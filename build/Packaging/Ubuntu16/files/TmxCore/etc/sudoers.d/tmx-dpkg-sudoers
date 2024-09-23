@@ -1,0 +1,9 @@
+#
+# This file is to allow the TMX CommandPlugin to invoke the Debian 
+# package manager commands natively.  It assumes the default user that 
+# runs CommandPlugin is "plugin".
+#
+
+# Allow TMX plugin user to run dpkg installs without password
+
+plugin	ALL = NOPASSWD: /usr/bin/dpkg

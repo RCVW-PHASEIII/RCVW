@@ -1,0 +1,13 @@
+[Unit]
+Description=websockify
+After=network.target
+
+[Service]
+WorkingDirectory=/var/tmp
+Type=forking
+ExecStart=/usr/bin/websockify -D 24603 localhost:24601
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+Alias=websockify.service

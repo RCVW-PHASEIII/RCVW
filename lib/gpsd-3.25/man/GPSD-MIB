@@ -1,0 +1,595 @@
+GPSD-MIB DEFINITIONS ::= BEGIN
+
+-- Run "smilint -l 4 GPSD_MIB" to validate this MIB
+--
+-- By default this file is installed as:
+--     /usr/local/share/snmp/mibs/gpsd/GPSD-MIB
+-- For net-snmp to find the file, add the following line to /etc/snmp/snmp.conf
+--   mibfile /usr/local/share/snmp/mibs/gpsd/GPSD-MIB
+--
+-- SNMP says Integer32 and INTEGER are "indistinguishable", but smilint
+-- prefers Integer32.
+
+IMPORTS
+    Integer32, MODULE-IDENTITY, OBJECT-TYPE, enterprises
+        FROM SNMPv2-SMI
+    DisplayString
+        FROM SNMPv2-TC
+    OBJECT-GROUP, MODULE-COMPLIANCE
+        FROM SNMPv2-CONF
+;
+
+gpsd MODULE-IDENTITY
+     LAST-UPDATED "202212080600Z"
+     ORGANIZATION "The Gpsd Project"
+     CONTACT-INFO
+        "The Gpsd Project
+        https://gpsd.io
+        EMail: gpsd-users@gpsd.io"
+
+     DESCRIPTION
+        "This MIB contains definition of the OIDs
+        used by gpssnmp part of the gpsd project.
+
+        This file is Copyright 2022 by the GPSD project
+        SPDX-License-Identifier: BSD-2-clause"
+
+     REVISION
+        "202212080600Z"
+
+     DESCRIPTION
+        "DRAFT: Initial MIB."
+
+     ::= { enterprises 59054 }
+
+-- These correspond to the gpsd JSON message classes
+-- See the gpsd doc (man gpsd_json) for detailed explanation of each.
+-- All are read-only
+
+ais       OBJECT IDENTIFIER ::= { gpsd 1 }
+
+att       OBJECT IDENTIFIER ::= { gpsd 2 }
+
+devices   OBJECT IDENTIFIER ::= { gpsd 3 }
+
+gst       OBJECT IDENTIFIER ::= { gpsd 4 }
+
+imu       OBJECT IDENTIFIER ::= { gpsd 5 }
+
+log       OBJECT IDENTIFIER ::= { gpsd 6 }
+
+osc       OBJECT IDENTIFIER ::= { gpsd 7 }
+
+raw       OBJECT IDENTIFIER ::= { gpsd 8 }
+
+rtcm2     OBJECT IDENTIFIER ::= { gpsd 9 }
+
+rtcm3     OBJECT IDENTIFIER ::= { gpsd 10 }
+
+sky       OBJECT IDENTIFIER ::= { gpsd 11 }
+
+subframe  OBJECT IDENTIFIER ::= { gpsd 12 }
+
+tpv       OBJECT IDENTIFIER ::= { gpsd 13 }
+
+version   OBJECT IDENTIFIER ::= { gpsd 14 }
+
+watch     OBJECT IDENTIFIER ::= { gpsd 15 }
+
+-- devices
+
+devNumber  OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of devices currently attached to gpsd, regardless
+            of current state."
+    ::= { devices 1 }
+
+-- the Devices table
+
+-- The Devices table contains information on on each connected device
+
+devTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF DevEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of device entries.  The number of entries is
+            given by the value of devNumber."
+    ::= { devices 2 }
+
+devEntry OBJECT-TYPE
+    SYNTAX      DevEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing information applicable to a
+            particular device."
+    INDEX   { devIndex }
+    ::= { devTable 1 }
+
+
+DevEntry ::=
+      SEQUENCE {
+        devIndex                 Integer32,
+        devPath                  DisplayString
+      }
+
+devIndex OBJECT-TYPE
+    SYNTAX      Integer32 (0..255)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A unique value, greater than zero, for each device."
+    ::= { devEntry 1 }
+
+devPath OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The device path."
+    ::= { devEntry 2 }
+
+-- tpv - Stuff from the TPV JSON class
+-- See "man gpsd_json" for more details on each item.
+
+tpvLeapSeconds OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Current Leap Seconds."
+    ::= { tpv 1}
+
+tpvNumber  OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of devices in tpvTable, regardless of current state."
+    ::= { tpv 2 }
+
+-- the TPV table
+
+-- The TPV table contains the TPV data from each connected device
+-- See 'man gpsd_json' for more information on each variable
+
+tpvTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF TpvEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of device entries.  The number of entries is
+            given by the value of tpvNumber."
+    ::= { tpv 3 }
+
+tpvEntry OBJECT-TYPE
+    SYNTAX      TpvEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing information applicable to a
+            particular device."
+    INDEX   { tpvIndex }
+    ::= { tpvTable 1 }
+
+
+TpvEntry ::=
+      SEQUENCE {
+        tpvIndex             Integer32,
+        tpvPath              DisplayString,
+        tpvMode              Integer32,
+        tpvStatus            Integer32,
+        tpvLatitude          Integer32,
+        tpvLongitude         Integer32,
+        tpvAltHAE            Integer32,
+        tpvAltMSL            Integer32,
+        tpvClimb             Integer32,
+        tpvTrack             Integer32,
+        tpvSpeed             Integer32,
+        tpvEpc               Integer32,
+        tpvEpd               Integer32,
+        tpvEph               Integer32,
+        tpvEps               Integer32,
+        tpvEpt               Integer32,
+        tpvEpv               Integer32,
+        tpvEpx               Integer32,
+        tpvEpy               Integer32,
+        tpvTime              DisplayString
+      }
+
+tpvIndex OBJECT-TYPE
+    SYNTAX      Integer32 (0..255)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A unique value, greater than zero, for each device."
+    ::= { tpvEntry 1 }
+
+tpvPath OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The device path."
+    ::= { tpvEntry 2 }
+
+tpvMode OBJECT-TYPE
+    SYNTAX      Integer32 (0..15)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "NMEA mode: 0=unknown, 1=no fix, 2=2D, 3=3D."
+    ::= { tpvEntry 3 }
+
+tpvStatus OBJECT-TYPE
+    SYNTAX      Integer32 (0..15)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Almost NMEA status: 0=Unknown, 1=Normal, 2=DGPS, 3=RTK Fixed,
+        4=RTK Floating, 5=DR, 6=GNSSDR, 7=Time (surveyed), 8=Simulated,   
+        9=P(Y)"
+    ::= { tpvEntry 4 }
+
+tpvLatitude OBJECT-TYPE
+    SYNTAX  Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    -- why 1e7?  Because SNMP chokes on INTEGERS > 32 bits.
+    DESCRIPTION
+            "The device Latitude in degrees. Scale 1e-7"
+    ::= { tpvEntry 5 }
+
+tpvLongitude OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    -- why 1e7?  Because SNMP chokes on INTEGERS > 32 bits.
+    DESCRIPTION
+            "The device Longitude in degrees. Scale 1e-7"
+    ::= { tpvEntry 6 }
+
+tpvAltHAE OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The device altitude above the(maybe WGS84) ellipsoid in meters.
+             Scale 1e-4."
+    ::= { tpvEntry 7 }
+
+tpvAltMSL OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The device altitude MSL in meters. Scale 1e-4."
+    ::= { tpvEntry 8 }
+
+tpvClimb OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The device climb rate in meters per second. Scale 1e-4."
+    ::= { tpvEntry 9 }
+
+tpvTrack OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Course over ground, degrees from true north. Scale 1e-5."
+    ::= { tpvEntry 10 }
+
+tpvSpeed OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The device speed in meters per second. Scale 1e-4."
+    ::= { tpvEntry 11 }
+
+tpvEpc OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Estimated climb error in meters / second. Scale 1e-5"
+    ::= { tpvEntry 12 }
+
+tpvEpd OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Estimated track (direction) error in degrees. Scale 1e-5"
+    ::= { tpvEntry 13 }
+
+tpvEph OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Estimated horizontal (2D) error in meters. Scale 1e-5"
+    ::= { tpvEntry 14 }
+
+tpvEps OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Estimated speed (2D) error in meters / second. Scale 1e-5"
+    ::= { tpvEntry 15 }
+
+tpvEpt OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Estimated time error in seconds. Scale 1e-7"
+    ::= { tpvEntry 16 }
+
+tpvEpv OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Estimated vertical (altitude) error in meters. Scale 1e-5"
+    ::= { tpvEntry 17 }
+
+tpvEpx OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Estimated Longitude error in meters. Scale 1e-5"
+    ::= { tpvEntry 18 }
+
+tpvEpy OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Estimated Latitude error in meters. Scale 1e-5"
+    ::= { tpvEntry 19 }
+
+tpvTime OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..30))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "UTC time of fix"
+    ::= { tpvEntry 20 }
+
+-- sky - Stuff from the SKY JSON class
+
+skyNumber  OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of devices in skyTable, regardless of current state."
+    ::= { sky 1 }
+
+-- the SKY table
+
+-- The SKY table contains the SKY JSON data from each connected device
+-- See 'man gpsd_json' for more information on each variable
+
+skyTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF SkyEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of device entries.  The number of entries is
+            given by the value of skyNumber."
+    ::= { sky 2 }
+
+skyEntry OBJECT-TYPE
+    SYNTAX      SkyEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing information applicable to a
+            particular device."
+    INDEX   { skyIndex }
+    ::= { skyTable 1 }
+
+
+SkyEntry ::=
+      SEQUENCE {
+        skyIndex             Integer32,
+        skyPath              DisplayString,
+        skynSat              Integer32,       -- aka "seen"
+        skyuSat              Integer32,       -- used
+        skySNRavg            Integer32,       -- average SNR
+        skyGdop              Integer32,
+        skyHdop              Integer32,
+        skyPdop              Integer32,
+        skyTdop              Integer32,
+        skyVdop              Integer32,
+        skyXdop              Integer32,
+        skyYdop              Integer32
+      }
+
+skyIndex OBJECT-TYPE
+    SYNTAX      Integer32 (0..255)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A unique value, greater than zero, for each device."
+    ::= { skyEntry 1 }
+
+skyPath OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The device path."
+    ::= { skyEntry 2 }
+
+skynSat OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "number of sats seen by this device"
+    ::= { skyEntry 3 }
+
+skyuSat OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "number of sats used by this device"
+    ::= { skyEntry 4 }
+
+skySNRavg OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "average SNR or all satellites in use, times 100."
+    ::= { skyEntry 5 }
+
+skyGdop OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "gdop, times 100."
+    ::= { skyEntry 6 }
+
+skyHdop OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "hdop, times 100."
+    ::= { skyEntry 7 }
+
+skyPdop OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "pdop, times 100."
+    ::= { skyEntry 8 }
+
+skyTdop OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "gdop, times 100."
+    ::= { skyEntry 9 }
+
+skyVdop OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "vdop, times 100."
+    ::= { skyEntry 10 }
+
+skyXdop OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "xdop, times 100."
+    ::= { skyEntry 11 }
+
+skyYdop OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "ydop, times 100."
+    ::= { skyEntry 12 }
+
+-- version - Stuff from the VERSION JSON class
+-- See "man gpsd_json" for more details on each item.
+
+verRelease OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "gpsd daemon release."
+    ::= { version 1 }
+
+verRevision OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "gpsd daemon Revision."
+    ::= { version 2 }
+
+-- groups in GPSD
+-- included to pacify smilint
+
+gpsdObjects     OBJECT-GROUP
+                OBJECTS {
+                    devNumber,
+                    devPath,
+                    tpvLeapSeconds,
+                    tpvNumber,
+                    tpvPath,
+                    tpvMode,
+                    tpvStatus,
+                    tpvLatitude,
+                    tpvLongitude,
+                    tpvAltHAE,
+                    tpvAltMSL,
+                    tpvClimb,
+                    tpvTrack,
+                    tpvSpeed,
+                    tpvEpc,
+                    tpvEpd,
+                    tpvEph,
+                    tpvEps,
+                    tpvEpt,
+                    tpvEpv,
+                    tpvEpx,
+                    tpvEpy,
+                    tpvTime,
+                    skyNumber,
+                    skyPath,
+                    skynSat,
+                    skyuSat,
+                    skySNRavg,
+                    skyGdop,
+                    skyHdop,
+                    skyPdop,
+                    skyTdop,
+                    skyVdop,
+                    skyXdop,
+                    skyYdop,
+                    verRelease,
+                    verRevision
+                }
+                STATUS  current
+                DESCRIPTION
+                    "A collection of objects providing support for
+                    the gpsd MIB."
+                ::= { gpsd 16 }
+
+gpsdMIBCompliance MODULE-COMPLIANCE
+    STATUS  current
+    DESCRIPTION
+        "The compliance statement for gpsd entities which
+        implement the GPSD MIB."
+    MODULE  -- compliance to the containing MIB module
+    GROUP   gpsdObjects
+    DESCRIPTION
+        "THis is here to shut up smilint"
+    ::= { gpsd 17 }
+
+END

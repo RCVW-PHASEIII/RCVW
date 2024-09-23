@@ -1,0 +1,17 @@
+#!/bin/sh -e
+
+systemctl stop tmxcore.service
+systemctl disable tmxcore.service
+
+# Clean up only for a real remove
+if [ "$1" != "remove" -a "$1" != "purge" ]; then
+  exit 0
+fi
+
+DBUSER="IVP"
+DBPASS="ivp"
+mysql -u$DBUSER -p$DBPASS -e "DROP DATABASE IF EXISTS $DBUSER;"
+
+set +e
+rmdir -p /var/www/plugins 2>/dev/null
+set -e

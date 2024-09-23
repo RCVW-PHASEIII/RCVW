@@ -1,0 +1,131 @@
+#
+# Transportation Message eXchange (TMX)
+# Makefile configuration script
+#
+# Author:
+#    Gregory M. Baumgardner
+# Version:
+#    1.0 : Initial version
+#
+
+CMAKE_MINIMUM_REQUIRED (VERSION 3.18)
+
+# Global options
+OPTION (DLL_LOADING "Support dynamic loading of TMX modules through Boost DLL.  Default is ON, unless Boost DLL is missing." ON)
+OPTION (Boost_USE_MULTITHREADED ON)
+OPTION (Boost_USE_STATIC_RUNTIME ON)
+OPTION (BUILD_SHARED_LIBS "Build TMX shared libraries instead of static" ON)
+
+PROJECT (tmx LANGUAGES NONE VERSION 4.0.0 DESCRIPTION "Transportation Message eXchange (TMX)")
+
+IF (COMMAND SETUP_TMX_PROJECT)
+    SETUP_TMX_PROJECT ()
+ENDIF ()
+
+IF (TMX_VERBOSE)
+    SET(CMAKE_VERBOSE_MAKEFILE ON CACHE INTERNAL "C Project setting")
+    SET(CMAKE_USE_RELATIVE_PATHS ON CACHE INTERNAL "C Project setting")
+ENDIF (TMX_VERBOSE)
+
+SET(CMAKE_CXX_STANDARD_REQUIRED ON)
+SET(CMAKE_CXX_EXTENSIONS OFF)
+
+ENABLE_LANGUAGE ( C )
+ENABLE_LANGUAGE ( CXX )
+
+IF (NOT TMX_BIN_DIR)
+    SET (TMX_BIN_DIR "${CMAKE_BINARY_DIR}/bin")
+ENDIF (NOT TMX_BIN_DIR)
+
+IF (NOT TMX_LIB_DIR)
+    SET (TMX_LIB_DIR "${CMAKE_BINARY_DIR}/lib")
+ENDIF (NOT TMX_LIB_DIR)
+
+IF (TMX_CROSSCOMPILING)
+    MESSAGE (STATUS "Cross-compiling for ${CMAKE_SYSTEM} on ${CMAKE_SYSTEM_PROCESSOR}")
+ENDIF (TMX_CROSSCOMPILING)
+
+INCLUDE (CheckCCompilerFlag)
+CHECK_C_COMPILER_FLAG ("-fPIC" CMAKE_C_FLAG_FPIC_SUPPORTED)
+IF (CMAKE_C_FLAG_FPIC_SUPPORTED)
+    ADD_COMPILE_OPTIONS ("-fPIC")
+ENDIF ()
+
+INCLUDE (CheckLinkerFlag)
+CHECK_LINKER_FLAG(CXX "-fsanitize" CMAKE_CXX_FLAG_ASAN_SUPPORTED)
+IF (CMAKE_CXX_FLAG_ASAN_SUPPORTED)
+    ADD_LINK_OPTIONS ("-fsanitize=address")
+ENDIF ()
+
+LINK_DIRECTORIES (${PROJECT_NAME} "${TMX_LIB_DIR}")
+SET (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${TMX_LIB_DIR})
+SET (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${TMX_LIB_DIR})
+SET (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${TMX_BIN_DIR})
+
+OPTION (Boost_USE_MULTITHREADED ON)
+OPTION (Boost_USE_STATIC_RUNTIME ON)
+IF (NOT DEFINED BOOST_MIN_VERSION)
+    SET (BOOST_MIN_VERSION 1.71)
+ENDIF ()
+
+IF (NOT Boost_LIBRARIES)
+    SET (Boost_DEFS "BOOST_ASIO_HEADER_ONLY -DBOOST_SPIRIT_THREADSAFE ${XTRA_BOOST_DEFS}")
+    IF (NOT Boost_USE_STATIC_RUNTIME)
+        SET (Boost_DEFS "${Boost_DEFS} -DBOOST_ALL_DYN_LINK -DBOOST_STACKTRACE_USE_ADDR2LINE")
+    ENDIF ()
+
+    FIND_PACKAGE ( Boost ${BOOST_MIN_VERSION}
+            COMPONENTS system program_options unit_test_framework
+            #stacktrace_addr2line
+            ${XTRA_BOOST_LIBRARIES} REQUIRED )
+
+    SET (Boost_VERSION "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}" CACHE INTERNAL "Boost")
+
+    # Only support DLL_LOADING if Boost DLL exist, which means Boost has to be 1.61 or higher
+    IF (Boost_VERSION VERSION_LESS "1.61")
+        MESSAGE (STATUS "Dynamic modules will not be supported since Boost version is ${Boost_VERSION}.")
+
+        SET (DLL_LOADING OFF CACHE BOOL "Disabled for Boost ${Boost_VERSION}." FORCE)
+    ENDIF ()
+ENDIF (NOT Boost_LIBRARIES)
+
+#
+# Include the API libraries and interfaces that contain the build properties
+#
+ADD_SUBDIRECTORY ( tmx-message )
+ADD_SUBDIRECTORY ( tmx-broker )
+ADD_SUBDIRECTORY ( tmx-plugin )
+
+MACRO (ADD_TMX_PLUGIN)
+    IF (NOT TMX_PLUGIN_NAME)
+        SET (TMX_PLUGIN_NAME ${PROJECT_NAME})
+    ENDIF()
+
+    FILE (RELATIVE_PATH PLUGIN_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX} /var/lib/plugin)
+    STRING (TOLOWER "${PROJECT_NAME}" COMPONENT_NAME)
+
+    FILE (GLOB_RECURSE SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c*")
+
+    ADD_EXECUTABLE (${PROJECT_NAME} ${SOURCES})
+    TARGET_LINK_OPTIONS(${PROJECT_NAME} PUBLIC "-Wl,--no-as-needed")
+    TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC libtmx-plugin libtmx-broker libtmx-message)
+
+    IF (NOT DEFINED ${PROJECT_NAME}_NO_PLUGIN_PACKAGE)
+        INSTALL (TARGETS ${PROJECT_NAME}
+                 DESTINATION ${PLUGIN_INSTALL_PREFIX}/${TMX_PLUGIN_NAME}/bin
+                 COMPONENT ${COMPONENT_NAME})
+    ENDIF ()
+
+    IF (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/manifest.json")
+        CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/manifest.json"
+                   	"${CMAKE_CURRENT_BINARY_DIR}/manifest.json"
+                   	@ONLY)
+
+        INSTALL (FILES ${CMAKE_CURRENT_BINARY_DIR}/manifest.json
+                DESTINATION ${PLUGIN_INSTALL_PREFIX}/${TMX_PLUGIN_NAME}
+                COMPONENT ${COMPONENT_NAME})
+    ENDIF()
+
+ENDMACRO()
+
+ADD_SUBDIRECTORY (tmxctl)

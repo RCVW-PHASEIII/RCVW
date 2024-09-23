@@ -1,0 +1,25 @@
+
+For 5th and Tisdale V2I testing use the following Config settings:
+
+1929
+
+Intersection
+
+10.30.100.51
+
+6053
+
+
+*** NO OVERLAP ***
+
+{"SignalGroups":[{"SignalGroupId":1,"Phase":1,"Type":"vehicle"},{"SignalGroupId":2,"Phase":2,"Type":"vehicle"},{"SignalGroupId":3,"Phase":4,"Type":"vehicle"},{"SignalGroupId":4,"Phase":4,"Type":"vehicle"},{"SignalGroupId":5,"Phase":5,"Type":"vehicle"},{"SignalGroupId":6,"Phase":6,"Type":"vehicle"},{"SignalGroupId":7,"Phase":7,"Type":"vehicle"},{"SignalGroupId":8,"Phase":4,"Type":"vehicle"},{"SignalGroupId":22,"Phase":6,"Type":"pedestrian"},{"SignalGroupId":24,"Phase":4,"Type":"pedestrian"},{"SignalGroupId":26,"Phase":2,"Type":"pedestrian"},{"SignalGroupId":28,"Phase":4,"Type":"pedestrian"}]}
+
+*** OVERLAP ***
+
+{"SignalGroups":[{"SignalGroupId":1,"Phase":1,"Type":"vehicle"},{"SignalGroupId":2,"Phase":2,"Type":"vehicle"},{"SignalGroupId":3,"Phase":4,"Type":"vehicle"},{"SignalGroupId":4,"Phase":4,"Type":"vehicle"},{"SignalGroupId":5,"Phase":5,"Type":"vehicle"},{"SignalGroupId":6,"Phase":6,"Type":"vehicle"},{"SignalGroupId":7,"Phase":7,"Type":"vehicle"},{"SignalGroupId":8,"Phase":4,"Type":"vehicle"},{"SignalGroupId":22,"Phase":6,"Type":"pedestrian"},{"SignalGroupId":24,"Phase":4,"Type":"pedestrian"},{"SignalGroupId":26,"Phase":2,"Type":"pedestrian"},{"SignalGroupId":28,"Phase":4,"Type":"pedestrian"},{"SignalGroupId":41,"Phase":1,"Type":"overlap"}]}
+
+
+10.30.100.108
+
+501
+

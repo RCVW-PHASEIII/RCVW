@@ -1,0 +1,60 @@
+{
+  "name": "RCVW-${RCVW_COMPONENT}-RSUIFM",
+  "description": "Plugin that listens for TMX messages and forwards them to the C-V2X Radio (i.e. the RSU).",
+  "version":"${RCVW_VERSION}",
+  "exe": "bin/${RSUIFM_PLUGIN}",
+  "channels":[
+    {
+      "comment": "TMX RBS core connection. Must use unique IDs for Kafka.",
+      "context": "kafka://localhost:${KAFKA_PORT}",
+      "config": {
+        "topics": "^(J2735|tmx)/",
+        "thread-count": 2,
+        "thread-assignment": "RoundRobin",
+        "comment": "Subscription occurs during runtime. Only take from the most recent offset.",
+        "global": {
+          "auto.offset.reset": "end"
+        }
+      }
+    },
+    {
+      "comment": "TMX CBS cloud connection.",
+      "id": "tmx-cbs",
+      "context": "${RCVW_CBS}",
+      "config": {
+        "auto-subscribe": false,
+        "topics": "^tmx/"
+      }
+    },
+    {
+      "comment": "RSU Immediate Forward connection.",
+      "id": "tmx-rsu-ifm",
+      "context": "udp://${RCVW_RSU_IP}:${RCVW_RSU_IFM_PORT}",
+      "config": {
+        "auto-subscribe": false,
+        "write-only": true,
+        "topics": "^RSU/IFM$"
+      }
+    },
+    {
+      "comment": "RSU NTCIP Management connection.",
+      "id": "tmx-rsu-ntcip",
+      "context": "ntcip://rsuRwUser@${RCVW_RSU_IP}",
+      "config": {
+        "topics": "^snmpget/",
+        "thread-count": 2,
+        "thread-assignment": "LeastUtilized",
+        "authentication-protocol": "SHA",
+        "authentication-passphrase": "authandauth",
+        "privacy-protocol": "AES",
+        "privacy-passphrase": "authandpriv",
+        "mib-dirs": [
+          "/usr/local/share/mibs"
+        ],
+        "timeout": 1000
+      }
+    }
+  ],
+  "Signature": "False",
+  "loglevel": "DEBUG"
+}

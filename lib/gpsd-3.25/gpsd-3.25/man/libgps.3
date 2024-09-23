@@ -1,0 +1,501 @@
+'\" t
+.\"     Title: libgps
+.\"    Author: Eric S. Raymond
+.\" Generator: Asciidoctor 2.0.16
+.\"      Date: 2023-01-10
+.\"    Manual: GPSD Documentation
+.\"    Source: GPSD, Version 3.25
+.\"  Language: English
+.\"
+.TH "LIBGPS" "3" "2023-01-10" "GPSD, Version 3.25" "GPSD Documentation"
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.ss \n[.ss] 0
+.nh
+.ad l
+.de URL
+\fI\\$2\fP <\\$1>\\$3
+..
+.als MTO URL
+.if \n[.g] \{\
+.  mso www.tmac
+.  am URL
+.    ad l
+.  .
+.  am MTO
+.    ad l
+.  .
+.  LINKSTYLE blue R < >
+.\}
+.SH "NAME"
+libgps \- C service library for communicating with the GPS daemon
+.SH "SYNOPSIS"
+.sp
+C:
+.sp
+.if n .RS 4
+.nf
+.fam C
+#include <gps.h>
+
+int gps_open(char * server, char * port, struct gps_data_t * gpsdata)
+
+int gps_send(struct gps_data_t * gpsdata, char * fmt, ...)
+
+int gps_read(struct gps_data_t * gpsdata, char * message,
+             int message_size)
+
+bool gps_waiting(const struct gps_data_t * gpsdata, int timeout)
+
+char * gps_data(const struct gps_data_t * gpsdata)
+
+int gps_unpack(char * buf, struct gps_data_t * gpsdata)
+
+int gps_close(struct gps_data_t * gpsdata)
+
+int gps_stream(struct gps_data_t * gpsdata, unsigned int flags,
+               void * data)
+
+int gps_mainloop(struct gps_data_t * gpsdata, int timeout,
+                 void (* hook)(struct gps_data_t *gpsdata))
+
+const char * gps_errstr(int err)
+.fam
+.fi
+.if n .RE
+.sp
+Python:
+.sp
+.if n .RS 4
+.nf
+.fam C
+import gps
+session = gps.gps(host="localhost", port="2947")
+session.stream(flags=gps.WATCH_JSON)
+while 0 == session.read():
+    process(session)
+del session
+.fam
+.fi
+.if n .RE
+.SH "DESCRIPTION"
+.SS "C"
+.sp
+\fBlibgps\fP is a service library which supports communicating with an
+instance of the \fBgpsd\fP(8), link it with the linker option \fB\-lgps\fP.
+Some systems may also require \fB\-lm\fP.
+.if n .sp
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+.B Warning
+.ps -1
+.br
+.sp
+Take care to conditionalize your code on the major and minor API version
+symbols in \fBgps.h\fP; ideally, force a compilation failure if
+GPSD_API_MAJOR_VERSION is not a version you recognize. See the GPSD
+project website for more information on the protocol and API changes.
+.sp .5v
+.RE
+.sp
+All the functions described here use the \fBgps_data_t\fP structure.
+Consult \fBgps.h\fP to learn more about \fBgps_data_t\fP, its data members,
+associated structures. associated timestamps. Note that information will
+accumulate in the session structure over time, and the \*(Aqvalid\*(Aq field is
+not automatically zeroed by each \fBgps_read()\fP. It is up to the client
+to zero that field when appropriate and to keep an eye on the fix and
+sentence timestamps.
+.if n .sp
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+.B Warning
+.ps -1
+.br
+.sp
+\fBgps_data_t\fP sets floating point variables to NaN when the actual
+variable value is unknown. Check all floats and doubles with \fBisfinite()\fP
+before using them. \fBisnan()\fP is not sufficient!
+.sp .5v
+.RE
+.sp
+\fBgps_open()\fP
+.RS 4
+Calling \fBgps_open()\fP initializes a \fBgps_data_t\fP structure to hold the data
+collected by the GPS, and sets up access to \fBgpsd\fP(8) via either the socket
+or shared\-memory export. The shared\-memory export is faster, but does
+not carry information about device activation and deactivation events
+and will not allow you to monitor device packet traffic.
+.sp
+\fBgps_open()\fP returns 0 on success, \-1 on errors and is re\-entrant.
+errno is set depending on the error returned from the socket or
+shared\-memory interface; see \fBgps.h\fP for values and explanations; also
+see \fBgps_errstr()\fP. The host address may be a DNS name, an IPv4 dotted
+quad, an IPV6 address, or the special value \fBGPSD_SHARED_MEMORY\fP
+referring to the shared\-memory export; the library will do the right
+thing for any of these.
+.RE
+.sp
+\fBgps_close()\fP
+.RS 4
+\fBgps_close()\fP ends the session and should only be called after a
+successful \fBgps_open()\fP. It returns 0 on success, \-1 on errors. The
+shared\-memory interface close always returns 0, whereas a socket close
+can result in an error. For a socket close error it will have set an
+errno from the call to the system\(cqs \fBclose()\fP.
+.RE
+.sp
+\fBgps_send()\fP
+.RS 4
+\fBgps_send()\fP writes a command to the \fBgpsd\fP daemon. It does nothing when
+using the shared\-memory export. The second argument must be a format
+string containing elements from the command set documented at \fBgpsd\fP(8).
+It may have % elements as for sprintf(3), which will be filled in
+from any following arguments. This function returns a \-1 if there was
+a Unix\-level write error, otherwise 0. Please read the LIMITATIONS
+section for additional information and cautions. See \fBgps_stream()\fP as a
+possible alternative.
+.RE
+.sp
+\fBgps_read()\fP
+.RS 4
+\fBgps_read()\fP accepts a response, or sequence of responses, from the
+\fBgpsd\fP daemon and decodes the response into a \fBgps_data_t\fP.  By default,
+this function does either a blocking read for data from the \fBgpsd\fP
+daemon or a fetch from shared memory; it returns a count of bytes read
+for success, \-1 with errno set on a Unix\-level read error, \-1 with
+errno not set if the socket to the \fBgpsd\fP daemon has closed or if the
+shared\-memory segment was unavailable, and 0 if no data is available.
+.sp
+The second argument to \fBgps_read()\fP is usually NULL, and the third
+argument is zero. If your application wants to see the raw data from
+the \fBgpsd\fP daemon then set the second argument to the address of your
+message buffer, and the third argument is the size of your buffer. Use
+with care; this may not to be a NUL\-terminated string if WATCH_RAW is
+enabled.
+.RE
+.sp
+\fBgps_waiting()\fP
+.RS 4
+\fBgps_waiting()\fP can be used to check whether there is new data from the
+\fBgpsd\fP daemon. The second argument is the maximum amount of time to block
+(in microseconds) waiting on input before returning. It returns true if there is
+input waiting, false on timeout (no data waiting) or error condition.
+When using the socket export, this function is a convenience wrapper
+around a \fBselect\fP(2) call, and zeros \fBerrno\fP on entry; you can test \fBerrno\fP
+after exit to get more information about error conditions.
+.sp
+Warning: under the shared\-memory interface there is a tiny race window
+between \fBgps_waiting()\fP and a following \fBgps_read()\fP; in that context,
+because the latter does not block, it is probably better to write a
+simple read loop.
+.RE
+.sp
+\fBgps_mainloop()\fP
+.RS 4
+\fBgps_mainloop()\fP enables the provided hook function to be continually
+called whenever there is \fBgpsd\fP data. The second argument is the maximum
+amount of time to wait (in microseconds) on input before exiting the
+loop (and return a value of \-1). It will also return a negative value on
+various errors.
+.RE
+.sp
+\fBgps_unpack()\fP
+.RS 4
+\fBgps_unpack()\fP parses JSON from the argument buffer into the target of
+the session structure pointer argument. Included in case your
+application wishes to manage socket I/O itself.
+.RE
+.sp
+\fBgps_data()\fP
+.RS 4
+\fBgps_data()\fP returns the contents of the client data buffer (it
+returns NULL when using the shared\-memory export). Use with care; this
+may not to be a NUL\-terminated string if WATCH_RAW is enabled.
+.RE
+.sp
+\fBgps_stream()\fP
+.RS 4
+\fBgps_stream()\fP asks \fBgpsd\fP to stream the reports it has at you, to be
+made available when you poll (not available when using the shared\-memory
+export). The second argument is a flag mask that sets various policy
+bits; see the list below. Calling \fBgps_stream()\fP more than once with
+different flag masks is allowed.
+.sp
+\fBWATCH_DEVICE\fP
+.RS 4
+Restrict watching to a specified device. The device path string is
+given as the third argument (data).
+.RE
+.sp
+\fBWATCH_DISABLE\fP
+.RS 4
+Disable the reporting modes specified by the other WATCH_ flags.
+.RE
+.sp
+\fBWATCH_ENABLE\fP
+.RS 4
+Enable the reporting modes specified by the other WATCH_ flags. This
+is the default.
+.RE
+.sp
+\fBWATCH_JSON\fP
+.RS 4
+Enable JSON reporting of data. If WATCH_ENABLE is set, and no other
+WATCH flags are set, this is the default.
+.RE
+.sp
+\fBWATCH_NEWSTYLE\fP
+.RS 4
+Force issuing a JSON initialization and getting new\-style responses.
+This is the default.
+.RE
+.sp
+\fBWATCH_NMEA\fP
+.RS 4
+Enable generated pseudo\-NMEA reporting on binary devices.
+.RE
+.sp
+\fBWATCH_OLDSTYLE\fP
+.RS 4
+Force issuing a W or R command and getting old\-style responses.
+Warning: this flag (and the capability) will be removed in a future
+release.
+.RE
+.sp
+\fBWATCH_RARE\fP
+.RS 4
+Enable reporting of binary packets in encoded hex.
+.RE
+.sp
+\fBWATCH_RAW\fP
+.RS 4
+Enable literal passthrough of binary packets.
+.RE
+.sp
+\fBWATCH_SCALED\fP
+.RS 4
+When reporting AIS or Subframe data, scale integer quantities to
+floats if they have a divisor or rendering formula associated with
+them.
+.RE
+.RE
+.sp
+\fBgps_errstr()\fP
+.RS 4
+\fBgps_errstr()\fP returns an ASCII string (in English) describing the
+error indicated by a nonzero return value from \fBgps_open()\fP.
+.RE
+.SS "Python"
+.sp
+The Python implementation supports the same facilities as the the C
+library. \fBgps_open()\fP is replaced by the initialization of a gps session
+object: \fBsession = gps.gps(...)\fP. The other calls are methods of that
+object, and have the same names as the corresponding C functions.
+.sp
+In addtion to using \fBgps.read()\fP to read messages from \fBgpsd\fP, you can
+use the session object as an iterator, as in the code fragment given
+below. Python iterators implicitly call the function \fBgps.\(rs_\(rs_next()\fP
+which is just a shim over \fBgps.read()\fP. There is other advantage to
+using the implicit iterator and it does not allow the options that
+\fBgps.read()\fP does.
+.sp
+.if n .RS 4
+.nf
+.fam C
+import gps
+session = gps.gps(host="localhost", port="2947")
+session.stream(flags=gps.WATCH_JSON)
+for report in session:
+    process(report)
+del session
+.fam
+.fi
+.if n .RE
+.sp
+Resources within the session object will be properly released when it is
+garbage\-collected.
+.sp
+For further information on the Python gps module, read the comments in
+the modules files.  There is a complete Python example in the file
+\fIwww/gpsd\-client\-example\-code.adoc\fP.
+.SH "ENVIRONMENT VARIABLES"
+.sp
+By setting the environment variable \fBGPSD_SHM_KEY\fP, you can control
+the key value used to create shared\-memory segment used for
+communication with \fBgpsd\fP. This will be useful mainly when isolating test
+instances of \fBgpsd\fP from production ones.
+.SH "EXAMPLES"
+.sp
+The following is a fully functional minimal C client.  Check
+the C source for the other \fBgpsd\fP clients for more ideas.
+.sp
+.if n .RS 4
+.nf
+.fam C
+// example  gpsd client
+// compile this way:
+//    gcc example1.c \-o example1 \-lgps \-lm
+#include <gps.h>         .. for gps_*()
+#include <math.h>        // for isfinite()
+
+#define MODE_STR_NUM 4
+static char *mode_str[MODE_STR_NUM] = {
+    "n/a",
+    "None",
+    "2D",
+    "3D"
+};
+
+int main(int argc, char *argv[])
+{
+    struct gps_data_t gps_data;
+
+    if (0 != gps_open("localhost", "2947", &gps_data)) {
+        printf("Open error.  Bye, bye\(rsn");
+        return 1;
+    }
+
+    (void)gps_stream(&gps_data, WATCH_ENABLE | WATCH_JSON, NULL);
+
+    while (gps_waiting(&gps_data, 5000000)) {
+        if (\-1 == gps_read(&gps_data, NULL, 0)) {
+            printf("Read error.  Bye, bye\(rsn");
+            break;
+        }
+        if (MODE_SET != (MODE_SET & gps_data.set)) {
+            // did not even get mode, nothing to see here
+            continue;
+        }
+        if (0 > gps_data.fix.mode ||
+            MODE_STR_NUM <= gps_data.fix.mode) {
+            gps_data.fix.mode = 0;
+        }
+        printf("Fix mode: %s (%d) Time: ",
+               mode_str[gps_data.fix.mode],
+               gps_data.fix.mode);
+        if (TIME_SET == (TIME_SET & gps_data.set)) {
+            // not 32 bit safe
+            printf("%ld.%09ld ", gps_data.fix.time.tv_sec,
+                   gps_data.fix.time.tv_nsec);
+        } else {
+            puts("n/a ");
+        }
+        if (isfinite(gps_data.fix.latitude) &&
+            isfinite(gps_data.fix.longitude)) {
+            // Display data from the GPS receiver if valid.
+            printf("Lat %.6f Lon %.6f\(rsn",
+                   gps_data.fix.latitude, gps_data.fix.longitude);
+        } else {
+            printf("Lat n/a Lon n/a\(rsn");
+        }
+    }
+
+    // When you are done...
+    (void)gps_stream(&gps_data, WATCH_DISABLE, NULL);
+    (void)gps_close(&gps_data);
+    return 0;
+}
+.fam
+.fi
+.if n .RE
+.SH "LIMITATIONS"
+.sp
+On some systems (those which do not support implicit linking in
+libraries) you may need to add \fB\-lm\fP to your link line when you link
+libgps. It is always safe to do this.
+.sp
+In the C API, incautious use of \fBgps_send()\fP may lead to subtle bugs.
+In order to not bloat struct \fBgps_data_t\fP with space used by responses
+that are not expected to be shipped in close sequence with each other,
+the storage for fields associated with certain responses are combined in
+a union.
+.sp
+The risky set of responses includes VERSION, DEVICELIST, RTCM2, RTCM3,
+SUBFRAME, AIS, GST, and ERROR; it may not be limited to that set. The
+logic of the \fBgpsd\fP daemon\(cqs watcher mode is careful to avoid dangerous
+sequences, but you should read and understand the layout of struct
+\fBgps_data_t\fP before using \fBgps_send()\fP to request any of these
+responses.
+.SH "COMPATIBILITY"
+.sp
+The \fBgps_query()\fP supported in major versions 1 and 2 of this library
+has been removed. With the new streaming\-oriented wire protocol behind
+this library, it is extremely unwise to assume that the first
+transmission from the \fBgpsd\fP daemon after a command is shipped to it will be
+the response to command.
+.sp
+If you must send commands to the \fBgpsd\fP daemon explicitly, use \fBgps_send()\fP
+but beware that this ties your code to the GPSD wire protocol. It is not
+recommended.
+.sp
+In some versions of the API \fBgps_read()\fP is a blocking call and
+there was a POLL_NONBLOCK option to make it nonblocking.
+\fBgps_waiting()\fP was added to reduce the number of wrong ways to code a
+polling loop.
+.sp
+See the comment above the symbol GPSD_API_MAJOR_VERSION in \fBgps.h\fP for
+recent changes.
+.SH "ACKNOWLEDGEMENTS"
+.sp
+C sample code by Gary E. Miller \c
+.MTO "gem\(atrellim.com" "" ""
+and
+Charles Curley \c
+.MTO "charlescurley\(atcharlescurley.com" "" ""
+.SH "SEE ALSO"
+.sp
+\fBgpsd\fP(8), \fBgps\fP(1), \fBgpsd_json\fP(5), \fBlibgpsmm\fP(3)
+.SH "RESOURCES"
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+.URL "https://gpsd.io/gpsd\-client\-example\-code.html" "GPSD Client Example Code" ""
+An
+annotated example client.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+.URL "https://gpsd.io/client\-howto.html" "GPSD Client HOWTO" ""
+A GPS client HOWTO.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.  sp -1
+.  IP \(bu 2.3
+.\}
+\fBProject web site:\fP \c
+.URL "https://gpsd.io/" "" ""
+.RE
+.SH "COPYING"
+.sp
+This file is Copyright 2013 by the GPSD project
+.br
+SPDX\-License\-Identifier: BSD\-2\-clause
+.SH "AUTHOR"
+.sp
+Eric S. Raymond

@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="CMakePresetLoader">{
+  &quot;useNewFormat&quot;: true
+}</component>
+  <component name="CMakeReloadState">
+    <option name="reloaded" value="true" />
+  </component>
+  <component name="CMakeRunConfigurationManager">
+    <generated>
+      <config projectName="tmx" targetName="test-tmxbroker-dds" />
+      <config projectName="tmx" targetName="tmxtype" />
+      <config projectName="tmx" targetName="tmxplugin-client" />
+      <config projectName="tmx" targetName="tmxbroker-dds" />
+      <config projectName="tmx" targetName="tmxcodec" />
+      <config projectName="tmx" targetName="test-tmxbroker-api" />
+      <config projectName="tmx" targetName="tmxbroker-api" />
+      <config projectName="tmx" targetName="tmxplugin-dao" />
+      <config projectName="tmx" targetName="TmxMessage_lib_generate" />
+      <config projectName="tmx" targetName="tmxplugin-utils" />
+      <config projectName="tmx" targetName="test-tmxtype" />
+      <config projectName="tmx" targetName="tmxbroker-qpid-proton" />
+      <config projectName="tmx" targetName="test-tmxbroker-qpid-proton" />
+    </generated>
+  </component>
+  <component name="CMakeSettings" AUTO_RELOAD="true">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" ENABLED="true" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="12ea4b86-ee96-4c37-bf2a-c680d313932a" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/../../.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/../../.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../tmx-exampleapps/EmptyPlugin/src/EmptyPlugin.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../tmx-exampleapps/EmptyPlugin/src/EmptyPlugin.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../tmx-exampleapps/ExamplePlugin/src/ExamplePlugin.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../tmx-exampleapps/ExamplePlugin/src/ExamplePlugin.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tmx-broker/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/tmx-broker/CMakeLists.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tmx-broker/api/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/tmx-broker/api/CMakeLists.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tmx-broker/api/src/tmx/broker/TmxBrokerContext.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/tmx-broker/api/src/tmx/broker/TmxBrokerContext.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tmx-broker/api/test/tmx/broker/TmxBrokerUrl_Test.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/tmx-broker/api/test/tmx/broker/TmxBrokerUrl_Test.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tmx-broker/cyclonedds/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/tmx-broker/cyclonedds/CMakeLists.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tmx-broker/cyclonedds/cyclonedds" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tmx-broker/cyclonedds/cyclonedds-cxx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tmx-broker/cyclonedds/include/tmx/broker/cyclonedds/TmxCycloneClient.hpp" beforeDir="false" afterPath="$PROJECT_DIR$/tmx-broker/cyclonedds/include/tmx/brokerclient/cyclonedds/TmxCycloneClient.hpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tmx-broker/cyclonedds/src/tmx/broker/cyclonedds/TmxCycloneClient.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/tmx-broker/cyclonedds/src/tmx/brokerclient/cyclonedds/TmxCycloneClient.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tmx-message/types/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/tmx-message/types/CMakeLists.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tmx-message/types/src/tmx/common/TmxLogger.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/tmx-message/types/src/tmx/common/TmxLogger.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tmx-message/types/test/tmx/common/types/TmxInt_Test.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/tmx-message/types/test/tmx/common/types/TmxInt_Test.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../test/tmx-performance/benchmark/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/../../test/tmx-performance/benchmark/CMakeLists.txt" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Debug" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../.." />
+  </component>
+  <component name="ProjectApplicationVersion">
+    <option name="ide" value="CLion" />
+    <option name="majorVersion" value="2023" />
+    <option name="minorVersion" value="1.4" />
+  </component>
+  <component name="ProjectId" id="2SNzTQIDzjkPpI2X4mhXBROXIVJ" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="1" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/nate/tmx-4/test/tmx-performance/benchmark/CMakeLists.txt&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.sourceCode.C/C++&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/tmx-broker/qpidproton" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/tmx-broker/qpidproton/test/tmx/brokerclient" />
+      <recent name="$PROJECT_DIR$/tmx-broker/cyclonedds/src/tmx/brokerclient/cyclonedds" />
+      <recent name="$PROJECT_DIR$/tmx-broker/cyclonedds/src/tmx/brokerclient" />
+      <recent name="$PROJECT_DIR$/tmx-broker/cyclonedds/include/tmx/brokerclient" />
+      <recent name="$PROJECT_DIR$/tmx-broker/qpidproton/src/tmx/broker" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Boost.Test.test-tmxbroker-qpid-proton">
+    <configuration name="test-tmxbroker-api" type="CMakeBoostTestRunConfigurationType" factoryName="Boost Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="tmx" TARGET_NAME="test-tmxbroker-api" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="tmx" RUN_TARGET_NAME="test-tmxbroker-api" TEST_MODE="SUITE_TEST">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+        <option name="BeforeTestRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test-tmxbroker-dds" type="CMakeBoostTestRunConfigurationType" factoryName="Boost Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="tmx" TARGET_NAME="test-tmxbroker-dds" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="tmx" RUN_TARGET_NAME="test-tmxbroker-dds" TEST_MODE="SUITE_TEST">
+      <envs>
+        <env name="MSG_SOURCE_FILE" value="$USER_HOME$/bible.txt" />
+        <env name="MSG_TOPIC" value="Bible" />
+      </envs>
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+        <option name="BeforeTestRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test-tmxbroker-qpid-proton" type="CMakeBoostTestRunConfigurationType" factoryName="Boost Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="tmx" TARGET_NAME="test-tmxbroker-qpid-proton" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="tmx" RUN_TARGET_NAME="test-tmxbroker-qpid-proton" TEST_MODE="SUITE_TEST">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+        <option name="BeforeTestRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test-tmxtype" type="CMakeBoostTestRunConfigurationType" factoryName="Boost Test" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="tmx" TARGET_NAME="test-tmxtype" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="tmx" RUN_TARGET_NAME="test-tmxtype" TEST_MODE="SUITE_TEST">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+        <option name="BeforeTestRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="TmxMessage_lib_generate" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="tmx" TARGET_NAME="TmxMessage_lib_generate" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="tmx" RUN_TARGET_NAME="test-tmxtype">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test-tmxbroker-dds" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="tmx" TARGET_NAME="test-tmxbroker-dds" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="tmx" RUN_TARGET_NAME="test-tmxbroker-dds">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="tmxbroker-api" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="tmx" TARGET_NAME="tmxbroker-api" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="tmxbroker-dds" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="tmx" TARGET_NAME="tmxbroker-dds" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="tmxbroker-qpid-proton" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="tmx" TARGET_NAME="tmxbroker-qpid-proton" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="tmxcodec" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="tmx" TARGET_NAME="tmxcodec" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="tmxplugin-client" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="tmx" TARGET_NAME="tmxplugin-client" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="tmxplugin-dao" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="tmx" TARGET_NAME="tmxplugin-dao" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="tmxplugin-utils" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="tmx" TARGET_NAME="tmxplugin-utils" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="tmxtype" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="tmx" TARGET_NAME="tmxtype" CONFIG_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <list>
+      <item itemvalue="Boost.Test.test-tmxbroker-dds" />
+      <item itemvalue="Boost.Test.test-tmxbroker-qpid-proton" />
+      <item itemvalue="Boost.Test.test-tmxbroker-api" />
+      <item itemvalue="Boost.Test.test-tmxtype" />
+      <item itemvalue="CMake Application.test-tmxbroker-dds" />
+      <item itemvalue="CMake Application.tmxbroker-api" />
+      <item itemvalue="CMake Application.tmxbroker-dds" />
+      <item itemvalue="CMake Application.TmxMessage_lib_generate" />
+      <item itemvalue="CMake Application.tmxbroker-qpid-proton" />
+      <item itemvalue="CMake Application.tmxcodec" />
+      <item itemvalue="CMake Application.tmxtype" />
+      <item itemvalue="CMake Application.tmxplugin-client" />
+      <item itemvalue="CMake Application.tmxplugin-dao" />
+      <item itemvalue="CMake Application.tmxplugin-utils" />
+    </list>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="12ea4b86-ee96-4c37-bf2a-c680d313932a" name="Changes" comment="" />
+      <created>1689001834536</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1689001834536</updated>
+      <workItem from="1689001836930" duration="6241000" />
+      <workItem from="1689073394220" duration="5906000" />
+      <workItem from="1689089158327" duration="33270000" />
+      <workItem from="1689594589238" duration="3816000" />
+      <workItem from="1689600634622" duration="14107000" />
+      <workItem from="1689617239113" duration="373000" />
+      <workItem from="1689617814803" duration="43483000" />
+      <workItem from="1689768887794" duration="18615000" />
+      <workItem from="1689791435054" duration="543000" />
+      <workItem from="1689792015647" duration="11570000" />
+      <workItem from="1689862053476" duration="2159000" />
+      <workItem from="1689865371839" duration="1016000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VCPKGProject">
+    <isAutomaticEditVcpkgJson value="false" />
+    <isAutomaticCheckingOnLaunch value="false" />
+    <isAutomaticFoundErrors value="true" />
+    <isAutomaticFoundErrors value="true" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/tmx-broker/qpidproton/include/tmx/brokerclient/TmxQpidProtonClient.hpp</url>
+          <line>231</line>
+          <option name="timeStamp" value="125" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/tmx-broker/qpidproton/include/tmx/brokerclient/TmxQpidProtonClient.hpp</url>
+          <line>208</line>
+          <option name="timeStamp" value="144" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>

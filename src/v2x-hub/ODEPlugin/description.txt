@@ -1,0 +1,34 @@
+/**
+ \page ivpplugins V2I Hub Plugins
+ - \subpage odeplugin
+ 
+ \page odeplugin ODE Plugin
+\tableofcontents
+
+The ODEPlugin is a plugin for the V2I Hub that forwards J2735 BSM messages from the V2I Hub to the UDP uploader on the ITS JPO ODE server.
+
+\section odedesign Description
+
+The Operational Data Environment (ODE) is a scalable data acquisition and distribution solution created by ITS JPO. The ODE plugin allows 
+transmission of BSMs received in the V2I Hub to the deployed ODE solution. In a deployed V2I Hub system, the BSM would be received by the 
+RSU and forwarded to the V2I Hub. Once in the V2I Hub, the BSM would be received by the ODE plugin and then sent to the ODE using the set 
+configuration. The ODE solution can also create TIM information based on the data it receives. The ODE plugin will query the ODE for TIM 
+messages for the deployed V2I Hub’s location, using the latitude and longitude obtained by GPS or set in configuration during deployment. 
+Any TIM messages retrieved by the ODE plugin will be packaged and sent through the V2I Hub and ultimately out the RSU.
+
+\section odeconfig Configuration
+
+The ODE Plugin Receiver can be configured to send BSM messages and receive TIM messages from one ODE instance using the configuration below. 
+The ODEIP contains the configuration value for the IP address for the deployed ODE, and the ODEPort is the port used for transmission 
+
+- ODEIP: IP address for the ODE network connection.
+- ODEPort: Port for the ODE network connection.
+
+\section odeexternals External Resources
+
+- BasicSafetyMessage
+- \ref tmx::messages::BsmMessage "BsmMessage"
+- \ref tmx::messages::BsmEncodedMessage "BsmEncodedMessage"
+- \ref tmx::utils::PluginClient "PluginClient"
+
+*/

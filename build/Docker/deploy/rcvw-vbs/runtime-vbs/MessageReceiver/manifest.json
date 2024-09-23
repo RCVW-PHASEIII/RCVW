@@ -1,0 +1,35 @@
+{
+	"name":"${TMX_COMPONENT}-${RCVW_COMPONENT}-RECV",
+	"description":"Plugin to receive messages from an external DSRC radio or other source",
+	"version":"${RCVW_VERSION}",
+	"exe": "bin/${RECEIVER_PLUGIN}",
+	"channels":[
+		{
+			"comment": "TMX core connection. Must use unique IDs for Kafka.",
+			"context": "kafka://localhost:${KAFKA_PORT}",
+			"config": {
+				"auto-subscribe": false,
+				"write-only": true,
+				"topics": "^(J2735|tmx|gpsd)/",
+				"thread-count": 4,
+				"thread-assignment": "RoundRobin",
+				"global": {
+					"auto.offset.reset": "end"
+				}
+			}
+		},
+		{
+			"comment": "Listener for C-V2X Radio and/or V2X Hub Simulator messages",
+			"id": "listener",
+			"context": "udp-d://0.0.0.0:${RCVW_OBU_FWD_PORT}",
+			"config": {
+				"auto-publish": false,
+				"read-only": true,
+				"topics": "^UNKNOWN",
+				"thread-count": 6,
+				"thread-assignment": "ShortestQueue"
+			}
+		}
+	],
+	"status-Hz": 1
+}

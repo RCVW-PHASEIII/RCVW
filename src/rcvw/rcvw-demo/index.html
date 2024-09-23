@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.14.0/themes/base/jquery-ui.css">
+
+    <link href="https://maps-sdk.trimblemaps.com/v3/trimblemaps-3.9.0.css" rel="stylesheet">
+    <script src=https://maps-sdk.trimblemaps.com/v3/trimblemaps-3.9.0.js></script>
+
+    <style>
+
+        #myMap {
+            position: absolute;
+            left: 32px;
+            top: 32px;
+            bottom: 0;
+            width: 100%;
+        }
+
+    </style>
+
+</head>
+<body>
+
+    <div id="debugInfo" style="display: none">
+        Inactive: <div id="inactiveHRIdiv" style="display: inline"></div></br>
+        Active: <div id="activeHRIdiv" style="display: inline"></div></br>
+        Instrumented: <div id="instrumentedHRIdiv" style="display: inline"></div></br>
+        Operational: <div id="operationalHRIdiv" style="display: inline"></div></br>
+        <div id="currentHRIdiv" style="display: inline"></div></br>
+        <div id="currentBounds" style="display: inline"></div></br>
+        <div id="myIp" style="display:inline"></div></br>
+        <div id="dbFreq" style="display: inline">1000</div></br>
+    </div>
+
+    <div id="menu" style="display: inline">
+        <input id="transportation" type="radio" name="rtoggle" value="TRANSPORTATION" checked="checked" />
+        <label for="transportation">transportation</label>
+        <input id="satellite" type="radio" name="rtoggle" value="SATELLITE" />
+        <label for="satellite">satellite</label>
+    </div>
+
+    <div id="myMap"></div>
+
+    <div id="hri-information-instrumented" style="display: none;">
+        <table>
+            <tr>
+                <td>
+                    <table id="hri-information-list" style="width: 256px">
+                        <tr><td>US DOT No:<span id="instrumented-CrossingID"</span></td></tr>
+                        <tr><td>Status: <span id="instrumented-PreemptionStatus"></span></td></tr>
+                        <tr><td>Comms: <span id="instrumented-RBSOperational"></span></td></tr>
+                        <tr><td>City: <span id="instrumented-CityName"</span></td></tr>
+                        <tr><td>County: <span id="instrumented-CountyName"</span></td></tr>
+                        <tr><td>Street: <span id="instrumented-Street"></span></td></tr>
+                        <tr><td>Highway: <span id="instrumented-Highway"</span></td></tr>
+                        <tr><td>Rail Name: <span id="instrumented-RailroadCode"></span></td></tr>
+                    </table>
+                    <table style="width: 256px">
+                        <tr>
+                            <td><button type="button" onclick="showMoreInformation(getHRIId());">More Info</button></td>
+                            <td><button id="hri-show-even-more-information" type="button" onclick="showCBSInformation(getHRIId());" style="display: inline; margin:8px,0,0,0; width:96px">CBS</br>Information</button></td>
+                            <td><button type="button" onclick="hideInformation();">Close</button></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="hri-CBS-information" style="display: none;" title="">
+        <table>
+            <tr>
+                <td>
+                    <table style="width: 512px">
+                        <tr><td>US DOT No:<span id="cbs-CrossingID"</span></td></tr>
+                        <tr><td>ErrorCode: <span id="cbs-ErrorCode"</span></td></tr>
+                        <tr><td>ErrorMessage: <span id="cbs-ErrorMessage"</span></td></tr>
+                        <tr id="cbs-ec-note" style="margin: 0px,16px,0px,0px"><td><strong>Note:</strong> the errorcode 999 indicates the Comms status was changed using this web interface</td></tr>
+                        <tr><td><button type="button" onclick="hideCBSInformation();">Close</button></td></tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="hri-information" style="display: none;" title="">
+        <table>
+            <tr>
+                <td>
+                    <table style="width: 140px">
+                        <tr><td>US DOT No:<span id="CrossingID"</span></td></tr>
+                        <tr><td id="hri-information-status-row">Status: <span id="ManualPreemptionStatus"></span></td></tr>
+                        <tr><td id="hri-information-operational-row">Comms: <span id="ManualRBSOperational"></span></td></tr>
+                        <tr><td>City: <span id="CityName"</span></td></tr>
+                        <tr><td>County: <span id="CountyName"</span></td></tr>
+                        <tr><td>Street: <span id="Street"></span></td></tr>
+                        <tr><td>Highway: <span id="Highway"</span></td></tr>
+                        <tr><td>Rail Name: <span id="RailroadCode"></span></td></tr>
+                    </table>
+                    <table style="width: 140px">
+                        <tr>
+                            <td><button type="button" onclick="showMoreInformation(getHRIId());">More Info</button></td>
+                            <td><button type="button" onclick="hideInformation();">Close</button></td>
+                        </tr>
+                    </table>
+                </td>
+                <td id="hri-controller-controls">
+                    <div style="vertical-align:top; margin-bottom:32px; margin-top:32px">
+                        <button id="hri-information-activateHRI" type="button" onclick="toggleHRIActivation(getHRIId(),null);" style="margin:0,0,64px,0; width:96px">Toggle Train</br>Detection</br>On/Off</button>
+                    </div>
+                    <div style="vertical-align:top; margin-bottom:64px">
+                        <button id="hri-information-toggle-comms" type="button" onclick="toggleOperational(getHRIId(),null);" style="margin:64px,0,0,0; width:96px">Toggle Comms</br>On/Off</button>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="hri-more-information" class="hri-more-information" title="___" style="display: none;">
+        <table>
+            <tr>
+                <td>
+                    <table style="width: 256px">
+                        <tr><td>Emergency Contact:<span id="more-PolCont"</span></td></tr>
+                        <tr><td>Railroad Contact: <span id="more-RrCont"></span></td></tr>
+                        <tr><td>Latitude: <span id="more-Latitude"></span></td></tr>
+                        <tr><td>Longitude: <span id="more-Longitude"</span></td></tr>
+                        <tr><td>Mile marker: <span id="more-LrsMilePost"></span></td></tr>
+                        <tr><td>Distance to Highway (ft): <span id="more-HwynDist"</span></td></tr>
+                        <tr><td>Speed Limit: <span id="more-HwySpeed"</span></td></tr>
+                        <tr><td>Crossing Angle: <span id="more-CrossingAngle"></span></td></tr>
+                        <tr><td>Crossing Position: <span id="more-CrossingPosition"></span></td></tr>
+                        <tr><td>Gates: <span id="more-GateConf"></span></td></tr>
+                        <tr><td>Flashing Lights: <span id="more-FlashPost"></span></td></tr>
+                        <tr><td>Other Devices: <span id="more-FlashOth"></span></td></tr>
+                    </table>
+                    <table style="width: 256px">
+                        <tr>
+                            <td><button type="button" onclick="hideMoreInformation();">Close</button></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <script>
+
+        TrimbleMaps.APIKey="7E27C13016099E47A48B466C0EC38AF2";
+
+        var origin = [-81.71896370494375,30.28618658831364];
+        var origin2 = [-81.73174950904843, 30.324498457737633];
+
+        var map = new TrimbleMaps.Map({
+            container: "myMap",
+            center: new TrimbleMaps.LngLat(origin[0],origin[1]),
+            /*
+                style: TrimbleMaps.Common.Style.SATELLITE,
+            */
+            style: TrimbleMaps.Common.Style.TRANSPORTATION,
+            zoom: 15,
+            pitch: 10,
+            antialias: true
+        });
+
+        var trimbleMapPopup = null;
+        var trimbleMapPopupMore = null;
+        var trimbleMapPopupCBSInfo = null;
+
+        var activeTimers = [];
+        var monitoredHRIs = [];
+        var awaitingHRIs = [];
+
+        var controllerHRI = `621220K`;
+
+        const layerList = document.getElementById('menu');
+        const inputs = layerList.getElementsByTagName('input');
+
+        function switchLayer (elem) {
+            const styleId = elem.target.value;
+            map.setStyle(TrimbleMaps.Common.Style[styleId]);
+            document.getElementById("currentBounds").innerHTML = '';
+            setupMap();
+        }
+
+        for ( k = 0; k < inputs.length; k++)
+            inputs[k].onclick = switchLayer;
+
+        map.on('load',function() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onload = function() {
+                document.getElementById('myIp').innerHTML = this.responseText;
+                if ( this.responseText == `24.154.75.125` ) {
+                    document.getElementById(`debugInfo`).style = "display: inline";
+                    document.getElementById('myMap').style = "top: 164px";
+                    controllerHRI = `621219R`;
+                    //map.setCenter(new TrimbleMaps.LngLat(origin2[0],origin2[1]));
+                }
+            };
+            xhttp.open("GET", "//api.ipify.org", true);
+            xhttp.send();
+            setupMap();
+        });
+
+        map.on('mousemove',function(e) {
+            /*
+            document.getElementById("MouseLatLon").innerHTML =
+                    `LAT: ` + e.lngLat.lat + ` LNG: ` + e.lngLat.lng + `</br>` +
+                        map.transform.center.lat + `,` + map.transform.center.lng + `</br>` +
+                        map.transform.tileZoom;
+            */
+        });
+
+        function setupMap() {
+
+            map.loadImage('/fraIconOriginal.png',function(error,image) {
+                map.addImage(`fraIcon`,image,{pixelRatio: 4.0});
+            });
+
+            map.loadImage('/fraIcon-NoComms.png',function(error,image) {
+                map.addImage(`fraIconNoComs`,image,{pixelRatio: 4.0});
+            });
+
+            map.loadImage('/fraIconOriginal-battelle.png',function(error,image) {
+                map.addImage(`fraIconBattelle`,image,{pixelRatio: 3.0});
+            });
+
+            map.loadImage('/fraIcon-NoComms-battelle.png',function(error,image) {
+                map.addImage(`fraIconNoComsBattelle`,image,{pixelRatio: 3.0});
+            });
+
+            map.loadImage('/poi_train_station-active.png',function(error,image) {
+                map.addImage(`rrIconActive`,image,{pixelRatio: 1.75});
+            });
+
+            map.loadImage('/blueLogo.jpg',function(error,image) {
+                map.addImage(`rrIconController`,image,{pixelRatio: 1.0});
+            });
+
+            map.loadImage('/poi_train_station-active-battelle.png',function(error,image) {
+                map.addImage(`rrIconActiveBattelle`,image,{pixelRatio: 1.75});
+            });
+
+            const xhttp = new XMLHttpRequest();
+            xhttp.onload = function() {
+                createHRIs(this.responseText);
+            }
+
+            var geoCoords = map.getBounds();
+            xhttp.open("GET","getHRIs.php?neLng=" + geoCoords._ne.lng + "&neLat=" + geoCoords._ne.lat + "&swLng=" + geoCoords._sw.lng + "&swLat=" + geoCoords._sw.lat);
+            xhttp.send();
+
+            map.on('zoomend',function(e) {
+                if ( map.getBounds().toString() == document.getElementById("currentBounds").innerHTML )
+                    return;
+                return;
+                const xhttp = new XMLHttpRequest();
+                xhttp.onload = function() {
+                    createHRIs(this.responseText);
+                }
+                var geoCoords = map.getBounds();
+                xhttp.open("GET","getHRIs.php?neLng=" + geoCoords._ne.lng + "&neLat=" + geoCoords._ne.lat + "&swLng=" + geoCoords._sw.lng + "&swLat=" + geoCoords._sw.lat);
+                xhttp.send();
+            });
+
+            map.on('moveend',function(e) {
+                if ( map.getBounds().toString() == document.getElementById("currentBounds").innerHTML )
+                    return;
+                const xhttp = new XMLHttpRequest();
+                xhttp.onload = function() {
+                    createHRIs(this.responseText);
+                }
+                var geoCoords = map.getBounds();
+                xhttp.open("GET","getHRIs.php?neLng=" + geoCoords._ne.lng + "&neLat=" + geoCoords._ne.lat + "&swLng=" + geoCoords._sw.lng + "&swLat=" + geoCoords._sw.lat);
+                xhttp.send();
+            });
+        }
+
+
+        function createHRIs(hrisJson) {
+
+            if ( map.getBounds().toString() == document.getElementById("currentBounds").innerHTML )
+                return;
+
+            var inactiveHRIList = document.getElementById('inactiveHRIdiv');
+            inactiveHRIList.innerHTML = "[";
+
+            var activeHRIList = document.getElementById('activeHRIdiv');
+            activeHRIList.innerHTML = "[";
+
+            var operationalHRIList = document.getElementById('operationalHRIdiv');
+            operationalHRIList.innerHTML = "[";
+
+            var instrumentedHRIList = document.getElementById('instrumentedHRIdiv');
+            instrumentedHRIList.innerHTML = "[";
+
+            visibleHRIs = JSON.parse(hrisJson);
+
+            for ( hriInfo of visibleHRIs ) {
+
+                var isActive = 1 == hriInfo.PreemptionStatus;
+                var hasComms = 1 == hriInfo.RBSOperational;
+
+                var isInstrumented = 1 == hriInfo.IsInstrumented;
+                var isController = -1 < hriInfo.CrossingID.indexOf(controllerHRI);
+
+                var isManual = ! isInstrumented && ! ( -1 == hriInfo.RBSOperational ) ;
+
+                if ( isInstrumented || isManual || isController ) 
+                    addHRIToList(hriInfo.CrossingID,`instrumentedHRIdiv`);
+
+                if ( ! isActive && map.getSource(`railroad_crossings` + hriInfo.CrossingID) ) {
+                    inactiveHRIList.innerHTML += `"railroad_crossings` + hriInfo.CrossingID + `",`;
+                    if ( hasComms )
+                        operationalHRIList.innerHTML += hriInfo.CrossingID + `",`;
+                    continue;
+                }
+
+                if ( isActive && map.getSource(`active_crossings` + hriInfo.CrossingID ) ) {
+                    activeHRIList.innerHTML += `"active_crossings` + hriInfo.CrossingID + `",`;
+                    if ( hasComms )
+                        operationalHRIList.innerHTML += hriInfo.CrossingID + `",`;
+                    continue;
+                }
+
+                createOneHRI(hriInfo);
+
+            }
+
+            finalizeLists();
+
+            document.getElementById("currentBounds").innerHTML = map.getBounds().toString() + map.getCenter().toString();
+
+            monitorinstrumentedHRIs();
+
+        }
+
+
+        function monitorinstrumentedHRIs() {
+        awaitingHRIs = JSON.parse(document.getElementById(`instrumentedHRIdiv`).innerHTML);
+        document.getElementById(`instrumentedHRIdiv`).innerHTML = ``;
+        setTimeout(function () { monitorinstrumentedHRIsContinue(); },500);
+        return;
+        }
+
+
+        function monitorinstrumentedHRIsContinue() {
+        if ( 0 < activeTimers.length ) {
+            setTimeout(function () { monitorinstrumentedHRIsContinue(); },500);
+            return;
+        }
+        document.getElementById(`instrumentedHRIdiv`).innerHTML = JSON.stringify(awaitingHRIs);
+        var deltaTime = 100;
+        if ( 1 < awaitingHRIs.length )
+            deltaTime = parseInt(document.getElementById('dbFreq').innerHTML) / ( awaitingHRIs.length - 1);
+        else
+            deletaTime = parseInt(document.getElementById('dbFreq').innerHTML);
+        var k = 0;
+        for ( var theHRI of awaitingHRIs ) {
+            k++;
+            var timerId = setTimeout(function (theHRIId) { monitorHRI(theHRIId); },k * deltaTime,theHRI);
+            activeTimers.push(timerId);
+            monitoredHRIs.push(theHRI);
+        }
+        return;
+        }
+
+
+        function createOneHRI(hriInfo) {
+
+            var inactiveHRIList = document.getElementById('inactiveHRIdiv');
+            var activeHRIList = document.getElementById('activeHRIdiv');
+            var operationalHRIList = document.getElementById('operationalHRIdiv');
+
+            var isActive = 1 == hriInfo.PreemptionStatus;
+            var hasComms = 1 == hriInfo.RBSOperational;
+            var isInstrumented = 1 == hriInfo.IsInstrumented;
+            var isController = -1 < hriInfo.CrossingID.indexOf(controllerHRI);
+
+            var isManual = ! isInstrumented && ! ( -1 == hriInfo.RBSOperational ) ;
+
+            var props = `{` +
+                `"id": "` + hriInfo.CrossingID + `",`+
+                `"operational": ` + hriInfo.RBSOperational + `,`+
+                `"active": ` + hriInfo.PreemptionStatus +`,` + 
+                `"instrumented": ` + hriInfo.IsInstrumented + `}`;
+
+            if ( isActive ) {
+
+                rrActivePoint = {
+                    type: 'FeatureCollection',features: [{
+                        type: 'Feature',
+                        properties: {
+                            'icon': ( ( isInstrumented || isManual ) ? (hasComms ? (isManual ? `rrIconActiveBattelle` : `rrIconActive`) : (isManual ? `fraIconNoComsBattelle` : `fraIconNoComs`) ) : 'poi_commuter_rail'),
+                            'hriData': props,
+                            'isInstrumented': isInstrumented,
+                            'isActive': true
+                        },
+                        geometry: {type: 'Point',coordinates: [hriInfo.Longitude,hriInfo.Latitude]},
+                    }]
+                }
+
+                map.addSource(`active_crossings` + hriInfo.CrossingID,{type: 'geojson',data: rrActivePoint});
+
+                map.addLayer({
+                    'id': `active_crossings` + hriInfo.CrossingID,
+                    'type': 'symbol',
+                    'source': `active_crossings` + hriInfo.CrossingID,
+                    'layout': {
+                        'icon-image': ['get','icon'],
+                        'icon-allow-overlap': true
+                    }
+                });
+
+                setMouseEvents(`active_crossings` + hriInfo.CrossingID);
+
+                if ( activeHRIList.innerHTML.endsWith(`]`) ) {
+                    activeHRIList.innerHTML = activeHRIList.innerHTML.substr(0,activeHRIList.innerHTML.length - 1);
+                    if ( ! ( `[` == activeHRIList.innerHTML ) )
+                        activeHRIList.innerHTML += `,`;
+                }
+
+                activeHRIList.innerHTML += `"active_crossings` + hriInfo.CrossingID + `",`;
+
+            } else {
+
+                rrCrossingPoint = {
+                    type: 'FeatureCollection',features: [{
+                        type: 'Feature',
+                        properties: {
+                            'icon': ( (isInstrumented || isManual) ? (hasComms ? (isManual ? `fraIconBattelle` : `fraIcon`) : (isManual ? `fraIconNoComsBattelle` : `fraIconNoComs`) ) : ( isController ? `rrIconController` : `poi_levelcwithbarrier` )),
+                            'hriData': props,
+                            'isInstrumented': isInstrumented,
+                            'isActive': false
+                        },
+                        geometry: {type: 'Point',coordinates: [hriInfo.Longitude,hriInfo.Latitude]},
+                    }]
+                }
+
+                map.addSource(`railroad_crossings` + hriInfo.CrossingID,{type: 'geojson',data: rrCrossingPoint});
+
+                map.addLayer({
+                    'id': `railroad_crossings` + hriInfo.CrossingID,
+                    'type': 'symbol',
+                    'source': `railroad_crossings` + hriInfo.CrossingID,
+                    'layout': {
+                        'icon-image': ['get','icon'],
+                        'icon-allow-overlap': true
+                    }
+                });
+
+                setMouseEvents(`railroad_crossings` + hriInfo.CrossingID);
+
+                if ( inactiveHRIList.innerHTML.endsWith(`]`) ) {
+                    inactiveHRIList.innerHTML = inactiveHRIList.innerHTML.substr(0,inactiveHRIList.innerHTML.length - 1);
+                    if ( ! ( `[` == inactiveHRIList.innerHTML ) )
+                        inactiveHRIList.innerHTML += `,`;
+                }
+
+                inactiveHRIList.innerHTML += `"railroad_crossings` + hriInfo.CrossingID + `",`;
+
+            }
+
+            if ( hasComms ) {
+                if ( operationalHRIList.innerHTML.endsWith(`]`) ) {
+                    operationalHRIList.innerHTML = operationalHRIList.innerHTML.substr(0,operationalHRIList.innerHTML.length - 1);
+                    if ( ! ( `[` == operationalHRIList.innerHTML ) )
+                        operationalHRIList.innerHTML += `,`;
+                }
+                operationalHRIList.innerHTML += `"` + hriInfo.CrossingID + `",`;
+            }
+        }
+
+
+        function removeHRIFromList(hriId,listId) {
+
+            var theList = document.getElementById(listId);
+            var s = theList.innerHTML;
+
+            if ( `` == s )
+                return;
+
+            var k = s.indexOf(hriId);
+            if ( -1 == k )
+                return;
+
+            var prefix = s.substring(0,k - 1);
+            s = s.substring(k);
+            k = s.indexOf(`,`);
+            if ( -1 == k ) {
+                if ( ! ( `[` == prefix ) )
+                    prefix = prefix.substring(0,prefix.length - 1);
+                s = `]`;
+            } else
+                s = s.substring(k + 1);
+
+            theList.innerHTML = prefix + s;
+            return;
+        }
+
+
+        function addHRIToList(hriId,listId) {
+            var theList = document.getElementById(listId);
+            if ( -1 == theList.innerHTML.indexOf(hriId) ) {
+                if ( theList.innerHTML.endsWith(`]`) ) {
+                    theList.innerHTML = theList.innerHTML.substr(0,theList.innerHTML.length - 1);
+                    if ( ! ( `[` == theList.innerHTML ) )
+                        theList.innerHTML += `,`;
+                }
+                theList.innerHTML += `"` + hriId + `",`;
+            }
+            finalizeList(listId);
+        }
+
+
+        function finalizeLists() {
+            finalizeList('inactiveHRIdiv');
+            finalizeList('activeHRIdiv');
+            finalizeList('instrumentedHRIdiv');
+            finalizeList('operationalHRIdiv');
+            return;
+        }
+
+
+        function finalizeList(listId) {
+
+            var theList = document.getElementById(listId);
+            var s = theList.innerHTML;
+
+            if ( `[]` == s )
+                return;
+
+            if ( `]` == s.substring(s.length - 1) )
+                return;
+
+            if ( `,` == s.substring(s.length - 1) )
+                s = s.substring(0,s.length - 1);
+
+            theList.innerHTML = s + `]`;
+
+            return;
+        }
+
+
+        function setMouseEvents(sourceLabel) {
+
+            map.on('mouseenter',sourceLabel,function() {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            map.on('mouseleave',sourceLabel,function() {
+                map.getCanvas().style.cursor = '';
+            });
+
+            map.on('click',sourceLabel,function(e) {
+                var hri = map.queryRenderedFeatures(e.point)[0];
+                var s = hri.layer.id;
+                var k = s.indexOf('railroad_crossings');
+                if ( -1 < k )
+                    s = s.substring(k + 18);
+                else {
+                    k = s.indexOf('active_crossings');
+                    if ( -1 == k )
+                        return;
+                    s = s.substring(k + 16)
+                }
+                showInformation(s);
+            });
+
+            return;
+        }
+
+
+        function activeIndex(hriData) {
+            return hriData.length - 1;
+        }
+
+
+        function operationalIndex(hriData) {
+            return hriData.length - 2;
+        }
+
+
+        function toggleHRIActivation(theHRIId,dbInfo) {
+
+            var currentHRI = getHRIById(theHRIId);
+
+            if ( ! currentHRI )
+                return;
+
+            var hriProperties = JSON.parse(currentHRI.properties.hriData);
+
+            if ( dbInfo ) {
+                if ( 0 == hriProperties.instrumented && 0 == dbInfo.IsInstrumented &&
+                            hriProperties.active == dbInfo.ManualPreemptionStatusCode )
+                    return;
+                if ( 1 == hriProperties.instrumented && 1 == dbInfo.IsInstrumented &&
+                            hriProperties.active == dbInfo.PreemptionStatusCode )
+                    return;
+            } else {
+
+                var elemStatus = document.getElementById(`instrumented-PreemptionStatus`);
+                if ( 0 == hriProperties.instrumented ) 
+                    elemStatus = document.getElementById(`ManualPreemptionStatus`);
+
+                elemStatus.innerHTML = `...`;
+
+            }
+
+            try {
+            removeHRIFromList(currentHRI.layer.id,'inactiveHRIdiv');
+            removeHRIFromList(currentHRI.layer.id,'activeHRIdiv');
+            removeHRIFromList(theHRIId,'operationalHRIdiv');
+            map.removeLayer(currentHRI.layer.id);
+            map.removeSource(currentHRI.layer.id);
+            } catch ( err ) {
+                console.log(err);
+            }
+
+            const outerAjax = new XMLHttpRequest();
+            outerAjax.onload = function() {
+                const innerAjax = new XMLHttpRequest();
+                innerAjax.onload = function() {
+                    var hriInfo = JSON.parse(this.responseText);
+                    createOneHRI(hriInfo[0]);
+                    document.getElementById('currentHRIdiv').innerHTML = hriProperties.id;
+                    addHRIToList(hriProperties.id,'instrumentedHRIdiv');
+                    finalizeLists();
+                    monitorinstrumentedHRIs();
+                }
+                innerAjax.open("GET","getHRIs.php?crossingId=" + hriProperties.id);
+                innerAjax.send();
+            }
+
+            var wasActive = hriProperties.active;
+
+            hriProperties.active = (1 == wasActive ? 0 : 1);
+
+            currentHRI.properties.hriData = JSON.stringify(hriProperties);
+
+            outerAjax.open("GET","setHRIValue.php?crossingID=" + hriProperties.id + "&field=PreemptionStatus&status=" + (1 == wasActive ? "0" : "1"));
+            outerAjax.send();
+            return;
+        }
+
+
+        function toggleOperational(theHRIId,dbInfo) {
+
+            var currentHRI = getHRIById(theHRIId);
+
+            if ( ! currentHRI )
+                return;
+
+            var hriProperties = JSON.parse(currentHRI.properties.hriData);
+
+            if ( dbInfo ) {
+
+                if ( 0 == hriProperties.instrumented && 0 == dbInfo.IsInstrumented &&
+                            hriProperties.operational == dbInfo.ManualRBSOperationalCode )
+                    return;
+                if ( 1 == hriProperties.instrumented && 1 == dbInfo.IsInstrumented &&
+                            hriProperties.operational == dbInfo.RBSOperationalCode )
+                    return;
+
+            } else {
+/*
+                removeHRIFromList(hriProperties.id,'instrumentedHRIdiv');
+*/
+                var elem = document.getElementById(`instrumented-RBSOperational`);
+                var elemStatus = document.getElementById(`instrumented-PreemptionStatus`);
+                if ( 0 == hriProperties.instrumented ) {
+                    elem = document.getElementById(`ManualRBSOperational`);
+                    elemStatus = document.getElementById(`ManualPreemptionStatus`);
+                }
+
+                elem.innerHTML = '...';
+                elemStatus.innerHTML = '...';
+/*
+                if ( 1 == hriProperties.operational ) {
+                    elem.innerHTML = "Not Operational";
+                    elemStatus.innerHTML = "unknown";
+                } else {
+                    elem.innerHTML = "Operational";
+                    elemStatus.innerHTML = 1 == hriProperties.active ? "Active" : "Not Active";
+                }
+*/
+                document.getElementById(`hri-information-activateHRI`).disabled = 1 == hriProperties.operational;
+            }
+
+            try {
+            removeHRIFromList(currentHRI.layer.id,'inactiveHRIdiv');
+            removeHRIFromList(currentHRI.layer.id,'activeHRIdiv');
+            removeHRIFromList(theHRIId,'operationalHRIdiv');
+            map.removeLayer(currentHRI.layer.id);
+            map.removeSource(currentHRI.layer.id);
+            } catch ( err ) {
+                console.log(err);
+            }
+
+            const outerAjax = new XMLHttpRequest();
+            outerAjax.onload = function() {
+                const innerAjax = new XMLHttpRequest();
+                innerAjax.onload = function() {
+                    var hriInfo = JSON.parse(this.responseText);
+                    createOneHRI(hriInfo[0]);
+                    document.getElementById('currentHRIdiv').innerHTML = hriProperties.id;
+                    finalizeLists();
+                    if ( 1 == hriInfo[0].IsInstrumented || -1 < hriInfo[0].CrossingID.indexOf(controllerHRI) ) {
+                        addHRIToList(hriProperties.id,'instrumentedHRIdiv');
+                        monitorinstrumentedHRIs();
+                    }
+                }
+                innerAjax.open("GET","getHRIs.php?crossingId=" + hriProperties.id);
+                innerAjax.send();
+            }
+
+            if ( dbInfo ) {
+                if ( -1 == dbInfo.ManualRBSOperationalCode ) {
+                    outerAjax.open("GET","getHRIs.php?crossingId=" + hriProperties.id);
+                    outerAjax.send();
+                    return;
+                }
+            }
+
+            var isOperational = hriProperties.operational;
+
+            hriProperties.operational = 1 == isOperational ? 0 : 1;
+
+            currentHRI.properties.hriData = JSON.stringify(hriProperties);
+
+            outerAjax.open("GET","setHRIValue.php?crossingID=" + hriProperties.id + "&field=RBSOperational&status=" + (1 == isOperational ? "0" : "1"));
+            outerAjax.send();
+            return;
+        }
+
+
+        function monitorHRI(thisHRIId) {
+
+            if ( -1 == document.getElementById(`instrumentedHRIdiv`).innerHTML.indexOf(thisHRIId) ) {
+                var k = monitoredHRIs.indexOf(thisHRIId);
+                activeTimers.splice(k,1);
+                monitoredHRIs.splice(k,1);
+                return;
+            }
+
+            getInformation(thisHRIId,function(info) {
+                var crossingData = JSON.parse(info);
+
+                if ( thisHRIId == document.getElementById('hri-information-instrumented').title ||
+                        thisHRIId == document.getElementById('hri-information').title ) {
+
+                    var prefix = "instrumented-";
+                    if ( 0 == crossingData.IsInstrumented )
+                        prefix = "";
+
+                    Object.keys(crossingData).forEach(function(key) {
+                        var elem = document.getElementById(prefix + key);
+                        if ( elem )
+                            elem.innerHTML = crossingData[key];
+                    });
+
+                    if ( 1 == crossingData.IsInstrumented )
+                        document.getElementById(`hri-information-activateHRI`).disabled = crossingData.RBSOperationalCode < 1;
+                    else
+                        document.getElementById(`hri-information-activateHRI`).disabled = crossingData.ManualRBSOperationalCode < 1;
+
+                }
+
+                toggleOperational(thisHRIId,crossingData);
+                toggleHRIActivation(thisHRIId,crossingData);
+            });
+
+            setTimeout(function() {
+                setTimeout(function(theHRIId) { monitorHRI(theHRIId);},parseInt(document.getElementById('dbFreq').innerHTML),thisHRIId);
+            },parseInt(document.getElementById('dbFreq').innerHTML));
+
+        }
+
+
+        function getInformation(hriID,callback) {
+            const xhttp = new XMLHttpRequest();
+            xhttp.onload = function() {
+                callback(this.responseText);
+            }
+            xhttp.open("GET","getCrossingInfo.php?crossingID=" + hriID);
+            xhttp.send();
+        }
+
+
+        function getHRI() {
+            return getHRIById(document.getElementById("currentHRIdiv").innerHTML);
+        }
+
+
+        function getHRIId() {
+            return document.getElementById("currentHRIdiv").innerHTML
+        }
+
+
+        function getHRIById(theId) {
+
+            var layers = map.queryRenderedFeatures();
+            for ( k = 0; k < 32; k++ ) 
+                if ( -1 < layers[k].layer.id.indexOf(theId) )
+                    return layers[k];
+
+            return null;
+        }
+
+
+        function showInformation(theHRIId) {
+
+            if ( theHRIId == document.getElementById(`hri-information-instrumented`).title ||
+                    theHRIId == document.getElementById(`hri-information`).title )
+                return;
+
+            hideInformation();
+
+            document.getElementById("currentHRIdiv").innerHTML = theHRIId;
+            document.getElementById(`hri-information`).title = theHRIId;
+            document.getElementById(`hri-information-instrumented`).title = theHRIId;
+
+            getInformation(theHRIId,function(info) {
+
+                var crossingData = JSON.parse(info);
+                var isInstrumented = 1 == crossingData.IsInstrumented;
+
+                var hasComms = true;
+                if ( isInstrumented && 1 >  crossingData.RBSOperationalCode )
+                    hasComms = false;
+                else if ( ! isInstrumented && 1 > crossingData.ManualRBSOperationalCode )
+                    hasComms = false;
+
+                var prefix = "instrumented-";
+                if ( ! isInstrumented )
+                    prefix = "";
+
+                Object.keys(crossingData).forEach(function(key) {
+                    var elem = document.getElementById(prefix + key);
+                    if ( elem )
+                        elem.innerHTML = crossingData[key];
+                });
+
+                var isController = -1 < theHRIId.indexOf(controllerHRI);
+
+                var dialogElem = document.getElementById(`hri-information-instrumented`);
+                if ( ! isInstrumented ) {
+                    dialogElem = document.getElementById(`hri-information`);
+                    document.getElementById(`hri-information-status-row`).style = "display: " + (isController ? `inline` : `none`);
+                    document.getElementById(`hri-information-operational-row`).style = "display: " + (isController ? `inline` : `none`);
+                    document.getElementById(`hri-controller-controls`).style = "display: " + (isController ? `inline` : `none`);
+                }
+
+                document.getElementById(`hri-information-activateHRI`).disabled = ! hasComms;
+
+                var theHRI = getHRIById(theHRIId);
+
+                trimbleMapPopup = new TrimbleMaps.Popup({closeOnClick: false,closeButton: false})
+                    .setLngLat(theHRI.geometry.coordinates.slice())
+                    .setHTML(dialogElem.innerHTML)
+                    .setMaxWidth(1024)
+                    .addTo(map);
+
+            });
+            return;
+        }
+
+
+        function showMoreInformation(theHRIId) {
+            hideMoreInformation();
+            getInformation(theHRIId,function(info) {
+                var crossingData = JSON.parse(info);
+                Object.keys(crossingData).forEach(function(key) {
+                    var elem = document.getElementById("more-" + key);
+                    if ( elem )
+                        elem.innerHTML = crossingData[key];
+                });
+                var theHRI = getHRIById(theHRIId);
+                trimbleMapPopupMore = new TrimbleMaps.Popup({closeOnClick: false,offset: [256,128]})
+                    .setLngLat(theHRI.geometry.coordinates.slice())
+                    .setHTML(document.getElementById(`hri-more-information`).innerHTML)
+                    .addTo(map);
+            });;
+            return;
+        }
+
+
+        function showCBSInformation(theHRIId) {
+            getInformation(theHRIId,function(info) {
+                var crossingData = JSON.parse(info);
+                var theDiv = document.getElementById(`hri-CBS-information`);
+                Object.keys(crossingData).forEach(function(key) {
+                    var elem = document.getElementById("cbs-" + key);
+                    if ( elem )
+                        elem.innerHTML = crossingData[key];
+                });
+
+                if ( 0 < crossingData.ErrorCode )
+                    document.getElementById(`cbs-ec-note`).style = "display: " + ( `999` == crossingData.ErrorCode ? `inline` : `none` );
+
+                var theHRI = getHRIById(theHRIId);
+                trimbleMapPopupCBSInfo = new TrimbleMaps.Popup({closeOnClick: false,offset: [256,128]})
+                    .setLngLat(theHRI.geometry.coordinates.slice())
+                    .setHTML(theDiv.innerHTML)
+                    .setMaxWidth(1024)
+                    .addTo(map);
+            });;
+            return;
+        }
+
+
+        function hideInformation() {
+            document.getElementById(`hri-information-instrumented`).title = ``;
+            document.getElementById(`hri-information`).title = ``;
+            if ( trimbleMapPopup ) 
+                trimbleMapPopup.remove();
+            if ( trimbleMapPopupCBSInfo )
+                trimbleMapPopupCBSInfo.remove();
+            hideMoreInformation();
+        }
+
+
+        function hideMoreInformation() {
+            if ( trimbleMapPopupMore )
+                trimbleMapPopupMore.remove();
+        }
+
+        function hideCBSInformation() {
+            if ( trimbleMapPopupCBSInfo )
+                trimbleMapPopupCBSInfo.remove();
+        }
+
+    </script>
+
+</body>
+</html>

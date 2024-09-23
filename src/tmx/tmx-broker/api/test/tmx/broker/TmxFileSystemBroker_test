@@ -1,0 +1,181 @@
+/*!
+ * Copyright (c) 2021 Battelle Memorial Institute
+ *
+ * All Rights Reserved.
+ *
+ * @file TmxFileSystemBroker_test.cpp
+ *
+ *  Created on: Sep 8, 2021
+ *      @author: gmb
+ */
+
+//#include <tmx/broker/file/TmxFileSystemBroker.hpp>
+
+//#include <tmx/common/TmxLogger.hpp>
+//#include <tmx/message/codec/TmxCodec.hpp>
+
+#include <boost/test/unit_test.hpp>
+#include <filesystem>
+#include <sstream>
+
+using namespace tmx::common;
+using namespace tmx::message;
+
+namespace tmx {
+namespace broker {
+namespace file {
+/*
+BOOST_AUTO_TEST_CASE ( test_read_from ) {
+	TmxFileSystemBroker b;
+	TmxData d;
+
+	// Test JSON taken from https://json.org/example.html
+	std::stringstream json {
+R"(
+{"menu": {
+    "header": "SVG Viewer",
+    "items": [
+        {"id": "Open"},
+        {"id": "OpenNew", "label": "Open New"},
+        null,
+        {"id": "ZoomIn", "label": "Zoom In"},
+        {"id": "ZoomOut", "label": "Zoom Out"},
+        {"id": "OriginalView", "label": "Original View"},
+        null,
+        {"id": "Quality"},
+        {"id": "Pause"},
+        {"id": "Mute"},
+        null,
+        {"id": "Find", "label": "Find..."},
+        {"id": "FindAgain", "label": "Find Again"},
+        {"id": "Copy"},
+        {"id": "CopyAgain", "label": "Copy Again"},
+        {"id": "CopySVG", "label": "Copy SVG"},
+        {"id": "ViewSVG", "label": "View SVG"},
+        {"id": "ViewSource", "label": "View Source"},
+        {"id": "SaveAs", "label": "Save As"},
+        null,
+        {"id": "Help"},
+        {"id": "About", "label": "About Adobe CVG Viewer..."}
+    ]
+}}
+)"
+};
+
+	b.read_from(json, d);
+
+	const any &chk1 = d;
+	BOOST_CHECK_EQUAL((int)chk1, 1);
+	BOOST_CHECK_EQUAL((bool)chk1["menu"], true);
+	BOOST_CHECK_EQUAL((int)chk1["menu"]["items"], 22);
+	BOOST_CHECK_EQUAL((bool)chk1["menu"]["items"], true);
+	BOOST_CHECK_EQUAL((bool)chk1["menu"]["items"][6], false);
+	BOOST_CHECK_EQUAL((bool)chk1["menu"]["items"][7], true);
+	BOOST_CHECK_EQUAL(chk1["menu"]["items"][7]["id"].to_string(), "Quality");
+
+	// Try again with XML
+	std::stringstream xml {
+R"(<menu>
+    <header>Adobe SVG Viewer</header>
+    <item action="Open" id="Open">Open</item>
+    <item action="OpenNew" id="OpenNew">Open New</item>
+    <separator/>
+    <item action="ZoomIn" id="ZoomIn">Zoom In</item>
+    <item action="ZoomOut" id="ZoomOut">Zoom Out</item>
+    <item action="OriginalView" id="OriginalView">Original View</item>
+    <separator/>
+    <item action="Quality" id="Quality">Quality</item>
+    <item action="Pause" id="Pause">Pause</item>
+    <item action="Mute" id="Mute">Mute</item>
+    <separator/>
+    <item action="Find" id="Find">Find...</item>
+    <item action="FindAgain" id="FindAgain">Find Again</item>
+    <item action="Copy" id="Copy">Copy</item>
+    <item action="CopyAgain" id="CopyAgain">Copy Again</item>
+    <item action="CopySVG" id="CopySVG">Copy SVG</item>
+    <item action="ViewSVG" id="ViewSVG">View SVG</item>
+    <item action="ViewSource" id="ViewSource">View Source</item>
+    <item action="SaveAs" id="SaveAs">Save As</item>
+    <separator/>
+    <item action="Help" id="Help">Help</item>
+    <item action="About" id="About">About Adobe CVG Viewer...</item>
+</menu>)"
+};
+	d.clear();
+	b.read_from(xml, d);
+
+	TLOG(info) << xml.str();
+	TLOG(info) << d;
+
+	const any &chk2 = d;
+	BOOST_CHECK_EQUAL((int)chk2, 1);
+	BOOST_CHECK_EQUAL((bool)chk2["menu"], true);
+	BOOST_CHECK_EQUAL((int)chk2["menu"]["items"], 22);
+	BOOST_CHECK_EQUAL((bool)chk2["menu"]["items"], true);
+	BOOST_CHECK_EQUAL((bool)chk2["menu"]["items"][6], false);
+	BOOST_CHECK_EQUAL((bool)chk2["menu"]["items"][7], true);
+	BOOST_CHECK_EQUAL(chk2["menu"]["items"][7]["id"].to_string(), "Quality");
+
+}
+*/
+class IncomingFileCallback: public TmxCallback {
+public:
+	void onReceived(void *context, const TmxMessage &msg, any &err) {
+		TLOG(debug) << "Received message";
+
+		this->recvd = msg;
+	}
+
+	TmxMessage recvd;
+};
+
+BOOST_AUTO_TEST_CASE( test_file_publish ) {
+	TmxLogger().enable("debug3");
+	std::shared_ptr<TmxClient> client = TmxClient::initialize("file:///tmp/test_file_publish.b32");
+
+	BOOST_CHECK_EQUAL((bool) client, true);
+	BOOST_CHECK_EQUAL(client->get_scheme(), "file");
+	BOOST_CHECK_EQUAL(client->get_host(), "");
+	BOOST_CHECK_EQUAL(client->get_port(), 0);
+	BOOST_CHECK_EQUAL(client->get_path(), "/tmp/test_file_publish.b32");
+
+	any theMessage;
+	theMessage = R"(
+When in the Course of human events, it becomes necessary for one people to 
+dissolve the political bands which have connected them with another, and to assume among the 
+powers of the earth, the separate and equal station to which the Laws of Nature and of 
+Nature's God entitle them, a decent respect to the opinions of mankind requires that 
+they should declare the causes which impel them to the separation.
+)";
+	auto msg = codec::TmxCodec::encode(theMessage, "base-32");
+
+	std::filesystem::path chk { client->get_path().c_str() };
+	std::filesystem::remove(chk);  // Just in case
+
+	std::shared_ptr<IncomingFileCallback> cb { new IncomingFileCallback() };
+	client->subscribe("/test/data/in", cb);
+
+	client->publish(*msg);
+
+	// Make sure the file exists
+	BOOST_CHECK_EQUAL(std::filesystem::exists(chk), true);
+	BOOST_CHECK_EQUAL(std::filesystem::file_size(chk), msg->get_length());
+
+	// Make sure the file comes in the callback
+	sleep(3);
+	BOOST_CHECK_EQUAL(cb->recvd.topic(), "/test/data/in");
+	BOOST_CHECK_EQUAL(cb->recvd.encoding(), msg->encoding());
+
+	auto payloadS = msg->get_payload();
+	auto payloadR = cb->recvd.get_payload();
+
+	BOOST_CHECK_EQUAL(std::string((const char *)payloadR.data(), payloadR.length()),
+					  std::string((const char *)payloadS.data(), payloadS.length()));
+
+	// Clean up
+	std::filesystem::remove(chk);
+}
+
+} /* namespace file */
+} /* namespace broker */
+} /* namespace tmx */

@@ -1,0 +1,41 @@
+{
+  "name": "@TMX_PLUGIN_NAME@",
+  "description": "Plugin that listens for TMX messages and forwards them to the DSRC Radio (i.e. the RSU).",
+  "version":"@PROJECT_VERSION@",
+  "exe": "bin/@PROJECT_NAME@",
+  "channels":[
+    {
+      "context": "kafka://localhost:29092",
+      "config": {
+        "topics": "^(J2735|tmx)/",
+        "thread-count": 2,
+        "thread-assignment": "RoundRobin"
+      }
+    },
+    {
+      "id": "RSU-NTCIP",
+      "context": "ntcip://rsuRwUser@10.30.100.18",
+      "config": {
+        "topics": "^snmpget/",
+        "thread-count": 2,
+        "thread-assignment": "LeastUtilized",
+        "authentication-protocol": "SHA",
+        "authentication-passphrase": "authandauth",
+        "privacy-protocol": "AES",
+        "privacy-passphrase": "authandpriv",
+        "mib-dirs": [
+          "/home/cas/git/TMX/src/v2x-hub/RSUImmediateForwardPlugin/mibs"
+        ],
+        "timeout": 1000
+      }
+    },
+    {
+      "id": "RSU-IFM",
+      "context": "udp://10.30.100.18:1516",
+      "config": {
+        "topics": "RSU/IFM"
+      }
+    }
+  ],
+  "Signature": "False"
+}

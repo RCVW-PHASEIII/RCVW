@@ -1,0 +1,39 @@
+/**
+ \page ivpplugins V2I Hub Plugins
+ - \subpage locplugin
+ 
+ \page locplugin GNSS Plugin
+\tableofcontents
+
+The GNSSPlugin is a plugin for the V2I Hub that publishes an internal \ref tmx::messages::LocationMessage "LocationMessage"
+built from a connection to a GPSd server.
+
+\section locdesign Description
+
+This plugin provides common access to the Global Positioning System (GPS) location service in the form of a V2I Hub message.  That message
+contains the longitude, latitude, altitude and relative speed and heading of the target, that is obtained from an active connection to
+the GPSd service running on that target.  Note that this is mostly useful for on-board units that are moving, however it is also required
+in order to pass location information to an NTRIP caster for RTCM corrections.  The GPSd service need not be the same localhost that the  
+plugin is running on, but also can be located on any system on the network, such as a nearby RSU.
+
+\section locconfig Configuration
+
+The Location plugin must be configured with the source IP of the GPSd service to connect to, plus how frequent the Location  messages are to be 
+generated.  In order to support the RTCM plugin, the SendRawNMEA flag must be set to true in order to receive the raw GGA string returned from
+the gpsd connection.  Additionally, moving vehicles may lose heading while stopped, so it is important to use the LatchHeadingSpeed value to
+set the speed at which no more updates are made to heading.  This should, of course, be set very low. 
+
+- Frequency: Rate to send Location Message in milliseconds.
+- GPSSource: Host where the GPSd is running.
+- LatchHeadingSpeed: Speed at which the heading parameter should be latched, in mph. Set to 0 to disable latching.
+- SendRawNMEA: Route the raw NMEA strings from GPSd through V2I Hub
+
+\section locexternals External Resources
+
+- \ref tmx::utils::PluginClient "PluginClient"
+- GPSd
+
+\section locpublish Published Messages
+- \ref tmx::messages::LocationMessage "LocationMessage"
+- \ref tmx::messages::TmxNmeaMessage "TmxNmeaMessage"
+*/

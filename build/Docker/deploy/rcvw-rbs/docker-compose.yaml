@@ -1,0 +1,329 @@
+#
+# Base configuration file for the Docker distribution of RCVW
+#
+# Expected Environment Variables, which can be set on the command line,
+# or in some local .env file:
+#
+# - RCVW_HRI_ID: The HRI identifier for this deployment
+# - RCVW_HRI_DESCRIPTION: A brief description of the HRI for messages
+#
+# Additionally, there are supported profiles which need to be set on the
+# command line, which require additional environment variables
+# - RCVW_RBS_BASESTATION: Use
+#
+name: rcvw
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    restart: always
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 22181:2181
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.4
+    restart: always
+    depends_on:
+      - zookeeper
+    ports:
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  rbs-plugin:
+    image: rcvw-rbs:4.0.0
+    entrypoint: /bin/bash
+    logging:
+      driver: journald
+    hostname: "rcvs-rbs-${RCVW_HRI:-0}"
+    network_mode: "host"
+    dns:
+      - 10.65.255.17
+      - 10.65.255.18
+      - 8.8.8.8
+    restart: no
+    user: "plugin"
+    stop_signal: SIGTERM
+    working_dir: /var/tmp
+    environment:
+      TMX_COMPONENT: RCVW                          # Name for this TMX application
+      RCVW_COMPONENT: RBS                          # Name for this RCVW component
+
+  rbs-map:
+    extends:
+      service: rbs-plugin
+    entrypoint:
+      - /usr/local/bin/tmxctl
+      - --start
+      - RCVW-RBS-MAP
+    restart: always
+    configs:
+      - source: rcvw-map-config
+        target: /var/lib/plugin/MAP/manifest.json
+    depends_on:
+      - kafka
+
+  rbs-hri:
+    extends:
+      service: rbs-plugin
+    entrypoint:
+      - /usr/local/bin/tmxctl
+      - --start
+      - RCVW-RBS-HRI
+    user: root
+    privileged: true
+    restart: always
+    configs:
+      - source: rcvw-hri-config
+        target: /var/lib/plugin/HRIStatus/manifest.json
+    volumes:
+      - ${RCVW_IEEE_INPUT:-/dev/null}:/dev/COM1
+      - /usr/local/lib/libwdt_dio.so:/usr/local/lib/libwdt_dio.so
+    depends_on:
+      - kafka
+
+  rbs-rsu:
+    extends:
+      service: rbs-plugin
+    entrypoint:
+      - /usr/local/bin/tmxctl
+      - --start
+      - RCVW-RBS-RSUIFM
+    restart: always
+    volumes:
+      - /etc/services:/etc/services
+    configs:
+      - source: rcvw-rsu-config
+        target: /var/lib/plugin/RSUImmediateForward/manifest.json
+    depends_on:
+      - kafka
+
+  rcvw-rbs:
+    build:
+      context: ../../..
+      dockerfile: Docker/deploy/rcvw-rbs/runtime-rbs/Dockerfile
+    extends:
+      service: rbs-plugin
+    restart: no
+    logging:
+      driver: journald
+    environment:
+      TMX_SOURCE_NAME: 14815
+      KAFKA_PORT: 29092
+      RTCM_PLUGIN: RtcmPlugin
+    depends_on:
+      - rbs-map
+      - rbs-hri
+      - rbs-rsu
+
+  rcvw-rbs-basestation:
+    extends:
+      service: rbs-plugin
+    restart: no
+    entrypoint:
+      - /usr/local/bin/configure-ubx.sh
+    profiles:
+      - use-basestation
+    volumes:
+      - ${RCVW_GPS_INPUT:-/dev/ttyACM0}:${RCVW_GPS_INPUT:-/dev/ttyACM0}
+    environment:
+      RCVW_GPS_INPUT: ${RCVW_GPS_INPUT:-/dev/ttyACM0}
+      # Basestation Configuration Options
+      CFG_TMODE_MODE: 2
+      CFG_TMODE_LAT: 399570248
+      CFG_TMODE_LON: -832478194
+      CFG_TMODE_HEIGHT: 2482            
+      CFG_TMODE_POS_TYPE: 1
+      CFG_NMEA_PROTVER: 41
+      CFG_NMEA_HIGHPREC: 0
+      CFG_NAVSPG_DYNMODEL: 2
+      CFG_RATE_MEAS: 100
+      CFG_RATE_TIMEREF: 1
+      CFG_UART1_BAUDRATE: 460800
+      CFG_UART1INPROT_UBX: 0
+      CFG_UART1INPROT_NMEA: 0
+      CFG_UART1INPROT_RTCM3X: 0
+      CFG_UART1OUTPROT_UBX: 0
+      CFG_UART1OUTPROT_NMEA: 0
+      CFG_UART1OUTPROT_RTCM3X: 0
+      CFG_USBINPROT_UBX: 1
+      CFG_USBINPROT_NMEA: 1
+      CFG_USBINPROT_RTCM3X: 1
+      CFG_USBOUTPROT_UBX: 1
+      CFG_USBOUTPROT_NMEA: 0
+      CFG_USBOUTPROT_RTCM3X: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1005_UART1: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1005_USB: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1074_UART1: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1074_USBL: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1084_UART1: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1084_USB: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1094_UART1: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1094_USB: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1124_UART1: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1124_USB: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1230_UART1: 5
+      CFG_MSGOUT_RTCM_3X_TYPE1230_USB: 5
+      CFG_MSGOUT_UBX_NAV_PVT_USB: 1
+      CFG_MSGOUT_UBX_NAV_SVIN_USB: 1
+
+configs:
+  rcvw-map-config:
+    content: |
+      {
+        "name": "RCVW-RBS-MAP",
+        "description": "Plugin that reads intersection geometry from a configuration file and publishes a J2735 MAP message.",
+        "version": "4.0.0",
+        "exe": "bin/MapPlugin",
+        "channels": [
+          {
+            "comment": "TMX RBS core connection. Must use unique IDs for Kafka.",
+            "context": "kafka://localhost:29092",
+            "config": {
+              "auto-subscribe": false,
+              "write-only": true,
+              "topics": "^(J2735|tmx)/",
+              "thread-count": 2,
+              "thread-assignment": "ShortestQueue"
+            }
+          },
+          {
+            "comment": "TMX CBS cloud connection. Sending generated messages and status",
+            "id": "tmx-cbs",
+            "${RCVW_CBS:+con}text": "${RCVW_CBS:-}",
+            "config": {
+              "auto-subscribe": false,
+              "write-only": true,
+              "topics": "^(J2735|tmx)/",
+              "thread-count": 2,
+              "thread-assignment": "ShortestQueue"
+            }
+          }
+        ],
+        "Frequency": 1000,
+        "MapFiles": [
+          {
+            "Action": 0,
+            "Bytes": "${RCVW_MAP:?No MAP for this intersection was supplied}"
+          }
+        ],
+        "loglevel": "${RCVW_RBS_MAP_DEBUG:-INFO}"
+      }
+
+  rcvw-hri-config:
+    content: |
+      {
+        "name": "RCVW-RBS-HRI",
+        "description":"Sends HRI Status as SPAT Message",
+        "version":"4.0.0",
+        "exe": "bin/HRIStatusPlugin",
+        "channels":[
+          {
+            "comment": "TMX RBS core connection. Must use unique IDs for Kafka.",
+            "context": "kafka://localhost:29092",
+            "config": {
+              "auto-subscribe": true,
+              "write-only": true,
+              "topics": "^(J2735|tmx)/",
+              "thread-count": 2,
+              "thread-assignment": "ShortestQueue"
+            }
+          },
+          {
+            "comment": "TMX CBS cloud connection. Sending generated messages and status",
+            "id": "tmx-cbs",
+            "${RCVW_CBS:+con}text": "${RCVW_CBS:-}",
+            "config": {
+              "auto-subscribe": false,
+              "write-only": true,
+              "topics": "^(J2735|tmx)/",
+              "thread-count": 2,
+              "thread-assignment": "ShortestQueue"
+            }
+          }
+        ],
+        "Frequency": 100,
+        "RailPinNumber": ${RCVW_DIO_PIN:-0},
+        "LaneMap": [
+          { "tracked": true, "signalGroup": ${RCVW_HRI_TRACKED_LANE:-1} },
+          { "vehicle": true, "signalGroup": ${RCVW_HRI_VEHICLE_LANE:-2} }
+        ],
+        "IntersectionID": "${RCVW_HRI:?No HRI identifier for intersection. Auto-detection from MAP not currently supported.}",
+        "IntersectionName": "${RCVW_HRI_DESCRIPTION:-RCVW Intersection ${RCVW_HRI:-}}",
+        "AlwaysSend": true,
+        "PortName": "${RCVW_IEEE_INPUT:+/dev/COM1}",
+        "SerialDataTimeout": 1500,
+        "loglevel": "${RCVW_RBS_HRI_DEBUG:-DEBUG}"
+      }
+
+  rcvw-rsu-config:
+    content: |
+      {
+        "name": "RCVW-RBS-RSUIFM",
+        "description": "Plugin that listens for TMX messages and forwards them to the C-V2X Radio (i.e. the RSU).",
+        "version":"4.0.0",
+        "exe": "bin/RSUImmediateForwardPlugin",
+        "channels":[
+          {
+            "comment": "TMX RBS core connection. Must use unique IDs for Kafka.",
+            "context": "kafka://localhost:29092",
+            "config": {
+              "topics": "^(J2735|tmx)/",
+              "thread-count": 2,
+              "thread-assignment": "RoundRobin",
+              "comment": "Subscription occurs during runtime. Only take from the most recent offset.",
+              "global": {
+                "auto.offset.reset": "end"
+              }
+            }
+          },
+          {
+            "comment": "TMX CBS cloud connection.",
+            "id": "tmx-cbs",
+            "${RCVW_CBS:+con}text": "${RCVW_CBS:-}",
+            "config": {
+              "auto-subscribe": false,
+              "topics": "^tmx/"
+            }
+          },
+          {
+            "comment": "RSU Immediate Forward connection.",
+            "id": "tmx-rsu-ifm",
+            "context": "udp://${RCVW_RSU_IP:-tmx-rsu}:${RCVW_RSU_IFM_PORT:-1516}",
+            "config": {
+              "auto-subscribe": false,
+              "write-only": true,
+              "topics": "^RSU/IFM"
+            }
+          },
+          {
+            "comment": "RSU NTCIP Management connection.",
+            "id": "tmx-rsu-ntcip",
+            "context": "ntcip://rsuRwUser@${RCVW_RSU_IP:-tmx-rsu}",
+            "config": {
+              "topics": "^snmpget/",
+              "thread-count": 2,
+              "thread-assignment": "LeastUtilized",
+              "authentication-protocol": "${RCVW_RSU_AUTHPROTO:-SHA}",
+              "authentication-passphrase": "${RCVW_RSU_AUTHPASS:-authandauth}",
+              "privacy-protocol": "${RCVW_RSU_PRIVPROTO:-AES}",
+              "privacy-passphrase": "${RCVW_RSU_PRIVPASS:-authandpriv}",
+              "mib-dirs": [
+                "/usr/local/share/mibs"
+              ],
+              "timeout": 1000
+            }
+          }
+        ],
+        "Signature": "False",
+        "loglevel": "${RCVW_RBS_RSUIFM_DEBUG:-DEBUG}"
+      }
+

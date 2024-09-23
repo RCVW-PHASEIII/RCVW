@@ -1,0 +1,22 @@
+#!/bin/sh -e
+
+echo "<?PHP header(\"location:tmx\") ?>" > /var/www/index.php
+chmod 644 /var/www/index.php
+chown www-data:www-data /var/www/*
+chown -R www-data:www-data /var/www/tmx
+
+sed '/short_open_tag/s/Off/On/g' -i /etc/php/7.0/apache2/php.ini
+rm -f /etc/apache2/sites-enabled/*
+ln -s ../sites-available/tmx-site.conf /etc/apache2/sites-enabled/tmx-site.conf
+
+set +e
+phpenmod mcrypt
+#pecl install zip
+set -e
+
+systemctl daemon-reload 
+systemctl is-enabled apache2.service >/dev/null 2>&1 || systemctl enable apache2.service
+systemctl restart apache2.service
+sleep 1
+systemctl is-enabled websockify.service >/dev/null 2>&1 || systemctl enable websockify.service
+systemctl restart websockify.service

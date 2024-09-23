@@ -1,0 +1,41 @@
+{
+    "name":"@TMX_PLUGIN_NAME@",
+    "description":"Listens for Location messages and generates SRM messages",
+    "version":"@PROJECT_VERSION@",
+    "exeLocation":"/bin/@PROJECT_NAME@",
+    "coreIpAddr":"127.0.0.1",
+    "corePort":24601,
+    "configuration":[
+        {
+            "key":"LocationMsgExpireMs",
+            "default":"5000",
+            "description":"The length of milliseconds before location messages are considered stale and should not be used."
+        },
+        {
+            "key":"SleepMS",
+            "default":"10",
+            "description":"The length of milliseconds to sleep between checks to send SRM."
+        },
+        {
+            "key":"EnableSRM",
+            "default":"false",
+            "description":"Enable sending SRMs."
+        },
+        {
+            "key":"VehicleID",
+            "default":"999111",
+            "description":"Vehicle ID in the SRM."
+        },
+        {
+            "key":"VehicleRole",
+            "default":"14",
+            "description":"Vehicle role in the SRM, 12 = police, 13 = fire, 14 = ambulance"
+        },
+        {
+            "key":"SRMFrequencyMS",
+            "default":"100",
+            "description":"The number of milliseconds between sending SRMs."
+        }
+    ]
+}
+

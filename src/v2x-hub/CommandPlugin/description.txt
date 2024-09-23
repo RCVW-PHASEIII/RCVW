@@ -1,0 +1,36 @@
+/**
+ \page ivpplugins V2I Hub Plugins
+ - \subpage cmdplugin
+ 
+ \page cmdplugin Command Plugin
+\tableofcontents
+
+The CommandPlugin is a plugin for the V2I Hub that allows remote administration from the V2I Hub admin portal. 
+
+\section cmddesign Description
+
+The V2I Hub Command Plugin is used solely for communication to and from V2I Hub Admin Portal connections. Using web socket connections from any 
+number of browsers, the Command Plugin writes periodic updates to each web portal for display, as well as handling incoming requests for change 
+from the administrative users of the web portal. The options include software changes, configuration changes and message and event displays. 
+Refer to the V2I Hub Admin Portal Guide for more details.
+
+\section cmdconfig Configuration
+
+The configuration values below are used to set up security and performance of the V2I Hub Command Plugin. The default mode of operation is 
+with a Secure Socket Layer (SSL) around the web socket connection. This secured web socket mode should always be used in deployment, and the 
+appropriate certificates must be installed to the SSLPath location. Because messages are processed in batch by the Command Plugin, the number of 
+milliseconds between each cycle will affect both the performance of the plugin and the display update intervals for each of the web portals. The 
+DownloadPath is a location where installable components such as new or updated plugins contained in a .zip are temporarily extracted to. Therefore, 
+the Linux user running the Command Plugin process must have write permissions to this directory for the feature to work properly.
+
+- SSLEnabled: Enable secure connection using SSL.
+- SSLPath: The path to the directory containing the SSL key and certificate files.  The files in this directory should be secured from outside access.
+- SleepMS: The length in milliseconds to sleep between processing all messages.
+- EventRowLimit: The maximum number of rows returned for the initial Event Log query.
+- DownloadPath: The path to the directory where downloaded files will be saved.
+
+\section cmdexternals External Resources
+
+- \ref tmxctl::TmxControl "TmxControl"
+- \ref tmx::utils::PluginClient "PluginClient"
+*/

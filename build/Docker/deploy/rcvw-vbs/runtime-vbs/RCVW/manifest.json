@@ -1,0 +1,71 @@
+{
+	"name": "${TMX_COMPONENT}-${RCVW_COMPONENT}-RCVW",
+	"description": "Application that creates RCVW Alerts and Warnings",
+	"version": "${RCVW_VERSION}",
+	"exe": "bin/${RCVW_PLUGIN}",
+	"channels": [
+		{
+			"comment": "TMX core connection. Must use unique IDs for Kafka.",
+			"context": "kafka://localhost:${KAFKA_PORT}",
+			"config": {
+				"topics": "^(J2735|V2X|tmx)/",
+				"thread-count": 5,
+				"thread-assignment": "ShortestQueue",
+				"global": {
+					"auto.offset.reset": "end"
+				}
+			}
+		},
+		{
+			"comment": "GPSd connection for location information",
+			"id": "GPSd",
+			"context": "gpsd://localhost",
+			"config": {
+				"auto-publish": false,
+				"read-only": true,
+				"topics": "^gpsd/",
+				"thread-count": 2,
+				"thread-assignment": "RoundRobin"
+			}
+		}
+	],
+	"loglevel": "DEBUG",
+	"Distance To HRI": 480.0,
+	"Extended Intersection": 0.1,
+	"Friction": 0.8,
+	"HRI Locations": [
+		{
+			"Latitude": 39.9570244,
+			"Longitude": -83.2478429,
+			"HRIName": "Battelle West Jefferson"
+		}
+	],
+	"HRI Warning Threshold Speed": 1.0,
+	"Message Expiration": 2000,
+	"Output Interface": 0,
+	"Reaction Time": 1.0,
+	"Safety Offset": 1.5,
+	"Use Calculated Deceleration": false,
+	"V2 Application Latency": 0.085,
+	"V2 Check Location Frequency": true,
+	"V2 Check RTK": false,
+	"V2 Communication Latency": 0.3,
+	"V2 Critical Message Expiration": 500,
+	"V2 Deceleration Car": 3.4,
+	"V2 Deceleration Heavy Truck": 2.322,
+	"V2 Deceleration Light Truck": 2.148,
+	"V2 GPS Error": 3.12,
+	"V2 Grade": 0,
+	"V2 Location Frequency Sample Size": 30,
+	"V2 Log SPAT": false,
+	"V2 Max Heading Change": 45,
+	"V2 Max Ignored Positions": 7,
+	"V2 Minimum Location Frequency": 4,
+	"V2 Reaction Time": 2.5,
+	"V2 Use Config Grade": false,
+	"V2 Use VBM Deceleration": false,
+	"V2 Antenna Placement X": "${RCVW_VBS_ANTENNA_X}",
+	"V2 Antenna Placement Y": "${RCVW_VBS_ANTENNA_Y}",
+	"V2 Antenna Height": "${RCVW_VBS_ANTENNA_HEIGHT}",
+	"V2 Vehicle Type": "${RCVW_VBS_TYPE}"
+}

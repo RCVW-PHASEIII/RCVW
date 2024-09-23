@@ -1,0 +1,4809 @@
+'\" t
+.\"     Title: gpsd_json
+.\"    Author: Eric S. Raymond
+.\" Generator: Asciidoctor 2.0.18
+.\"      Date: 2023-01-10
+.\"    Manual: GPSD Documentation
+.\"    Source: GPSD, Version 3.25
+.\"  Language: English
+.\"
+.TH "GPSD_JSON" "5" "2023-01-10" "GPSD, Version 3.25" "GPSD Documentation"
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.ss \n[.ss] 0
+.nh
+.ad l
+.de URL
+\fI\\$2\fP <\\$1>\\$3
+..
+.als MTO URL
+.if \n[.g] \{\
+.  mso www.tmac
+.  am URL
+.    ad l
+.  .
+.  am MTO
+.    ad l
+.  .
+.  LINKSTYLE blue R < >
+.\}
+.SH "NAME"
+gpsd_json \- gpsd request/response protocol
+.SH "OVERVIEW"
+.sp
+\fBgpsd\fP is a service daemon that can be used to monitor GPSes, DGPS
+receivers, Marine AIS broadcasts, and various other location\-related and
+kinematic sensors.
+.sp
+Clients may communicate with \fBgpsd\fP via textual requests and responses
+over a socket. It is a bad idea for applications to speak the protocol
+directly: rather, they should use the \fBlibgps\fP client library (for C;
+bindings also exist for other languages) and take appropriate care to
+check in their code for the expected major and minor protocol versions.
+.sp
+The GPSD protocol is built on top of JSON, JavaScript Object Notation,
+as specified in [RFC\-7159]: The JavaScript Object Notation (JSON) Data
+Interchange Format. Similar to ECMA 404.
+.sp
+GPSD\(cqs use of JSON is restricted in some ways that make parsing it in
+fixed\-extent languages (such as C) easier.
+.sp
+A request line is introduced by "?" and may include multiple commands.
+Commands begin with a command identifier, followed either by a
+terminating \*(Aq;\*(Aq or by an equal sign "=" and a JSON object treated as an
+argument. Any \*(Aq;\*(Aq or newline indication (either LF or CR\-LF) after the
+end of a command is ignored. All request lines must be composed of
+US\-ASCII characters and may be no more than 80 characters in length,
+exclusive of the trailing newline.
+.sp
+Responses are single JSON objects that have a "class" attribute the
+value of which is the object type . Object types include, but are not
+limited to: "TPV", "SKY", "DEVICE", and "ERROR".  Objects are sent both
+in response to commands, and periodically as gpsd sends reports.  Each
+object is terminated by a carriage return and a new line (CR\-NL).
+.sp
+The order of JSON attributes within a response object is never
+significant, and you may specify command attributes in any order.
+Responses never contain the special JSON value null; instead, attributes
+with empty or undefined values are omitted. The length limit for
+responses and reports is currently 10240 characters, including the
+trailing CR\-NL. Longer responses will be truncated, so client code must
+be prepared for the possibility of invalid JSON fragments.
+.sp
+The default maximum message length is set by GPS_JSON_RESPONSE_MAX in
+\fBinclude/gpsd_json.h\fP. at compile time.
+.sp
+In JSON reports, if an attribute is present only if the parent attribute
+is present or has a particular range, then the parent attribute is
+emitted first.
+.sp
+There is one constraint on the order in which attributes will be
+omitted. If an optional attribute is present only when a parent
+attribute has a specified value or range of values, the parent attribute
+will be emitted first to make parsing easier.
+.sp
+The next subsection section documents the core GPSD protocol. Extensions
+are documented in the following subsections. The extensions may not be
+supported in your \fBgpsd\fP instance if it has been compiled with a
+restricted feature set.
+.sp
+The protocol was designed and documented by Eric S. Raymond.
+.SH "CORE PROTOCOL RESPONSES"
+.sp
+Here are the core\-protocol responses.
+.SS "TPV"
+.sp
+A TPV object is a time\-position\-velocity report. The "class" and "mode"
+fields will reliably be present.  When "mode" is 0 (Unknown) there is
+likely no usable data in the sentence.  The remaining fields are optional,
+their presence depends on what data the GNSS receiver has sent, and
+what \fBgpsd\fP may calculate from that data.
+.sp
+A TPV object will usually be sent at least once for every measurement
+epoch as determined by the "time" field. Unless the receiver has a
+solid fix, and knows the current leap second, the time may be random.
+.sp
+Multiple TPV objects are often sent per epoch.  When the receiver dribbles
+data to \fBgpsd\fP, then \fBgpsd\fP has no choice but to dribble it to the
+client in multiple TPV messages.
+.sp
+The optional "status" field (aka fix type), is a modifier (adjective) to
+mode.  It is not a replacement for, or superset of, the "mode" field.
+It is almost, but not quite, the same as the NMEA 4.x xxGGA GPS Quality
+Indicator Values.  Many GNSS receivers do not supply it.  Those that do
+interpret the specification in various incompatible ways.  To save space
+in the output, and avoid confusion, the JSON never includes status values
+of 0 or 1.
+.sp
+All error estimates (epc, epd, epe, eph, ept, epv, epx, epy) are
+guessed to be 95% confidence, may also be 50%, one sigma, or two sigma
+confidence. Many GNSS receivers do not specify a confidence level.
+None specify how the value is calculated. Use error estimates with
+caution, and only as relative "goodness" indicators. If the GPS
+reports a value to \fBgpsd\fP, then \fBgpsd\fP will report that value. Otherwise
+\fBgpsd\fP will try to compute the value from the skyview.
+.sp
+See the file \fBinclude/gps.h\fP, especially \fBstruct gps_data_t\fP, for
+expanded notes on the items and values in the TPV message.
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 1. TPV object
+.TS
+allbox tab(:);
+lt lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Always?
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+class
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Fixed: "TPV"
+T}
+T{
+.sp
+device
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Name of the originating device.
+T}
+T{
+.sp
+mode
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+NMEA mode:
+.br
+0=unknown,
+.br
+1=no fix,
+.br
+2=2D,
+.br
+3=3D.
+T}
+T{
+.sp
+status
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+GPS fix status:
+.br
+0=Unknown,
+.br
+1=Normal,
+.br
+2=DGPS,
+.br
+3=RTK Fixed,
+.br
+4=RTK Floating,
+.br
+5=DR,
+.br
+6=GNSSDR,
+.br
+7=Time (surveyed),
+.br
+8=Simulated,
+.br
+9=P(Y)
+T}
+T{
+.sp
+time
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Time/date stamp in ISO8601 format, UTC. May have a
+fractional part of up to .001sec precision. May be absent if the mode
+is not 2D or 3D.  May be present, but invalid, if there is no fix.  Verify
+3 consecutive 3D fixes before believing it is UTC.  Even then it may be
+off by several seconds until the current leap seconds is known.
+T}
+T{
+.sp
+altHAE
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Altitude, height above ellipsoid, in meters.
+Probably WGS84.
+T}
+T{
+.sp
+altMSL
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+MSL Altitude in meters. The geoid used is rarely
+specified and is often inaccurate. See the comments below on geoidSep.
+altMSL is altHAE minus geoidSep.
+T}
+T{
+.sp
+alt
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Deprecated. Undefined. Use altHAE or altMSL.
+T}
+T{
+.sp
+climb
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Climb (positive) or sink (negative) rate, meters
+per second.
+T}
+T{
+.sp
+datum
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Current datum. Hopefully WGS84.
+T}
+T{
+.sp
+depth
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Depth in meters. Probably depth below the keel...
+T}
+T{
+.sp
+dgpsAge
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Age of DGPS data. In seconds
+T}
+T{
+.sp
+dgpsSta
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Station of DGPS data.
+T}
+T{
+.sp
+epc
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Estimated climb error in meters per second.
+Certainty unknown.
+T}
+T{
+.sp
+epd
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Estimated track (direction) error in degrees.
+Certainty unknown.
+T}
+T{
+.sp
+eph
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Estimated horizontal Position (2D) Error in meters.
+Also known as Estimated Position Error (epe). Certainty unknown.
+T}
+T{
+.sp
+eps
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Estimated speed error in meters per second.
+Certainty unknown.
+T}
+T{
+.sp
+ept
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Estimated time stamp error in seconds. Certainty
+unknown.
+T}
+T{
+.sp
+epx
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Longitude error estimate in meters. Certainty
+unknown.
+T}
+T{
+.sp
+epy
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Latitude error estimate in meters. Certainty
+unknown.
+T}
+T{
+.sp
+epv
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Estimated vertical error in meters. Certainty
+unknown.
+T}
+T{
+.sp
+geoidSep
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Geoid separation is the difference between the
+WGS84 reference ellipsoid and the geoid (Mean Sea Level) in meters.
+Almost no GNSS receiver specifies how they compute their geoid. \fBgpsd\fP
+interpolates the geoid from a 5x5 degree table of EGM2008 values when
+the receiver does not supply a geoid separation. The \fBgpsd\fP computed
+geoidSep is usually within one meter of the "true" value, but can be
+off as much as 12 meters.
+T}
+T{
+.sp
+lat
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Latitude in degrees: +/\- signifies North/South.
+T}
+T{
+.sp
+leapseconds
+T}:T{
+.sp
+No
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+Current leap seconds.
+T}
+T{
+.sp
+lon
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Longitude in degrees: +/\- signifies East/West.
+T}
+T{
+.sp
+track
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Course over ground, degrees from true north.
+T}
+T{
+.sp
+magtrack
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Course over ground, degrees magnetic.
+T}
+T{
+.sp
+magvar
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Magnetic variation, degrees. Also known as the
+magnetic declination (the direction of the horizontal component of the
+magnetic field measured clockwise from north) in degrees, Positive is
+West variation. Negative is East variation.
+T}
+T{
+.sp
+speed
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Speed over ground, meters per second.
+T}
+T{
+.sp
+ecefx
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+ECEF X position in meters.
+T}
+T{
+.sp
+ecefy
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+ECEF Y position in meters.
+T}
+T{
+.sp
+ecefz
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+ECEF Z position in meters.
+T}
+T{
+.sp
+ecefpAcc
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+ECEF position error in meters. Certainty
+unknown.
+T}
+T{
+.sp
+ecefvx
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+ECEF X velocity in meters per second.
+T}
+T{
+.sp
+ecefvy
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+ECEF Y velocity in meters per second.
+T}
+T{
+.sp
+ecefvz
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+ECEF Z velocity in meters per second.
+T}
+T{
+.sp
+ecefvAcc
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+ECEF velocity error in meters per second.
+Certainty unknown.
+T}
+T{
+.sp
+sep
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Estimated Spherical (3D) Position Error in meters.
+Guessed to be 95% confidence, but many GNSS receivers do not specify,
+so certainty unknown.
+T}
+T{
+.sp
+relD
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Down component of relative position vector in
+meters.
+T}
+T{
+.sp
+relE
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+East component of relative position vector in
+meters.
+T}
+T{
+.sp
+relN
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+North component of relative position vector in
+meters.
+T}
+T{
+.sp
+velD
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Down velocity component in meters.
+T}
+T{
+.sp
+velE
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+East velocity component in meters.
+T}
+T{
+.sp
+velN
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+North velocity component in meters.
+T}
+T{
+.sp
+wanglem
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Wind angle magnetic in degrees.
+T}
+T{
+.sp
+wangler
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Wind angle relative in degrees.
+T}
+T{
+.sp
+wanglet
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Wind angle true in degrees.
+T}
+T{
+.sp
+wspeedr
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Wind speed relative in meters per second.
+T}
+T{
+.sp
+wspeedt
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Wind speed true in meters per second.
+T}
+T{
+.sp
+wtemp
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Water temperature in degrees Celsius.
+T}
+.TE
+.sp
+.sp
+When the C client library parses a response of this kind, it will
+assert validity bits in the top\-level set member for each field
+received; see gps.h for bitmask names and values.
+.sp
+Invalid or unknown floating\-point values will be set to NAN. Always
+check floating point values with isfinite() before use.  isnan() is
+not sufficient.
+.sp
+Here\(cqs an example TPV sentence:
+.sp
+.if n .RS 4
+.nf
+.fam C
+{"class":"TPV","device":"/dev/pts/1",
+    "time":"2005\-06\-08T10:34:48.283Z","ept":0.005,
+    "lat":46.498293369,"lon":7.567411672,"alt":1343.127,
+    "eph":36.000,"epv":32.321,
+    "track":10.3788,"speed":0.091,"climb":\-0.085,"mode":3}
+.fam
+.fi
+.if n .RE
+.SS "SKY"
+.sp
+A SKY object reports a sky view of the GPS satellite positions. If
+there is no GPS device available, or no skyview has been reported yet,
+only the "class" field will reliably be present.
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 2. SKY object
+.TS
+allbox tab(:);
+lt lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Always?
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+class
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Fixed: "SKY"
+T}
+T{
+.sp
+device
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Name of originating device
+T}
+T{
+.sp
+nSat
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Number of satellite objects in "satellites" array.
+T}
+T{
+.sp
+gdop
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Geometric (hyperspherical) dilution of precision,
+a combination of PDOP and TDOP. A dimensionless factor which should be
+multiplied by a base UERE to get an error estimate.
+T}
+T{
+.sp
+hdop
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Horizontal dilution of precision, a dimensionless
+factor which should be multiplied by a base UERE to get a circular
+error estimate.
+T}
+T{
+.sp
+pdop
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Position (spherical/3D) dilution of precision, a
+dimensionless factor which should be multiplied by a base UERE to get
+an error estimate.
+T}
+T{
+.sp
+prRes
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Pseudorange residue in meters.
+T}
+T{
+.sp
+qual
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Quality Indicator
+.br
+0=no signal
+.br
+1=searching signal
+.br
+2=signal acquired
+.br
+3=signal detected but unusable
+.br
+4=code locked and time synchronized
+.br
+5, 6, 7=code and carrier locked and time synchronized
+T}
+T{
+.sp
+satellites
+T}:T{
+.sp
+No
+T}:T{
+.sp
+list
+T}:T{
+.sp
+List of satellite objects in skyview
+T}
+T{
+.sp
+tdop
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Time dilution of precision, a dimensionless factor
+which should be multiplied by a base UERE to get an error estimate.
+T}
+T{
+.sp
+time
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Time/date stamp in ISO8601 format, UTC. May have a
+fractional part of up to .001sec precision.
+T}
+T{
+.sp
+uSat
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Number of satellites used in navigation solution.
+T}
+T{
+.sp
+vdop
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Vertical (altitude) dilution of precision, a
+dimensionless factor which should be multiplied by a base UERE to get
+an error estimate.
+T}
+T{
+.sp
+xdop
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Longitudinal dilution of precision, a
+dimensionless factor which should be multiplied by a base UERE to get
+an error estimate.
+T}
+T{
+.sp
+ydop
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Latitudinal dilution of precision, a dimensionless
+factor which should be multiplied by a base UERE to get an error
+estimate.
+T}
+.TE
+.sp
+.sp
+Many devices compute dilution of precision factors but do not include
+them in their reports. Many that do report DOPs report only HDOP,
+two\-dimensional circular error. \fBgpsd\fP always passes through whatever
+the device reports, then attempts to fill in other DOPs by calculating
+the appropriate determinants in a covariance matrix based on the
+satellite view. DOPs may be missing if some of these determinants are
+singular. It can even happen that the device reports an error estimate
+in meters when the corresponding DOP is unavailable; some devices use
+more sophisticated error modeling than the covariance calculation.
+.sp
+The satellite list objects have the following elements:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 3. Satellite object
+.TS
+allbox tab(:);
+lt lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Always?
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+PRN
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+PRN ID of the satellite. 1\-63 are GNSS satellites,
+64\-96 are GLONASS satellites, 100\-164 are SBAS satellites
+T}
+T{
+.sp
+az
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Azimuth, degrees from true north.
+T}
+T{
+.sp
+el
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Elevation in degrees.
+T}
+T{
+.sp
+ss
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Signal to Noise ratio in dBHz.
+T}
+T{
+.sp
+used
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+boolean
+T}:T{
+.sp
+Used in current solution? (SBAS/WAAS/EGNOS
+satellites may be flagged used if the solution has corrections from
+them, but not all drivers make this information available.)
+T}
+T{
+.sp
+gnssid
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+The GNSS ID, as defined by u\-blox, not NMEA.
+0=GPS, 2=Galileo, 3=Beidou, 5=QZSS, 6\-GLONASS.
+T}
+T{
+.sp
+svid
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+The satellite ID within its constellation. As
+defined by u\-blox, not NMEA).
+T}
+T{
+.sp
+sigid
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+The signal ID of this signal. As defined by
+u\-blox, not NMEA. See u\-blox doc for details.
+T}
+T{
+.sp
+freqid
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+For GLONASS satellites only: the frequency ID of
+the signal. As defined by u\-blox, range 0 to 13. The freqid is the
+frequency slot plus 7.
+T}
+T{
+.sp
+health
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+The health of this satellite. 0 is unknown, 1 is
+OK, and 2 is unhealthy.
+T}
+.TE
+.sp
+.sp
+Note that satellite objects do not have a "class" field, as they are
+never shipped outside of a SKY object.
+.sp
+When the C client library parses a SKY response, it will assert the
+SATELLITE_SET bit in the top\-level set member.
+.sp
+Here\(cqs an example:
+.sp
+.if n .RS 4
+.nf
+.fam C
+{"class":"SKY","device":"/dev/pts/1",
+    "time":"2005\-07\-08T11:28:07.114Z",
+    "xdop":1.55,"hdop":1.24,"pdop":1.99,
+    "satellites":[
+        {"PRN":23,"el":6,"az":84,"ss":0,"used":false},
+        {"PRN":28,"el":7,"az":160,"ss":0,"used":false},
+        {"PRN":8,"el":66,"az":189,"ss":44,"used":true},
+        {"PRN":29,"el":13,"az":273,"ss":0,"used":false},
+        {"PRN":10,"el":51,"az":304,"ss":29,"used":true},
+        {"PRN":4,"el":15,"az":199,"ss":36,"used":true},
+        {"PRN":2,"el":34,"az":241,"ss":43,"used":true},
+        {"PRN":27,"el":71,"az":76,"ss":43,"used":true}]}
+.fam
+.fi
+.if n .RE
+.SS "GST"
+.sp
+A GST object is a pseudorange noise report.
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 4. GST object
+.TS
+allbox tab(:);
+lt lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Always?
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+class
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Fixed: "GST"
+T}
+T{
+.sp
+device
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Name of originating device
+T}
+T{
+.sp
+time
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Time/date stamp in ISO8601 format, UTC. May have a
+fractional part of up to .001sec precision.
+T}
+T{
+.sp
+rms
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Value of the standard deviation of the range inputs
+to the navigation process (range inputs include pseudoranges and DGPS
+corrections).
+T}
+T{
+.sp
+major
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Standard deviation of semi\-major axis of error
+ellipse, in meters.
+T}
+T{
+.sp
+minor
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Standard deviation of semi\-minor axis of error
+ellipse, in meters.
+T}
+T{
+.sp
+orient
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Orientation of semi\-major axis of error ellipse,
+in degrees from true north.
+T}
+T{
+.sp
+lat
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Standard deviation of latitude error, in meters.
+T}
+T{
+.sp
+lon
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Standard deviation of longitude error, in meters.
+T}
+T{
+.sp
+alt
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Standard deviation of altitude error, in meters.
+T}
+.TE
+.sp
+.sp
+Here\(cqs an example:
+.sp
+.if n .RS 4
+.nf
+.fam C
+{"class":"GST","device":"/dev/ttyUSB0",
+        "time":"2010\-12\-07T10:23:07.096Z","rms":2.440,
+        "major":1.660,"minor":1.120,"orient":68.989,
+        "lat":1.600,"lon":1.200,"alt":2.520}
+.fam
+.fi
+.if n .RE
+.SS "ATT"
+.sp
+An ATT object is a vehicle\-attitude report. It is returned by
+digital\-compass and gyroscope sensors; depending on device, it may
+include: heading, pitch, roll, yaw, gyroscope, and magnetic\-field
+readings. Because such sensors are often bundled as part of
+marine\-navigation systems, the ATT response may also include water
+depth.
+.sp
+The "class" and "mode" fields will reliably be present. Others may be
+reported or not depending on the specific device type.
+.sp
+The ATT object is synchronous to the GNSS epoch. Some devices report
+attitude information with arbitrary, even out of order, time scales.
+\fBgpsd\fP reports those in an IMU object. The ATT and IMU objects have
+the same fields, but IMU objects are output as soon as possible. Some
+devices output both types with arbitrary interleaving.
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 5. ATT object
+.TS
+allbox tab(:);
+lt lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Always?
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+class
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Fixed: "ATT"
+T}
+T{
+.sp
+device
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Name of originating device
+T}
+T{
+.sp
+time
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Time/date stamp in ISO8601 format, UTC. May have a
+fractional part of up to .001sec precision.
+T}
+T{
+.sp
+timeTag
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Arbitrary time tag of measurement.
+T}
+T{
+.sp
+heading
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Heading, degrees from true north.
+T}
+T{
+.sp
+mag_st
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Magnetometer status.
+T}
+T{
+.sp
+mheading
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Heading, degrees from magnetic north.
+T}
+T{
+.sp
+pitch
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Pitch in degrees.
+T}
+T{
+.sp
+pitch_st
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Pitch sensor status.
+T}
+T{
+.sp
+rot
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Rate of Turn in dgrees per minute.
+T}
+T{
+.sp
+yaw
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Yaw in degrees
+T}
+T{
+.sp
+yaw_st
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Yaw sensor status.
+T}
+T{
+.sp
+roll
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Roll in degrees.
+T}
+T{
+.sp
+roll_st
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Roll sensor status.
+T}
+T{
+.sp
+dip
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Local magnetic inclination, degrees, positive when
+the magnetic field points downward (into the Earth).
+T}
+T{
+.sp
+mag_len
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Scalar magnetic field strength.
+T}
+T{
+.sp
+mag_x
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+X component of magnetic field strength.
+T}
+T{
+.sp
+mag_y
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Y component of magnetic field strength.
+T}
+T{
+.sp
+mag_z
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Z component of magnetic field strength.
+T}
+T{
+.sp
+acc_len
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Scalar acceleration.
+T}
+T{
+.sp
+acc_x
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+X component of acceleration (m/s^2).
+T}
+T{
+.sp
+acc_y
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Y component of acceleration (m/s^2).
+T}
+T{
+.sp
+acc_z
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Z component of acceleration (m/s^2).
+T}
+T{
+.sp
+gyro_x
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+X component of angular rate (deg/s)
+T}
+T{
+.sp
+gyro_y
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Y component of angular rate (deg/s)
+T}
+T{
+.sp
+gyro_z
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Z component of angular rate (deg/s)
+T}
+T{
+.sp
+depth
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Water depth in meters.
+T}
+T{
+.sp
+temp
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Temperature at the sensor, degrees centigrade.
+T}
+.TE
+.sp
+.sp
+The heading, pitch, and roll status codes (if present) vary by device.
+For the TNT Revolution digital compasses, they are coded as follows:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 6. Device flags
+.TS
+allbox tab(:);
+lt lt.
+T{
+.sp
+Code
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+C
+T}:T{
+.sp
+magnetometer calibration alarm
+T}
+T{
+.sp
+L
+T}:T{
+.sp
+low alarm
+T}
+T{
+.sp
+M
+T}:T{
+.sp
+low warning
+T}
+T{
+.sp
+N
+T}:T{
+.sp
+normal
+T}
+T{
+.sp
+O
+T}:T{
+.sp
+high warning
+T}
+T{
+.sp
+P
+T}:T{
+.sp
+high alarm
+T}
+T{
+.sp
+V
+T}:T{
+.sp
+magnetometer voltage level alarm
+T}
+.TE
+.sp
+.sp
+When the C client library parses a response of this kind, it will
+assert ATT_IS.
+.sp
+Here\(cqs an example:
+.sp
+.if n .RS 4
+.nf
+.fam C
+{"class":"ATT","time":1270938096.843,
+    "heading":14223.00,"mag_st":"N",
+    "pitch":169.00,"pitch_st":"N", "roll":\-43.00,"roll_st":"N",
+    "dip":13641.000,"mag_x":2454.000}
+.fam
+.fi
+.if n .RE
+.SS "IMU"
+.sp
+The IMU object is asynchronous to the GNSS epoch. It is reported
+with arbitrary, even out of order, time scales.
+.sp
+The ATT and IMU objects have the same fields, but IMU objects are output
+as soon as possible.
+.sp
+Seee the ATT onject description for field details.
+.SS "TOFF"
+.sp
+This message is emitted on each cycle and reports the offset between
+the host\(cqs clock time and the GPS time at top of the second (actually,
+when the first data for the reporting cycle is received).
+.sp
+This message exactly mirrors the PPS message.
+.sp
+The TOFF message reports the GPS time as derived from the GPS serial
+data stream. The PPS message reports the GPS time as derived from the
+GPS PPS pulse.
+.sp
+A TOFF object has the following elements:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 7. TOFF object
+.TS
+allbox tab(:);
+lt lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Always?
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+class
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Fixed: "TOFF"
+T}
+T{
+.sp
+device
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Name of the originating device
+T}
+T{
+.sp
+real_sec
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+seconds from the GPS clock
+T}
+T{
+.sp
+real_nsec
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+nanoseconds from the GPS clock
+T}
+T{
+.sp
+clock_sec
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+seconds from the system clock
+T}
+T{
+.sp
+clock_nsec
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+nanoseconds from the system clock
+T}
+.TE
+.sp
+.sp
+This message is emitted once per second to watchers of a device and is
+intended to report the timestamps of the in\-band report of the GPS and
+seconds as reported by the system clock (which may be NTP\-corrected)
+when the first valid time stamp of the reporting cycle was seen.
+.sp
+The message contains two second/nanosecond pairs: real_sec and
+real_nsec contain the time the GPS thinks it was at the start of the
+current cycle; clock_sec and clock_nsec contain the time the system
+clock thinks it was on receipt of the first timing message of the
+cycle. real_nsec is always to nanosecond precision. clock_nsec is
+nanosecond precision on most systems.
+.sp
+Here\(cqs an example:
+.sp
+.if n .RS 4
+.nf
+.fam C
+{"class":"TOFF","device":"/dev/ttyUSB0",
+     "real_sec":1330212592, "real_nsec":343182,
+     "clock_sec":1330212592,"clock_nsec":343184,
+     "precision":\-2}
+.fam
+.fi
+.if n .RE
+.SS "PPS"
+.sp
+This message is emitted each time the daemon sees a valid PPS (Pulse
+Per Second) strobe from a device.
+.sp
+This message exactly mirrors the TOFF message.
+.sp
+The TOFF message reports the GPS time as derived from the GPS serial
+data stream. The PPS message reports the GPS time as derived from the
+GPS PPS pulse.
+.sp
+There are various sources of error in the reported clock times. The
+speed of the serial connection between the GPS and the system adds a
+delay to the start of cycle detection. An even bigger error is added
+by the variable computation time inside the GPS. Taken together the
+time derived from the start of the GPS cycle can have offsets of 10
+milliseconds to 700 milliseconds and combined jitter and wander of 100
+to 300 milliseconds.
+.sp
+See the NTP documentation for their definition of precision.
+.sp
+A PPS object has the following elements:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 8. PPS object
+.TS
+allbox tab(:);
+lt lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Always?
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+class
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Fixed: "PPS"
+T}
+T{
+.sp
+device
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Name of the originating device
+T}
+T{
+.sp
+real_sec
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+seconds from the PPS source
+T}
+T{
+.sp
+real_nsec
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+nanoseconds from the PPS source
+T}
+T{
+.sp
+clock_sec
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+seconds from the system clock
+T}
+T{
+.sp
+clock_nsec
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+nanoseconds from the system clock
+T}
+T{
+.sp
+precision
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+NTP style estimate of PPS precision
+T}
+T{
+.sp
+shm
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+shm key of this PPS
+T}
+T{
+.sp
+qErr
+T}:T{
+.sp
+No
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+Quantization error of the PPS, in picoseconds.
+Sometimes called the "sawtooth" error.
+T}
+.TE
+.sp
+.sp
+This message is emitted once per second to watchers of a device
+emitting PPS, and reports the time of the start of the GPS second
+(when the 1PPS arrives) and seconds as reported by the system clock
+(which may be NTP\-corrected) at that moment.
+.sp
+The message contains two second/nanosecond pairs: real_sec and
+real_nsec contain the time the GPS thinks it was at the PPS edge;
+clock_sec and clock_nsec contain the time the system clock thinks it
+was at the PPS edge. real_nsec is always to nanosecond precision.
+clock_nsec is nanosecond precision on most systems.
+.sp
+There are various sources of error in the reported clock times. For
+PPS delivered via a real serial\-line strobe, serial\-interrupt latency
+plus processing time to the timer call should be bounded above by
+about 10 microseconds; that can be reduced to less than 1 microsecond
+if your kernel supports [RFC\-2783]. USB1.1\-to\-serial control\-line
+emulation is limited to about 1 millisecond. seconds.
+.sp
+Here\(cqs an example:
+.sp
+.if n .RS 4
+.nf
+.fam C
+{"class":"PPS","device":"/dev/ttyUSB0",
+     "real_sec":1330212592, "real_nsec":343182,
+     "clock_sec":1330212592,"clock_nsec":343184,
+     "precision":\-3}
+.fam
+.fi
+.if n .RE
+.SS "OSC"
+.sp
+This message reports the status of a GPS\-disciplined oscillator
+(GPSDO). The GPS PPS output (which has excellent long\-term stability)
+is typically used to discipline a local oscillator with much better
+short\-term stability (such as a rubidium atomic clock).
+.sp
+An OSC object has the following elements:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 9. OSC object
+.TS
+allbox tab(:);
+lt lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Always?
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+class
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Fixed: "OSC"
+T}
+T{
+.sp
+device
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Name of the originating device.
+T}
+T{
+.sp
+running
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+boolean
+T}:T{
+.sp
+If true, the oscillator is currently running.
+Oscillators may require warm\-up time at the start of the day.
+T}
+T{
+.sp
+reference
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+boolean
+T}:T{
+.sp
+If true, the oscillator is receiving a GPS
+PPS signal.
+T}
+T{
+.sp
+disciplined
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+boolean
+T}:T{
+.sp
+If true, the GPS PPS signal is
+sufficiently stable and is being used to discipline the local
+oscillator.
+T}
+T{
+.sp
+delta
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+The time difference (in nanoseconds) between the
+GPS\-disciplined oscillator PPS output pulse and the most recent GPS
+PPS input pulse.
+T}
+.TE
+.sp
+.sp
+Here\(cqs an example:
+.sp
+.if n .RS 4
+.nf
+.fam C
+{"class":"OSC","running":true,"device":"/dev/ttyUSB0",
+    "reference":true,"disciplined":true,"delta":67}
+.fam
+.fi
+.if n .RE
+.SH "CORE PROTOCOL COMMANDS"
+.sp
+And here are the commands you can send to \fBgpsd\fP.
+.SS "?VERSION;"
+.sp
+Returns an object with the following attributes:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 10. VERSION object
+.TS
+allbox tab(:);
+lt lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Always?
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+class
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Fixed: "VERSION"
+T}
+T{
+.sp
+release
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Public release level
+T}
+T{
+.sp
+rev
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Internal revision\-control level.
+T}
+T{
+.sp
+proto_major
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+API major revision level.
+T}
+T{
+.sp
+proto_minor
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+numeric
+T}:T{
+.sp
+API minor revision level.
+T}
+T{
+.sp
+remote
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+URL of the remote daemon reporting this version.
+If empty, this is the version of the local daemon.
+T}
+.TE
+.sp
+.sp
+The daemon ships a VERSION response to each client when the client
+first connects to it.
+.sp
+When the C client library parses a response of this kind, it will
+assert the VERSION_SET bit in the top\-level set member.
+.sp
+Here\(cqs an example:
+.sp
+.if n .RS 4
+.nf
+.fam C
+{"class":"VERSION","version":"2.40dev",
+    "rev":"06f62e14eae9886cde907dae61c124c53eb1101f",
+    "proto_major":3,"proto_minor":1
+}
+.fam
+.fi
+.if n .RE
+.SS "?DEVICES;"
+.sp
+Returns a device list object with the following elements:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 11. DEVICES object
+.TS
+allbox tab(:);
+lt lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Always?
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+class
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Fixed: "DEVICES"
+T}
+T{
+.sp
+devices
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+list
+T}:T{
+.sp
+List of device descriptions
+T}
+T{
+.sp
+remote
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+URL of the remote daemon reporting the device
+set. If empty, this is a DEVICES response from the local daemon.
+T}
+.TE
+.sp
+.sp
+When the C client library parses a response of this kind, it will
+assert the DEVICELIST_SET bit in the top\-level set member.
+.sp
+Here\(cqs an example:
+.sp
+.if n .RS 4
+.nf
+.fam C
+{"class"="DEVICES","devices":[
+    {"class":"DEVICE","path":"/dev/pts/1","flags":1,"driver":"SiRF binary"},
+    {"class":"DEVICE","path":"/dev/pts/3","flags":4,"driver":"AIVDM"}]}
+.fam
+.fi
+.if n .RE
+.sp
+The daemon occasionally ships a bare DEVICE object to the client (that
+is, one not inside a DEVICES wrapper). The data content of these
+objects will be described later as a response to the ?DEVICE command.
+.SS "?WATCH;"
+.sp
+This command sets watcher mode. It also sets or elicits a report of
+per\-subscriber policy and the raw bit. An argument WATCH object
+changes the subscriber\(cqs policy. The response describes the
+subscriber\(cqs policy. The response will also include a DEVICES object.
+.sp
+A WATCH object has the following elements:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 12. WATCH object
+.TS
+allbox tab(:);
+lt lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Always?
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+class
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Fixed: "WATCH"
+T}
+T{
+.sp
+enable
+T}:T{
+.sp
+No
+T}:T{
+.sp
+boolean
+T}:T{
+.sp
+Enable (true) or disable (false) watcher mode.
+Default is true.
+T}
+T{
+.sp
+json
+T}:T{
+.sp
+No
+T}:T{
+.sp
+boolean
+T}:T{
+.sp
+Enable (true) or disable (false) dumping of JSON
+reports. Default is false.
+T}
+T{
+.sp
+nmea
+T}:T{
+.sp
+No
+T}:T{
+.sp
+boolean
+T}:T{
+.sp
+Enable (true) or disable (false) dumping of binary
+packets as pseudo\-NMEA. Default is false.
+T}
+T{
+.sp
+raw
+T}:T{
+.sp
+No
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+Controls \*(Aqraw\*(Aq mode. When this attribute is set to
+1 for a channel, \fBgpsd\fP reports the unprocessed NMEA or AIVDM data
+stream from whatever device is attached. Binary GPS packets are
+hex\-dumped. RTCM2 and RTCM3 packets are not dumped in raw mode. When
+this attribute is set to 2 for a channel that processes binary data,
+\fBgpsd\fP reports the received data verbatim without hex\-dumping.
+T}
+T{
+.sp
+scaled
+T}:T{
+.sp
+No
+T}:T{
+.sp
+boolean
+T}:T{
+.sp
+If true, apply scaling divisors to output before
+dumping; default is false.
+T}
+T{
+.sp
+split24
+T}:T{
+.sp
+No
+T}:T{
+.sp
+boolean
+T}:T{
+.sp
+If true, aggregate AIS type24 sentence parts.
+If false, report each part as a separate JSON object, leaving the
+client to match MMSIs and aggregate. Default is false. Applies only to
+AIS reports.
+T}
+T{
+.sp
+pps
+T}:T{
+.sp
+No
+T}:T{
+.sp
+boolean
+T}:T{
+.sp
+If true, emit the TOFF JSON message on each cycle
+and a PPS JSON message when the device issues 1PPS. Default is false.
+T}
+T{
+.sp
+device
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+If present, enable watching only of the specified
+device rather than all devices. Useful with raw and NMEA modes in
+which device responses aren\(cqt tagged. Has no effect when used with
+enable:false.
+T}
+T{
+.sp
+remote
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+URL of the remote daemon reporting the watch set.
+If empty, this is a WATCH response from the local daemon.
+T}
+.TE
+.sp
+.sp
+There is an additional boolean "timing" attribute which is
+undocumented because that portion of the interface is considered
+unstable and for developer use only.
+.sp
+In watcher mode, GPS reports are dumped as TPV and SKY responses. AIS,
+Subframe and RTCM reporting is described in the next section.
+.sp
+When the C client library parses a response of this kind, it will
+assert the POLICY_SET bit in the top\-level set member.
+.sp
+Here\(cqs an example:
+.sp
+.if n .RS 4
+.nf
+.fam C
+{"class":"WATCH", "raw":1,"scaled":true}
+.fam
+.fi
+.if n .RE
+.SS "?POLL;"
+.sp
+The POLL command requests data from the last\-seen fixes on all active
+GPS devices. Devices must previously have been activated by ?WATCH to
+be pollable.
+.sp
+Polling can lead to possibly surprising results when it is used on
+a device such as an NMEA GPS for which a complete fix has to be
+accumulated from several sentences. If you poll while those sentences
+are being emitted, the response will contain only the fix data collected
+so far in the current epoch. It may be as much as one cycle time
+(typically 1 second) stale.
+.sp
+The POLL response will contain a timestamped list of TPV objects
+describing cached data, and a timestamped list of SKY objects
+describing satellite configuration. If a device has not seen fixes, it
+will be reported with a mode field of zero.
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 13. POLL object
+.TS
+allbox tab(:);
+lt lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Always?
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+class
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Fixed: "POLL"
+T}
+T{
+.sp
+time
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+Numeric
+T}:T{
+.sp
+Timestamp in ISO 8601 format. May have a
+fractional part of up to .001sec precision.
+T}
+T{
+.sp
+active
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+Numeric
+T}:T{
+.sp
+Count of active devices.
+T}
+T{
+.sp
+tpv
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+JSON array
+T}:T{
+.sp
+Comma\-separated list of TPV objects.
+T}
+T{
+.sp
+sky
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+JSON array
+T}:T{
+.sp
+Comma\-separated list of SKY objects.
+T}
+.TE
+.sp
+.sp
+Here\(cqs an example of a POLL response:
+.sp
+.if n .RS 4
+.nf
+.fam C
+{"class":"POLL","time":"2010\-06\-04T10:31:00.289Z","active":1,
+    "tpv":[{"class":"TPV","device":"/dev/ttyUSB0",
+            "time":"2010\-09\-08T13:33:06.095Z",
+            "ept":0.005,"lat":40.035093060,
+            "lon":\-75.519748733,"track":99.4319,"speed":0.123,"mode":2}],
+    "sky":[{"class":"SKY","device":"/dev/ttyUSB0",
+            "time":1270517264.240,"hdop":9.20,
+            "satellites":[{"PRN":16,"el":55,"az":42,"ss":36,"used":true},
+                          {"PRN":19,"el":25,"az":177,"ss":0,"used":false},
+                          {"PRN":7,"el":13,"az":295,"ss":0,"used":false},
+                          {"PRN":6,"el":56,"az":135,"ss":32,"used":true},
+                          {"PRN":13,"el":47,"az":304,"ss":0,"used":false},
+                          {"PRN":23,"el":66,"az":259,"ss":0,"used":false},
+                          {"PRN":20,"el":7,"az":226,"ss":0,"used":false},
+                          {"PRN":3,"el":52,"az":163,"ss":32,"used":true},
+                          {"PRN":31,"el":16,"az":102,"ss":0,"used":false}
+]}]}
+.fam
+.fi
+.if n .RE
+.if n .sp
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+.B Note
+.ps -1
+.br
+.sp
+Client software should not assume the field inventory of the POLL
+response is fixed for all time. As \fBgpsd\fP collects and caches more data
+from more sensor types, those data are likely to find their way into
+this response.
+.sp .5v
+.RE
+.SS "?DEVICE; ?DEVICE="
+.sp
+This command reports (when followed by \*(Aq;\*(Aq) the state of a device, or
+sets (when followed by \*(Aq=\*(Aq and a DEVICE object) device\-specific
+control bits, notably the device\(cqs speed and serial mode and the
+native\-mode bit. The parameter\-setting form will be rejected if more
+than one client is attached to the channel and a device path is not
+specified.
+.sp
+Pay attention to the response, because it is possible for this command
+to fail if the GPS does not support a command or only supports some
+combinations of modes. In case of failure, the daemon and GPS will
+continue to communicate at the old speed.
+.sp
+Use the parameter\-setting form with caution. On USB and Bluetooth
+GPSes it is also possible for serial mode setting to fail either
+because the serial adaptor chip does not support non\-8N1 modes or
+because the device firmware does not properly synchronize the serial
+adaptor chip with the UART on the GPS chipset when the speed changes.
+These failures can hang your device, possibly requiring a GPS power
+cycle or (in extreme cases) physically disconnecting the NVRAM backup
+battery.
+.sp
+A DEVICE object has the following elements:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 14. DEVICE object
+.TS
+allbox tab(:);
+lt lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Always?
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+class
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Fixed: "DEVICE"
+T}
+T{
+.sp
+activated
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Time the device was activated as an ISO8601
+time stamp. If the device is inactive this attribute is absent.
+T}
+T{
+.sp
+bps
+T}:T{
+.sp
+No
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+Device speed in bits per second.
+T}
+T{
+.sp
+cycle
+T}:T{
+.sp
+No
+T}:T{
+.sp
+real
+T}:T{
+.sp
+Device cycle time in seconds.
+T}
+T{
+.sp
+driver
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+GPSD\(cqs name for the device driver type. Won\(cqt be
+reported before \fBgpsd\fP has seen identifiable packets from the device.
+T}
+T{
+.sp
+flags
+T}:T{
+.sp
+No
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+Bit vector of property flags. Currently defined
+flags are: describe packet types seen so far (GPS, RTCM2, RTCM3, AIS).
+Won\(cqt be reported if empty, e.g. before \fBgpsd\fP has seen identifiable
+packets from the device.
+T}
+T{
+.sp
+hexdata
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Data, in bare hexadecimal, to send to the GNSS
+receiver.
+T}
+T{
+.sp
+mincycle
+T}:T{
+.sp
+No
+T}:T{
+.sp
+real
+T}:T{
+.sp
+Device minimum cycle time in seconds. Reported
+from ?DEVICE when (and only when) the rate is switchable. It is
+read\-only and not settable.
+T}
+T{
+.sp
+native
+T}:T{
+.sp
+No
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+0 means NMEA mode and 1 means alternate mode
+(binary if it has one, for SiRF and Evermore chipsets in particular).
+Attempting to set this mode on a non\-GPS device will yield an error.
+T}
+T{
+.sp
+parity
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+N, O or E for no parity, odd, or even.
+T}
+T{
+.sp
+path
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Name the device for which the control bits are
+being reported, or for which they are to be applied. This attribute
+may be omitted only when there is exactly one subscribed channel.
+T}
+T{
+.sp
+readonly
+T}:T{
+.sp
+No
+T}:T{
+.sp
+boolean
+T}:T{
+.sp
+True if device is read\-only.
+T}
+T{
+.sp
+stopbits
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Stop bits (1 or 2).
+T}
+T{
+.sp
+subtype
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Whatever version information the device driver
+returned.
+T}
+T{
+.sp
+subtype1
+T}:T{
+.sp
+No
+T}:T{
+.sp
+string
+T}:T{
+.sp
+More version information the device driver
+returned.
+T}
+.TE
+.sp
+.sp
+The serial parameters will (bps, parity, stopbits) be omitted in a
+response describing a TCP/IP source such as an Ntrip, DGPSIP, or AIS
+feed; on a serial device they will always be present.
+.sp
+The contents of the flags field should be interpreted as follows:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 15. Device flags
+.TS
+allbox tab(:);
+lt lt lt.
+T{
+.sp
+C #define
+T}:T{
+.sp
+Value
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+SEEN_GPS
+T}:T{
+.sp
+0x01
+T}:T{
+.sp
+GPS data has been seen on this device
+T}
+T{
+.sp
+SEEN_RTCM2
+T}:T{
+.sp
+0x02
+T}:T{
+.sp
+RTCM2 data has been seen on this device
+T}
+T{
+.sp
+SEEN_RTCM3
+T}:T{
+.sp
+0x04
+T}:T{
+.sp
+RTCM3 data has been seen on this device
+T}
+T{
+.sp
+SEEN_AIS
+T}:T{
+.sp
+0x08
+T}:T{
+.sp
+AIS data has been seen on this device
+T}
+.TE
+.sp
+.sp
+When the C client library parses a response of this kind, it will
+assert the DEVICE_SET bit in the top\-level set member.
+.sp
+Here\(cqs an example:
+.sp
+.if n .RS 4
+.nf
+.fam C
+{"class":"DEVICE","bps":4800,"parity":"N","stopbits":1,"native":0}
+.fam
+.fi
+.if n .RE
+.sp
+When a client is in watcher mode, the daemon will ship it DEVICE
+notifications when a device is added to the pool or deactivated.
+.sp
+When the C client library parses a response of this kind, it will assert
+the DEVICE_SET bit in the top\-level set member.
+.SS "Examples"
+.sp
+A notice of a deactivated device:
+.sp
+.if n .RS 4
+.nf
+.fam C
+{"class":"DEVICE","path":"/dev/pts1","activated":0}
+.fam
+.fi
+.if n .RE
+.sp
+A send a u\-blox receiver at /dev/ttyUSB2 a request for a UBX\-MON\-VER
+message:
+.sp
+.if n .RS 4
+.nf
+.fam C
+?DEVICE={"path":"/dev/ttyUSB2","hexdata":"b5620a0400000e34"}
+.fam
+.fi
+.if n .RE
+.sp
+The \fIgpsd\fP daemon will respond with an ACK on success:
+.sp
+.if n .RS 4
+.nf
+.fam C
+{"class":"ACK"}
+.fam
+.fi
+.if n .RE
+.SS "ERROR"
+.sp
+The daemon may ship an error object in response to a syntactically
+invalid command line or unknown command. It has the following elements:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 16. ERROR notification object
+.TS
+allbox tab(:);
+lt lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Always?
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+class
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Fixed: "ERROR"
+T}
+T{
+.sp
+message
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Textual error message
+T}
+.TE
+.sp
+.sp
+Here\(cqs an example:
+.sp
+.if n .RS 4
+.nf
+.fam C
+{"class":"ERROR","message":"Unrecognized request \*(Aq?FOO\*(Aq"}
+.fam
+.fi
+.if n .RE
+.sp
+When the C client library parses a response of this kind, it will assert
+the ERR_SET bit in the top\-level set member.
+.SH "RTCM2"
+.sp
+RTCM\-104 is a family of serial protocols used for broadcasting
+pseudorange corrections from differential\-GPS reference stations. Many
+GPS receivers can accept these corrections to improve their reporting
+accuracy.
+.sp
+RTCM\-104 comes in two major and incompatible flavors, 2.x and 3.x. Each
+major flavor has minor (compatible) revisions.
+.sp
+The applicable standard for RTCM Version 2.x is RTCM Recommended
+Standards for Differential NAVSTAR GPS Service RTCM Paper 194\-93/SC
+104\-STD. For RTCM 3.1 it is RTCM Paper 177\-2006\-SC104\-STD. Ordering
+instructions for both standards are accessible from the website of the
+\c
+.URL "https://www.rtcm.org/" "Radio Technical Commission for Maritime Services"
+under "Publications".
+.SS "RTCM WIRE TRANSMISSIONS"
+.sp
+Differential\-GPS correction stations consist of a GPS reference receiver
+coupled to a low frequency (LF) transmitter. The GPS reference receiver
+is a survey\-grade GPS that does GPS carrier tracking and can work out
+its position to a few millimeters. It generates range and range\-rate
+corrections and encodes them into RTCM104. It ships the RTCM104 to the
+LF transmitter over serial rs\-232 signal at 100 baud or 200 baud
+depending on the requirements of the transmitter.
+.sp
+The LF transmitter broadcasts the approximately 300khz radio signal that
+differential\-GPS radio receivers pick up. Transmitters that are meant to
+have a higher range will need to transmit at a slower rate. The higher
+the data rate the harder it will be for the remote radio receiver to
+receive with a good signal\-to\-noise ration. (Higher data rate signals
+can\(cqt be averaged over as long a time frame, hence they appear noisier.)
+.SS "RTCM WIRE FORMATS"
+.sp
+An RTCM 2.x message consists of a sequence of up to 33 30\-bit words. The
+24 most significant bits of each word are data and the six least
+significant bits are parity. The parity algorithm used is the same
+ISGPS\-2000 as that used on GPS satellite downlinks. Each RTCM 2.x
+message consists of two header words followed by zero or more data
+words, depending upon the message type.
+.sp
+An RTCM 3.x message begins with a fixed leader byte 0xD3. That is
+followed by six bits of version information and 10 bits of payload
+length information. Following that is the payload; following the payload
+is a 3\-byte checksum of the payload using the Qualcomm CRC\-24Q
+algorithm.
+.SS "RTCM2 JSON FORMAT"
+.sp
+Each RTCM2 message is dumped as a single JSON object per message, with
+the message fields as attributes of that object. Arrays of satellite,
+station, and constellation statistics become arrays of JSON sub\-objects.
+Each sentence will normally also have a "device" field containing the
+pathname of the originating device.
+.sp
+All attributes other than the device field are mandatory. Header
+attributes are emitted before others.
+.SS "Header portion"
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 17. SKY object
+.TS
+allbox tab(:);
+lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+class
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Fixed: "RTCM2".
+T}
+T{
+.sp
+type
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+Message type (1\-9).
+T}
+T{
+.sp
+station_id
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+The id of the GPS reference receiver. The LF
+transmitters also have (different) id numbers.
+T}
+T{
+.sp
+zcount
+T}:T{
+.sp
+real
+T}:T{
+.sp
+The reference time of the corrections in the message in
+seconds within the current hour. Note that it is in GPS time, which is
+some seconds ahead of UTC (see the U.S. Naval Observatory\(cqs
+\c
+.URL "ftp://maia.usno.navy.mil/ser7/tai\-utc.dat" "table of leap second
+corrections" ).
+T}
+T{
+.sp
+seqnum
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+Sequence number. Only 3 bits wide, wraps after 7.
+T}
+T{
+.sp
+length
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+The number of words after the header that comprise the
+message.
+T}
+T{
+.sp
+station_health
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+Station transmission status. Indicates the
+health of the beacon as a reference source. Any nonzero value means the
+satellite is probably transmitting bad data and should not be used in a
+fix. 6 means the transmission is unmonitored. 7 means the station is not
+working properly. Other values are defined by the beacon operator.
+T}
+.TE
+.sp
+.sp
+<message type> is one of
+.sp
+1
+.RS 4
+full corrections \(em one message containing corrections for all GPS
+satellites in view. This is not common.
+.RE
+.sp
+3
+.RS 4
+reference station parameters \(em the position of the reference station
+GPS antenna.
+.RE
+.sp
+4
+.RS 4
+datum \(em the datum to which the DGPS data is referred.
+.RE
+.sp
+5
+.RS 4
+constellation health \(em information about the satellites the beacon
+can see.
+.RE
+.sp
+6
+.RS 4
+null message \(em just a filler.
+.RE
+.sp
+7
+.RS 4
+radio beacon almanac \(em information about this or other beacons.
+.RE
+.sp
+9
+.RS 4
+subset corrections \(em a message containing corrections for only a
+subset of the GPS satellites in view.
+.RE
+.sp
+16
+.RS 4
+special message \(em a text message from the beacon operator.
+.RE
+.sp
+31
+.RS 4
+GLONASS subset corrections \(em a message containing corrections for
+a set of the GLONASS satellites in view.
+.RE
+.SS "Type 1 and 9: Correction data"
+.sp
+One or more satellite objects follow the header for type 1 or type 9
+messages. Here is the format:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 18. Satellite object
+.TS
+allbox tab(:);
+lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+ident
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+The PRN number of the satellite for which this is
+correction data.
+T}
+T{
+.sp
+udre
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+User Differential Range Error (0\-3). See the table
+following for values.
+T}
+T{
+.sp
+iod
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+Issue Of Data, matching the IOD for the current ephemeris
+of this satellite, as transmitted by the satellite. The IOD is a unique
+tag that identifies the ephemeris; the GPS using the DGPS correction and
+the DGPS generating the data must use the same orbital positions for the
+satellite.
+T}
+T{
+.sp
+prc
+T}:T{
+.sp
+real
+T}:T{
+.sp
+The pseudorange error in meters for this satellite as
+measured by the beacon reference receiver at the epoch indicated by the
+z_count in the parent record.
+T}
+T{
+.sp
+rrc
+T}:T{
+.sp
+real
+T}:T{
+.sp
+The rate of change of pseudorange error in meters/sec for
+this satellite as measured by the beacon reference receiver at the epoch
+indicated by the z_count field in the parent record. This is used to
+calculate pseudorange errors at other epochs, if required by the GPS
+receiver.
+T}
+.TE
+.sp
+.sp
+User Differential Range Error values are as follows:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 19. UDRE values
+.TS
+allbox tab(:);
+lt lt.
+T{
+.sp
+0
+T}:T{
+.sp
+1\-sigma error \(lA 1 m
+T}
+T{
+.sp
+1
+T}:T{
+.sp
+1\-sigma error \(lA 4 m
+T}
+T{
+.sp
+2
+T}:T{
+.sp
+1\-sigma error \(lA 8 m
+T}
+T{
+.sp
+3
+T}:T{
+.sp
+1\-sigma error > 8 m
+T}
+.TE
+.sp
+.sp
+Here\(cqs an example:
+.sp
+.if n .RS 4
+.nf
+.fam C
+{"class":"RTCM2","type":1,
+    "station_id":688,"zcount":843.0,"seqnum":5,"length":19,"station_health":6,
+    "satellites":[
+        {"ident":10,"udre":0,"iod":46,"prc":\-2.400,"rrc":0.000},
+        {"ident":13,"udre":0,"iod":94,"prc":\-4.420,"rrc":0.000},
+        {"ident":7,"udre":0,"iod":22,"prc":\-5.160,"rrc":0.002},
+        {"ident":2,"udre":0,"iod":34,"prc":\-6.480,"rrc":0.000},
+        {"ident":4,"udre":0,"iod":47,"prc":\-8.860,"rrc":0.000},
+        {"ident":8,"udre":0,"iod":76,"prc":\-7.980,"rrc":0.002},
+        {"ident":5,"udre":0,"iod":99,"prc":\-8.260,"rrc":0.002},
+        {"ident":23,"udre":0,"iod":81,"prc":\-8.060,"rrc":0.000},
+        {"ident":16,"udre":0,"iod":70,"prc":\-11.740,"rrc":0.000},
+        {"ident":30,"udre":0,"iod":4,"prc":\-18.960,"rrc":\-0.006},
+        {"ident":29,"udre":0,"iod":101,"prc":\-24.960,"rrc":\-0.002}
+]}
+.fam
+.fi
+.if n .RE
+.SS "Type 3: Reference Station Parameters"
+.sp
+Here are the payload members of a type 3 (Reference Station Parameters)
+message:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 20. Reference Station Parameters
+.TS
+allbox tab(:);
+lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+x
+T}:T{
+.sp
+real
+T}:T{
+.sp
+ECEF X coordinate.
+T}
+T{
+.sp
+y
+T}:T{
+.sp
+real
+T}:T{
+.sp
+ECEF Y coordinate.
+T}
+T{
+.sp
+z
+T}:T{
+.sp
+real
+T}:T{
+.sp
+ECEF Z coordinate.
+T}
+.TE
+.sp
+.sp
+The coordinates are the position of the station, in meters to two
+decimal places, in Earth Centred Earth Fixed coordinates. These are
+usually referred to the WGS84 reference frame, but may be referred to
+NAD83 in the US (essentially identical to WGS84 for all except
+geodesists), or some other reference frame in other parts of the world.
+.sp
+An invalid reference message is represented by a type 3 header without
+payload fields.
+.sp
+Here\(cqs an example:
+.sp
+.if n .RS 4
+.nf
+.fam C
+{"class":"RTCM2","type":3,
+    "station_id":652,"zcount":1657.2,"seqnum":2,"length":4,"station_health":6,
+    "x":3878620.92,"y":670281.40,"z":5002093.59
+}
+.fam
+.fi
+.if n .RE
+.SS "Type 4: Datum"
+.sp
+Here are the payload members of a type 4 (Datum) message:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 21. Datum
+.TS
+allbox tab(:);
+lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+dgnss_type
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Either "GPS", "GLONASS", "GALILEO", or "UNKNOWN".
+T}
+T{
+.sp
+dat
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+0 or 1 and indicates the sense of the offset shift given
+by dx, dy, dz. dat = 0 means that the station coordinates (in the
+reference message) are referred to a local datum and that adding dx, dy,
+dz to that position will render it in GNSS coordinates (WGS84 for GPS).
+If dat = 1 then the ref station position is in GNSS coordinates and
+adding dx, dy, dz will give it referred to the local datum.
+T}
+T{
+.sp
+datum_name
+T}:T{
+.sp
+string
+T}:T{
+.sp
+A standard name for the datum.
+T}
+T{
+.sp
+dx
+T}:T{
+.sp
+real
+T}:T{
+.sp
+X offset.
+T}
+T{
+.sp
+dy
+T}:T{
+.sp
+real
+T}:T{
+.sp
+Y offset.
+T}
+T{
+.sp
+dz
+T}:T{
+.sp
+real
+T}:T{
+.sp
+Z offset.
+T}
+.TE
+.sp
+.sp
+<dx> <dy> <dz> are offsets to convert from local datum to GNSS datum or
+vice versa. These fields are optional.
+.sp
+An invalid datum message is represented by a type 4 header without
+payload fields.
+.SS "Type 5: Constellation Health"
+.sp
+One or more of these follow the header for type 5 messages \(em one for
+each satellite.
+.sp
+Here is the format:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 22. Constellation health
+.TS
+allbox tab(:);
+lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+ident
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+The PRN number of the satellite.
+T}
+T{
+.sp
+iodl
+T}:T{
+.sp
+bool
+T}:T{
+.sp
+True indicates that this information relates to the
+satellite information in an accompanying type 1 or type 9 message.
+T}
+T{
+.sp
+health
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+0 indicates that the satellite is healthy. Any other
+value indicates a problem (coding is not known).
+T}
+T{
+.sp
+snr
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+The carrier/noise ratio of the received signal in the
+range 25 to 55 dB(Hz).
+T}
+T{
+.sp
+health_en
+T}:T{
+.sp
+bool
+T}:T{
+.sp
+If set to True it indicates that the satellite is
+healthy even if the satellite navigation data says it is unhealthy.
+T}
+T{
+.sp
+new_data
+T}:T{
+.sp
+bool
+T}:T{
+.sp
+True indicates that the IOD for this satellite will
+soon be updated in type 1 or 9 messages.
+T}
+T{
+.sp
+los_warning
+T}:T{
+.sp
+bool
+T}:T{
+.sp
+Line\-of\-sight warning. True indicates that the
+satellite will shortly go unhealthy.
+T}
+T{
+.sp
+tou
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+Healthy time remaining in seconds.
+T}
+.TE
+.sp
+.SS "Type 6: Null"
+.sp
+This just indicates a null message. There are no payload fields.
+.SS "Unknown message"
+.sp
+This format is used to dump message words in hexadecimal when the
+message type field doesn\(cqt match any of the known ones.
+.sp
+Here is the format:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 23. Unknown Message
+.TS
+allbox tab(:);
+lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+data
+T}:T{
+.sp
+list
+T}:T{
+.sp
+A list of strings.
+T}
+.TE
+.sp
+.sp
+Each string in the array is a hex literal representing 30 bits of
+information, after parity checks and inversion. The high two bits should
+be ignored.
+.SS "Type 7: Radio Beacon Almanac"
+.sp
+Here is the format:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 24. Constellation health
+.TS
+allbox tab(:);
+lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+lat
+T}:T{
+.sp
+real
+T}:T{
+.sp
+Latitude in degrees, of the LF transmitter antenna for the
+station for which this is an almanac. North is positive.
+T}
+T{
+.sp
+lon
+T}:T{
+.sp
+real
+T}:T{
+.sp
+Longitude in degrees, of the LF transmitter antenna for the
+station for which this is an almanac. East is positive.
+T}
+T{
+.sp
+range
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+Published range of the station in km.
+T}
+T{
+.sp
+frequency
+T}:T{
+.sp
+real
+T}:T{
+.sp
+Station broadcast frequency in kHz.
+T}
+T{
+.sp
+health
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+<health> is the health of the station for which this
+is an almanac. If it is non\-zero, the station is issuing suspect data
+and should not be used for fixes. The ITU and RTCM104 standards differ
+about the mode detailed interpretation of the <health> field and even
+about its bit width.
+T}
+T{
+.sp
+station_id
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+The id of the transmitter. This is not the same as
+the reference id in the header, the latter being the id of the reference
+receiver.
+T}
+T{
+.sp
+bitrate
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+The transmitted bitrate.
+T}
+.TE
+.sp
+.sp
+Here\(cqs an example:
+.sp
+.if n .RS 4
+.nf
+.fam C
+{"class":"RTCM2","type":9,"station_id":268,"zcount":252.6,
+        "seqnum":4,"length":5,"station_health":0,
+        "satellites":[
+            {"ident":13,"udre":0,"iod":3,"prc":\-25.940,"rrc":0.066},
+            {"ident":2,"udre":0,"iod":73,"prc":0.920,"rrc":\-0.080},
+            {"ident":8,"udre":0,"iod":22,"prc":23.820,"rrc":0.014}
+]}
+.fam
+.fi
+.if n .RE
+.SS "Type 13: GPS Time of Week"
+.sp
+Here are the payload members of a type 13 (Groumf Tramitter Parameters)
+message:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 25. Ground Transmitter Parameters
+.TS
+allbox tab(:);
+lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+status
+T}:T{
+.sp
+bool
+T}:T{
+.sp
+If True, signals user to expect a type 16 explanatory
+message associated with this station. Probably indicates some sort of
+unusual event.
+T}
+T{
+.sp
+rangeflag
+T}:T{
+.sp
+bool
+T}:T{
+.sp
+If True, indicates that the estimated range is
+different from that found in the type 7 message (which contains the
+beacon\(cqs listed range). Generally indicates a range reduction due to
+causes such as poor ionospheric conditions or reduced transmission
+power.
+T}
+T{
+.sp
+lat
+T}:T{
+.sp
+real
+T}:T{
+.sp
+Degrees latitude, signed. Positive is N, negative is S.
+T}
+T{
+.sp
+lon
+T}:T{
+.sp
+real
+T}:T{
+.sp
+Degrees longitude, signed. Positive is E, negative is W.
+T}
+T{
+.sp
+range
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+Transmission range in km (1\-1024).
+T}
+.TE
+.sp
+.sp
+This message type replaces message type 3 (Reference Station Parameters)
+in RTCM 2.3.
+.SS "Type 14: GPS Time of Week"
+.sp
+Here are the payload members of a type 14 (GPS Time of Week) message:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 26. Reference Station Parameters
+.TS
+allbox tab(:);
+lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+week
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+GPS week (0\-123).
+T}
+T{
+.sp
+hour
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+Hour of week (0\-167).
+T}
+T{
+.sp
+leapsecs
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+Leap Seconds (0\-63).
+T}
+.TE
+.sp
+.sp
+Here\(cqs an example:
+.sp
+.if n .RS 4
+.nf
+.fam C
+{"class":"RTCM2","type":14,"station_id":652,"zcount":1657.2,
+        "seqnum":3,"length":1,"station_health":6,"week":601,"hour":109,
+        "leapsecs":15}
+.fam
+.fi
+.if n .RE
+.SS "Type 16: Special Message"
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 27. Special Message
+.TS
+allbox tab(:);
+lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+message
+T}:T{
+.sp
+string
+T}:T{
+.sp
+A text message sent by the beacon operator.
+T}
+.TE
+.sp
+.SS "Type 31: Correction data"
+.sp
+One or more GLONASS satellite objects follow the header for type 1 or
+type 9 messages. Here is the format:
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 28. Satellite object
+.TS
+allbox tab(:);
+lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+ident
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+The PRN number of the satellite for which this is
+correction data.
+T}
+T{
+.sp
+udre
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+User Differential Range Error (0\-3). See the table
+following for values.
+T}
+T{
+.sp
+change
+T}:T{
+.sp
+boolean
+T}:T{
+.sp
+Change\-of\-ephemeris bit.
+T}
+T{
+.sp
+tod
+T}:T{
+.sp
+uinteger
+T}:T{
+.sp
+Count of 30\-second periods since the top of the hour.
+T}
+T{
+.sp
+prc
+T}:T{
+.sp
+real
+T}:T{
+.sp
+The pseudorange error in meters for this satellite as
+measured by the beacon reference receiver at the epoch indicated by the
+z_count in the parent record.
+T}
+T{
+.sp
+rrc
+T}:T{
+.sp
+real
+T}:T{
+.sp
+The rate of change of pseudorange error in meters/sec for
+this satellite as measured by the beacon reference receiver at the epoch
+indicated by the z_count field in the parent record. This is used to
+calculate pseudorange errors at other epochs, if required by the GPS
+receiver.
+T}
+.TE
+.sp
+.sp
+Here\(cqs an example:
+.sp
+.if n .RS 4
+.nf
+.fam C
+{"class":"RTCM2","type":31,"station_id":652,"zcount":1642.2,
+    "seqnum":0,"length":14,"station_health":6,
+    "satellites":[
+        {"ident":5,"udre":0,"change":false,"tod":0,"prc":132.360,"rrc":0.000},
+        {"ident":15,"udre":0,"change":false,"tod":0,"prc":134.840,"rrc":0.002},
+        {"ident":14,"udre":0,"change":false,"tod":0,"prc":141.520,"rrc":0.000},
+        {"ident":6,"udre":0,"change":false,"tod":0,"prc":127.000,"rrc":0.000},
+        {"ident":21,"udre":0,"change":false,"tod":0,"prc":128.780,"rrc":0.000},
+        {"ident":22,"udre":0,"change":false,"tod":0,"prc":125.260,"rrc":0.002},
+        {"ident":20,"udre":0,"change":false,"tod":0,"prc":117.280,"rrc":\-0.004},
+        {"ident":16,"udre":0,"change":false,"tod":17,"prc":113.460,"rrc":0.018}
+]}
+.fam
+.fi
+.if n .RE
+.SH "RTCM3 DUMP FORMAT"
+.sp
+The support for RTCM104v3 dumping is incomplete and buggy. Do not
+attempt to use it for production! Anyone interested in it should read
+the source code.
+.SH "AIS DUMP FORMATS"
+.sp
+AIS support is an extension. It may not be present if your instance of
+\fBgpsd\fP has been built with a restricted feature set.
+.sp
+AIS packets are dumped as JSON objects with class "AIS". Each AIS report
+object contains a "type" field giving the AIS message type and a
+"scaled" field telling whether the remainder of the fields are dumped in
+scaled or unscaled form. (These will be emitted before any type\-specific
+fields.) It will also contain a "device" field naming the data source.
+Other fields have names and types as specified in the AIVDM/AIVDO
+Protocol Decoding document on the GPSD project website; each message
+field table may be directly interpreted as a specification for the
+members of the corresponding JSON object type.
+.sp
+By default, certain scaling and conversion operations are performed for
+JSON output. Latitudes and longitudes are scaled to decimal degrees
+rather than the native AIS unit of 1/10000th of a minute of arc. Ship
+(but not air) speeds are scaled to knots rather than tenth\-of\-knot
+units. Rate of turn may appear as "nan" if is unavailable, or as one of
+the strings "fastright" or "fastleft" if it is out of the AIS encoding
+range; otherwise it is quadratically mapped back to the turn sensor
+number in degrees per minute. Vessel draughts are converted to decimal
+meters rather than native AIS decimeters. Various other scaling
+conversions are described in "AIVDM/AIVDO Protocol Decoding".
+.SH "SUBFRAME DUMP FORMATS"
+.sp
+Subframe support is always compiled into \fBgpsd\fP but many GPSes do not
+output subframe data or the \fBgpsd\fP driver may not support subframes.
+.sp
+Subframe packets are dumped as JSON objects with class "SUBFRAME". Each
+subframe report object contains a "frame" field giving the subframe
+number, a "tSV" field for the transmitting satellite number, a "TOW17"
+field containing the 17 MSBs of the start of the next 12\-second message
+and a "scaled" field telling whether the remainder of the fields are
+dumped in scaled or unscaled form. It will also contain a "device" field
+naming the data source. Each SUBFRAME object will have a sub\-object
+specific to that subframe page type. Those sub\-object fields have names
+and types similar to those specified in the IS\-GPS\-200 document; each
+message field table may be directly interpreted as a specification for
+the members of the corresponding JSON object type.
+.sp
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.B Table 29. SUBFRAME object
+.TS
+allbox tab(:);
+lt lt lt lt.
+T{
+.sp
+Name
+T}:T{
+.sp
+Always?
+T}:T{
+.sp
+Type
+T}:T{
+.sp
+Description
+T}
+T{
+.sp
+class
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Fixed: "SUBFRAME"
+T}
+T{
+.sp
+device
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+string
+T}:T{
+.sp
+Name of the originating device.
+T}
+T{
+.sp
+gnssId
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+Constellation of transmitting satellite
+T}
+T{
+.sp
+tSV
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+ID of transmitting satellite (Not PRN)
+T}
+T{
+.sp
+TOW17
+T}:T{
+.sp
+No
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+Type 17 bits of the next GPS Time Of Week
+T}
+T{
+.sp
+frame
+T}:T{
+.sp
+No
+T}:T{
+.sp
+integer
+T}:T{
+.sp
+Frame number
+T}
+T{
+.sp
+scaled
+T}:T{
+.sp
+Yes
+T}:T{
+.sp
+boolean
+T}:T{
+.sp
+True is values scaled
+T}
+.TE
+.sp
+.SH "READING"
+.sp
+Reading the raw JSON can be tedious.  You can pretty print, and
+colorize, your JSON with [jq] to make reading easier.  Using \fBjq\fP
+ito pretty pring a JSON file can be as simple as:
+.sp
+.if n .RS 4
+.nf
+.fam C
+$ jq .  GPSD.json
+.fam
+.fi
+.if n .RE
+.sp
+To grab 10 seconds of live \fBgpsd\fP JSON, and pretty print it:
+.sp
+.if n .RS 4
+.nf
+.fam C
+$ gpspipe \-w \-x 10 | jq .
+.fam
+.fi
+.if n .RE
+.sp
+If you only want to see the TPV messages:
+.sp
+.if n .RS 4
+.nf
+.fam C
+$ gpspipe \-w \-x 10 | fgrep TPV | jq .
+.fam
+.fi
+.if n .RE
+.SH "SEE ALSO"
+.sp
+\fBgpsd\fP(8), \fBlibgps\fP(3), \fBlibgpsmm\fP(3), \fBjq\fP(1)
+.SH "RESOURCES"
+.sp
+\fBProject web site:\fP \c
+.URL "https://gpsd.io/" "" ""
+.sp
+ [RFC 2783]: \c
+.URL "https://datatracker.ietf.org/doc/html/rfc2783" ""
+.br
+Pulse\-Per\-Second API for UNIX\-like Operating Systems
+.sp
+ [RFC 7159]: \c
+.URL "https://datatracker.ietf.org/doc/html/rfc7159" ""
+.br
+The JavaScript Object Notation (JSON) Data Interchange Format
+.sp
+ [jq]: \c
+.URL "https://github.com/stedolan/jq" "" ""
+.SH "COPYING"
+.sp
+This file is Copyright 2013 by the GPSD project
+.br
+SPDX\-License\-Identifier: BSD\-2\-clause
+.SH "AUTHOR"
+.sp
+Eric S. Raymond

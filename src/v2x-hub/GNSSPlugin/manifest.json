@@ -1,0 +1,78 @@
+{
+    "name":"@TMX_PLUGIN_NAME@",
+    "description":"Plugin used to send out Location Messages using data from GPSD",
+    "version":"@PROJECT_VERSION@",
+	"exe": "bin/@PROJECT_NAME@",
+	"SEND-NMEA": "false",
+	"LATCH-SPEED": 0.1,
+	"LOCATION-HZ": 10,
+	"channels": [
+		{
+			"context": "gpsd://localhost:2947",
+			"read-only": true
+		},
+		{
+			"context": "nmea://localhost:2947",
+			"read-only": true,
+			"NMEA-FILTERS": {
+				"GGA": true,
+				"PPA": true,
+				"GGV": true,
+				"RMC": true,
+				"VTG": true,
+				"GLL": true,
+				"GSA": true
+			}
+		},
+		{
+			"context": "gpsd-config://localhost/dev/ttyUSB0",
+			"config": {
+				"write-only": true,
+				"CFG-RATE-MEAS": 100,
+				"CFG-NAVSPG-DYNMODEL": 4,
+				"CFG-NMEA-PROTVER": 41,
+				"CFG-NMEA-HIGHPREC": 1,
+				"CFG-RATE-TIMEREF": 1,
+				"CFG-UART1-BAUDRATE": 460800,
+				"CFG-UART1INPROT-UBX": 1,
+				"CFG-UART1INPROT-NMEA": 0,
+				"CFG-UART1INPROT-RTCM3X": 1,
+				"CFG-UART1OUTPROT-UBX": 1,
+				"CFG-UART1OUTPROT-NMEA": 1,
+				"CFG-UART1OUTPROT-RTCM3X": 0,
+				"CFG-USBINPROT-UBX": 1,
+				"CFG-USBINPROT-NMEA": 1,
+				"CFG-USBINPROT-RTCM3X": 1,
+				"CFG-USBOUTPROT-UBX":1,
+				"CFG-USBOUTPROT-NMEA": 1,
+				"CFG-USBOUTPROT-RTCM3X": 0,
+				"CFG-MSGOUT-UBX_NAV_PVT_USB": 1,
+				"CFG-MSGOUT-UBX_NAV_SVIN_USB":0,
+				"CFG-MSGOUT-RTCM_3X_TYPE1005_UART1": 0,
+				"CFG-MSGOUT-RTCM_3X_TYPE1074_UART1": 0,
+				"CFG-MSGOUT-RTCM_3X_TYPE1084_UART1": 0,
+				"CFG-MSGOUT-RTCM_3X_TYPE1094_UART1": 0,
+				"CFG-MSGOUT-RTCM_3X_TYPE1124_UART1": 0,
+				"CFG-MSGOUT-RTCM_3X_TYPE1230_UART1": 0,
+				"CFG-MSGOUT-RTCM_3X_TYPE1005_USB": 0,
+				"CFG-MSGOUT-RTCM_3X_TYPE1074_USB": 0,
+				"CFG-MSGOUT-RTCM_3X_TYPE1084_USB": 0,
+				"CFG-MSGOUT-RTCM_3X_TYPE1094_USB": 0,
+				"CFG-MSGOUT-RTCM_3X_TYPE1124_USB": 0,
+				"CFG-MSGOUT-RTCM_3X_TYPE1230_USB": 0,
+				"CFG-TMODE-MODE": 0,
+				"CFG-TMODE-POS_TYPE": 1,
+				"CFG-TMODE-LAT": 0,
+				"CFG-TMODE-LON": 0,
+				"CFG-TMODE-HEIGHT": 0
+			}
+		},
+		{
+			"context": "kafka://localhost:29092",
+			"config": {
+				"thread":3,
+				"write-only": true
+			}
+		}
+	]
+}

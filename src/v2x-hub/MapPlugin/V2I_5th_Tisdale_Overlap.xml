@@ -1,0 +1,628 @@
+<?xml version="1.0"?>
+<J2735.GID.blob xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Version>24</Version>
+  <IntersectionID>1929</IntersectionID>
+  <Elevation>false</Elevation>
+  <Resolution>decimeter</Resolution>
+  <Geometry>
+    <ReferencePoint>
+      <Latitude>39.9876814</Latitude>
+      <Longitude>-83.0207827</Longitude>
+    </ReferencePoint>
+    <Approach>
+      <Lane Number="11">
+        <Type>Vehicle</Type>
+        <Attributes>116</Attributes>
+        <Width>320</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>-100</Eastern>
+            <Northern>840</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>100</Eastern>
+            <Northern>680</Northern>
+          </Node>
+          <Node Number="3">
+            <Eastern>100</Eastern>
+            <Northern>2000</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>23</LaneNumber>
+            <Maneuver>2</Maneuver>
+            <SignalGroup>3</SignalGroup>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="12">
+        <Type>Vehicle</Type>
+        <Attributes>58</Attributes>
+        <Width>320</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>-460</Eastern>
+            <Northern>840</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>100</Eastern>
+            <Northern>680</Northern>
+          </Node>
+          <Node Number="3">
+            <Eastern>100</Eastern>
+            <Northern>2000</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>33</LaneNumber>
+            <Maneuver>1</Maneuver>
+            <SignalGroup>4</SignalGroup>
+          </Connection>
+          <Connection>
+            <LaneNumber>43</LaneNumber>
+            <Maneuver>4</Maneuver>
+            <SignalGroup>3</SignalGroup>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="14">
+        <Type>Vehicle</Type>
+        <Attributes>58</Attributes>
+        <Width>320</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>-1515</Eastern>
+            <Northern>1800</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>-3000</Eastern>
+            <Northern>140</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>43</LaneNumber>
+            <Maneuver>4</Maneuver>
+            <SignalGroup>41</SignalGroup>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="21">
+        <Type>Vehicle</Type>
+        <Attributes>116</Attributes>
+        <Width>320</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>1600</Eastern>
+            <Northern>-240</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>3150</Eastern>
+            <Northern>-140</Northern>
+          </Node>
+          <Node Number="3">
+            <Eastern>2990</Eastern>
+            <Northern>-170</Northern>
+          </Node>
+          <Node Number="4">
+            <Eastern>2390</Eastern>
+            <Northern>-90</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>33</LaneNumber>
+            <Maneuver>2</Maneuver>
+            <SignalGroup>2</SignalGroup>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="22">
+        <Type>Vehicle</Type>
+        <Attributes>58</Attributes>
+        <Width>320</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>1600</Eastern>
+            <Northern>60</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>3150</Eastern>
+            <Northern>-140</Northern>
+          </Node>
+          <Node Number="3">
+            <Eastern>2990</Eastern>
+            <Northern>-170</Northern>
+          </Node>
+          <Node Number="4">
+            <Eastern>2390</Eastern>
+            <Northern>-90</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>43</LaneNumber>
+            <Maneuver>1</Maneuver>
+            <SignalGroup>2</SignalGroup>
+          </Connection>
+          <Connection>
+            <LaneNumber>13</LaneNumber>
+            <Maneuver>4</Maneuver>
+            <SignalGroup>2</SignalGroup>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="31">
+        <Type>Vehicle</Type>
+        <Attributes>116</Attributes>
+        <Width>320</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>-100</Eastern>
+            <Northern>-1350</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>-130</Eastern>
+            <Northern>-2750</Northern>
+          </Node>
+          <Node Number="3">
+            <Eastern>-30</Eastern>
+            <Northern>-1170</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>43</LaneNumber>
+            <Maneuver>2</Maneuver>
+            <SignalGroup>3</SignalGroup>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="32">
+        <Type>Vehicle</Type>
+        <Attributes>58</Attributes>
+        <Width>320</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>240</Eastern>
+            <Northern>-1350</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>-130</Eastern>
+            <Northern>-2750</Northern>
+          </Node>
+          <Node Number="3">
+            <Eastern>-30</Eastern>
+            <Northern>-1170</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>13</LaneNumber>
+            <Maneuver>1</Maneuver>
+            <SignalGroup>8</SignalGroup>
+          </Connection>
+          <Connection>
+            <LaneNumber>23</LaneNumber>
+            <Maneuver>4</Maneuver>
+            <SignalGroup>3</SignalGroup>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="41">
+        <Type>Vehicle</Type>
+        <Attributes>116</Attributes>
+        <Width>320</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>-1990</Eastern>
+            <Northern>-50</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>-4290</Eastern>
+            <Northern>200</Northern>
+          </Node>
+          <Node Number="3">
+            <Eastern>-3540</Eastern>
+            <Northern>160</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>13</LaneNumber>
+            <Maneuver>2</Maneuver>
+            <SignalGroup>6</SignalGroup>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="42">
+        <Type>Vehicle</Type>
+        <Attributes>58</Attributes>
+        <Width>320</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>-1990</Eastern>
+            <Northern>-370</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>-4290</Eastern>
+            <Northern>200</Northern>
+          </Node>
+          <Node Number="3">
+            <Eastern>-3540</Eastern>
+            <Northern>160</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>23</LaneNumber>
+            <Maneuver>1</Maneuver>
+            <SignalGroup>6</SignalGroup>
+          </Connection>
+          <Connection>
+            <LaneNumber>33</LaneNumber>
+            <Maneuver>4</Maneuver>
+            <SignalGroup>6</SignalGroup>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="1">
+        <Type>Pedestrian</Type>
+        <Attributes>3</Attributes>
+        <Width>221</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>-700</Eastern>
+            <Northern>580</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>1310</Eastern>
+            <Northern>-50</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>1</LaneNumber>
+            <SignalGroup>26</SignalGroup>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="2">
+        <Type>Pedestrian</Type>
+        <Attributes>3</Attributes>
+        <Width>333</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>1280</Eastern>
+            <Northern>220</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>-80</Eastern>
+            <Northern>-880</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>2</LaneNumber>
+            <SignalGroup>24</SignalGroup>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="3">
+        <Type>Pedestrian</Type>
+        <Attributes>3</Attributes>
+        <Width>302</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>970</Eastern>
+            <Northern>-900</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>-2100</Eastern>
+            <Northern>50</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>3</LaneNumber>
+            <SignalGroup>22</SignalGroup>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="4">
+        <Type>Pedestrian</Type>
+        <Attributes>3</Attributes>
+        <Width>400</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>-1550</Eastern>
+            <Northern>-600</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>40</Eastern>
+            <Northern>890</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>4</LaneNumber>
+            <SignalGroup>28</SignalGroup>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="111">
+        <Type>Sidewalk</Type>
+        <Attributes>11</Attributes>
+        <Width>290</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>700</Eastern>
+            <Northern>480</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>300</Eastern>
+            <Northern>0</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>111</LaneNumber>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="112">
+        <Type>Sidewalk</Type>
+        <Attributes>11</Attributes>
+        <Width>236</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>-900</Eastern>
+            <Northern>580</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>-300</Eastern>
+            <Northern>0</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>112</LaneNumber>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="121">
+        <Type>Sidewalk</Type>
+        <Attributes>11</Attributes>
+        <Width>440</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>1300</Eastern>
+            <Northern>-760</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>0</Eastern>
+            <Northern>-200</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>121</LaneNumber>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="122">
+        <Type>Sidewalk</Type>
+        <Attributes>11</Attributes>
+        <Width>367</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>1200</Eastern>
+            <Northern>280</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>0</Eastern>
+            <Northern>400</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>122</LaneNumber>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="131">
+        <Type>Sidewalk</Type>
+        <Attributes>11</Attributes>
+        <Width>280</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>-1210</Eastern>
+            <Northern>-870</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>-400</Eastern>
+            <Northern>0</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>131</LaneNumber>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="132">
+        <Type>Sidewalk</Type>
+        <Attributes>11</Attributes>
+        <Width>307</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>980</Eastern>
+            <Northern>-870</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>200</Eastern>
+            <Northern>0</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>132</LaneNumber>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="141">
+        <Type>Sidewalk</Type>
+        <Attributes>11</Attributes>
+        <Width>431</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>-1580</Eastern>
+            <Northern>390</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>0</Eastern>
+            <Northern>400</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>141</LaneNumber>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="142">
+        <Type>Sidewalk</Type>
+        <Attributes>11</Attributes>
+        <Width>388</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>-1650</Eastern>
+            <Northern>-650</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>0</Eastern>
+            <Northern>-350</Northern>
+          </Node>
+        </Nodes>
+        <Connections>
+          <Connection>
+            <LaneNumber>142</LaneNumber>
+          </Connection>
+        </Connections>
+        <ReferenceLane />
+      </Lane>
+    </Approach>
+    <Egress>
+      <Lane Number="13">
+        <Type>Vehicle</Type>
+        <Width>320</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>350</Eastern>
+            <Northern>840</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>100</Eastern>
+            <Northern>680</Northern>
+          </Node>
+          <Node Number="3">
+            <Eastern>100</Eastern>
+            <Northern>2000</Northern>
+          </Node>
+        </Nodes>
+        <Connections />
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="23">
+        <Type>Vehicle</Type>
+        <Width>320</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>1600</Eastern>
+            <Northern>-540</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>3150</Eastern>
+            <Northern>-140</Northern>
+          </Node>
+          <Node Number="3">
+            <Eastern>2990</Eastern>
+            <Northern>-170</Northern>
+          </Node>
+          <Node Number="4">
+            <Eastern>2390</Eastern>
+            <Northern>-90</Northern>
+          </Node>
+        </Nodes>
+        <Connections />
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="33">
+        <Type>Vehicle</Type>
+        <Width>320</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>-440</Eastern>
+            <Northern>-1350</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>-130</Eastern>
+            <Northern>-2750</Northern>
+          </Node>
+          <Node Number="3">
+            <Eastern>-30</Eastern>
+            <Northern>-1170</Northern>
+          </Node>
+        </Nodes>
+        <Connections />
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="43">
+        <Type>Vehicle</Type>
+        <Width>320</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>-1990</Eastern>
+            <Northern>270</Northern>
+          </Node>
+          <Node Number="2">
+            <Eastern>-4290</Eastern>
+            <Northern>200</Northern>
+          </Node>
+          <Node Number="3">
+            <Eastern>-3540</Eastern>
+            <Northern>160</Northern>
+          </Node>
+        </Nodes>
+        <Connections />
+        <ReferenceLane>
+          <LaneNumber>41</LaneNumber>
+          <YOffset>310</YOffset>
+          <XOffset>0</XOffset>
+        </ReferenceLane>
+      </Lane>
+    </Egress>
+  </Geometry>
+</J2735.GID.blob>

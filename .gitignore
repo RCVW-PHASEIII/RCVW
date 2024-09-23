@@ -1,0 +1,11 @@
+
+Build/Debug/
+
+Build/ARM-Debug/
+
+# Ignore build directories
+/build/
+/cmake-build-debug/
+/cmake-build-release/
+
+.idea/

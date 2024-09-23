@@ -1,0 +1,82 @@
+'\" t
+.\"     Title: libgpsmm
+.\"    Author: Alfredo Pironti
+.\" Generator: Asciidoctor 2.0.18
+.\"      Date: 2023-01-10
+.\"    Manual: GPSD Documentation
+.\"    Source: GPSD, Version 3.25
+.\"  Language: English
+.\"
+.TH "LIBGPSMM" "3" "2023-01-10" "GPSD, Version 3.25" "GPSD Documentation"
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.ss \n[.ss] 0
+.nh
+.ad l
+.de URL
+\fI\\$2\fP <\\$1>\\$3
+..
+.als MTO URL
+.if \n[.g] \{\
+.  mso www.tmac
+.  am URL
+.    ad l
+.  .
+.  am MTO
+.    ad l
+.  .
+.  LINKSTYLE blue R < >
+.\}
+.SH "NAME"
+libgpsmm, libQgpsm \- C++ and QT class wrappers for the GPS daemon
+.SH "SYNOPSIS"
+.sp
+C++:
+.sp
+.if n .RS 4
+.nf
+.fam C
+#include <libgpsmm>
+
+struct gps_data_t * open(char * host char * port)
+
+struct gps_data_t * open(void)
+
+struct gps_data_t * send(char * request)
+
+struct gps_data_t * read(void)
+
+struct gps_data_t * waiting(int)
+
+struct gps_data_t * stream unsigned(int flags)
+.fam
+.fi
+.if n .RE
+.SH "DESCRIPTION"
+.sp
+\fIlibgpsmm\fP and \fIlibQgpsmm\fP are mere wrappers over \fIlibgps\fP. The important
+difference between the libraries is that \fIlibgpsmm\fP is targeted at C++
+applications and contained in \fIlibgps\fP, while \fIlibQgpsmm\fP is platform
+independent by using \fIQTcpSocket\fP to connect to \fIgpsd\fP and shipped as an
+additional library due to the necessary linking to QT. Method names are
+the same as the analogue C functions. For a detailed description of the
+functions please read libgps(3). \f(CRopen()\fP must be called after class
+constructor and before any other method (open()` is not inside the
+constructor since it may fail, however constructors have no return
+value). The analogue of the C function \f(CRgps_close()\fP is in the
+destructor.
+.SH "SEE ALSO"
+.sp
+\fBgpsd\fP(8), \fBgps\fP(1), \fBlibgps\fP(3)
+.SH "RESOURCES"
+.sp
+\fBProject web site:\fP \c
+.URL "https://gpsd.io/" "" ""
+.SH "COPYING"
+.sp
+This file is Copyright 2013 by the GPSD project
+.br
+SPDX\-License\-Identifier: BSD\-2\-clause
+.SH "AUTHOR"
+.sp
+Alfredo Pironti

@@ -1,0 +1,40 @@
+/**
+ \page ivpplugins V2I Hub Plugins
+ - \subpage dsrcmsgmgrplugin
+ 
+ \page dsrcmsgmgrplugin DSRC Message Manager Plugin
+\tableofcontents
+
+The DsrcMessageManagerPlugin is a plugin for the V2I Hub that routes J2735 message to a destination RSU radio for broadcast.
+
+\section dsrcmsgmgrdesign Description
+
+The DSRC immediate forward plugin, also known as the DSRC Message Manager, listens for any J2735 Message passing through V2I Hub whose flag
+is set to including DSRC routing.  Those messages are then automatically forwarded to the defined destination on a remote RSU.  Note that 
+these destinations must adhere to the RSU 4.1 immediate forward specification in order to process the message and broadcast the bytes over
+the DSRC radio.  This plugin tracks the number of messages that are successfully or unsuccessfully passed to the RSU.
+
+\section dsrcmsgmgrconfig Configuration
+
+The DSRC Message Manager listens for V2I Hub messages that need to be routed out the DSRC radio, packages the messages, and transmits them to the DSRC 
+radio using the Immediate Forward protocol found in the RSU 4.1 specification.  The DSRC Message Manager plugin can be configured to send the messages 
+to four different destinations.  A destination is dependent on the type of RSU used.  For example, the Lear RSU must have an immediate forward application 
+running for each Provider Service Identifier (PSID) which means to send four different PSIDs to one RSU four different destinations would need to be 
+configured to communicate with the four different instances of the immediate forward application running on the Lear RSU.  Another example uses only 
+one destination for a Cohda RSU since the Cohda RSU immediate forward application does not limit its inputs based on PSID.
+
+- Message_Destination_1: JSON data defining the message types and PSIDs for messages forwarded to the DSRC radio at destination 1.
+- Message_Destination_2: JSON data defining the message types and PSIDs for messages forwarded to the DSRC radio at destination 2.
+- Message_Destination_3: JSON data defining the message types and PSIDs for messages forwarded to the DSRC radio at destination 3.
+- Message_Destination_4: JSON data defining the message types and PSIDs for messages forwarded to the DSRC radio at destination 4.
+- Destination_1: The destination UDP server(s) and port number(s) on the DSRC radio for all messages specified by Messages_Destination_1.
+- Destination_2: The destination UDP server(s) and port number(s) on the DSRC radio for all messages specified by Messages_Destination_2.
+- Destination_3: The destination UDP server(s) and port number(s) on the DSRC radio for all messages specified by Messages_Destination_3.
+- Destination_4: The destination UDP server(s) and port number(s) on the DSRC radio for all messages specified by Messages_Destination_4.
+- Signature: 
+
+\section dsrcmsgmgrexternals External Resources
+
+- \ref tmx::utils::PluginClient "PluginClient"
+
+*/

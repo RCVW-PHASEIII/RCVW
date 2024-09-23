@@ -1,0 +1,12 @@
+{
+  "name": "@TMX_PLUGIN_NAME@",
+  "description": "An example plugin for the TMX system.",
+  "version": "@PROJECT_VERSION@",
+  "channels": [
+    {
+      "context": "dds://localhost",
+      "config": {
+      }
+    }
+  ]
+}

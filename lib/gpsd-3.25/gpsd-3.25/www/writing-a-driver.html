@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 2.0.16">
+<meta name="keywords" content="gps, gpsd, drivers">
+<meta name="author" content="Mick Durkin">
+<title>Notes on Writing a GPSD Driver</title>
+<style>
+/*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
+/* Uncomment the following line when using as a custom stylesheet */
+/* @import "https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700"; */
+html{font-family:sans-serif;-webkit-text-size-adjust:100%}
+a{background:none}
+a:focus{outline:thin dotted}
+a:active,a:hover{outline:0}
+h1{font-size:2em;margin:.67em 0}
+b,strong{font-weight:bold}
+abbr{font-size:.9em}
+abbr[title]{cursor:help;border-bottom:1px dotted #dddddf;text-decoration:none}
+dfn{font-style:italic}
+hr{height:0}
+mark{background:#ff0;color:#000}
+code,kbd,pre,samp{font-family:monospace;font-size:1em}
+pre{white-space:pre-wrap}
+q{quotes:"\201C" "\201D" "\2018" "\2019"}
+small{font-size:80%}
+sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}
+sup{top:-.5em}
+sub{bottom:-.25em}
+img{border:0}
+svg:not(:root){overflow:hidden}
+figure{margin:0}
+audio,video{display:inline-block}
+audio:not([controls]){display:none;height:0}
+fieldset{border:1px solid silver;margin:0 2px;padding:.35em .625em .75em}
+legend{border:0;padding:0}
+button,input,select,textarea{font-family:inherit;font-size:100%;margin:0}
+button,input{line-height:normal}
+button,select{text-transform:none}
+button,html input[type=button],input[type=reset],input[type=submit]{-webkit-appearance:button;cursor:pointer}
+button[disabled],html input[disabled]{cursor:default}
+input[type=checkbox],input[type=radio]{padding:0}
+button::-moz-focus-inner,input::-moz-focus-inner{border:0;padding:0}
+textarea{overflow:auto;vertical-align:top}
+table{border-collapse:collapse;border-spacing:0}
+*,::before,::after{box-sizing:border-box}
+html,body{font-size:100%}
+body{background:#fff;color:rgba(0,0,0,.8);padding:0;margin:0;font-family:"Noto Serif","DejaVu Serif",serif;line-height:1;position:relative;cursor:auto;-moz-tab-size:4;-o-tab-size:4;tab-size:4;word-wrap:anywhere;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased}
+a:hover{cursor:pointer}
+img,object,embed{max-width:100%;height:auto}
+object,embed{height:100%}
+img{-ms-interpolation-mode:bicubic}
+.left{float:left!important}
+.right{float:right!important}
+.text-left{text-align:left!important}
+.text-right{text-align:right!important}
+.text-center{text-align:center!important}
+.text-justify{text-align:justify!important}
+.hide{display:none}
+img,object,svg{display:inline-block;vertical-align:middle}
+textarea{height:auto;min-height:50px}
+select{width:100%}
+.subheader,.admonitionblock td.content>.title,.audioblock>.title,.exampleblock>.title,.imageblock>.title,.listingblock>.title,.literalblock>.title,.stemblock>.title,.openblock>.title,.paragraph>.title,.quoteblock>.title,table.tableblock>.title,.verseblock>.title,.videoblock>.title,.dlist>.title,.olist>.title,.ulist>.title,.qlist>.title,.hdlist>.title{line-height:1.45;color:#7a2518;font-weight:400;margin-top:0;margin-bottom:.25em}
+div,dl,dt,dd,ul,ol,li,h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6,pre,form,p,blockquote,th,td{margin:0;padding:0}
+a{color:#2156a5;text-decoration:underline;line-height:inherit}
+a:hover,a:focus{color:#1d4b8f}
+a img{border:0}
+p{line-height:1.6;margin-bottom:1.25em;text-rendering:optimizeLegibility}
+p aside{font-size:.875em;line-height:1.35;font-style:italic}
+h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{font-family:"Open Sans","DejaVu Sans",sans-serif;font-weight:300;font-style:normal;color:#ba3925;text-rendering:optimizeLegibility;margin-top:1em;margin-bottom:.5em;line-height:1.0125em}
+h1 small,h2 small,h3 small,#toctitle small,.sidebarblock>.content>.title small,h4 small,h5 small,h6 small{font-size:60%;color:#e99b8f;line-height:0}
+h1{font-size:2.125em}
+h2{font-size:1.6875em}
+h3,#toctitle,.sidebarblock>.content>.title{font-size:1.375em}
+h4,h5{font-size:1.125em}
+h6{font-size:1em}
+hr{border:solid #dddddf;border-width:1px 0 0;clear:both;margin:1.25em 0 1.1875em}
+em,i{font-style:italic;line-height:inherit}
+strong,b{font-weight:bold;line-height:inherit}
+small{font-size:60%;line-height:inherit}
+code{font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;font-weight:400;color:rgba(0,0,0,.9)}
+ul,ol,dl{line-height:1.6;margin-bottom:1.25em;list-style-position:outside;font-family:inherit}
+ul,ol{margin-left:1.5em}
+ul li ul,ul li ol{margin-left:1.25em;margin-bottom:0}
+ul.square li ul,ul.circle li ul,ul.disc li ul{list-style:inherit}
+ul.square{list-style-type:square}
+ul.circle{list-style-type:circle}
+ul.disc{list-style-type:disc}
+ol li ul,ol li ol{margin-left:1.25em;margin-bottom:0}
+dl dt{margin-bottom:.3125em;font-weight:bold}
+dl dd{margin-bottom:1.25em}
+blockquote{margin:0 0 1.25em;padding:.5625em 1.25em 0 1.1875em;border-left:1px solid #ddd}
+blockquote,blockquote p{line-height:1.6;color:rgba(0,0,0,.85)}
+@media screen and (min-width:768px){h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{line-height:1.2}
+h1{font-size:2.75em}
+h2{font-size:2.3125em}
+h3,#toctitle,.sidebarblock>.content>.title{font-size:1.6875em}
+h4{font-size:1.4375em}}
+table{background:#fff;margin-bottom:1.25em;border:1px solid #dedede;word-wrap:normal}
+table thead,table tfoot{background:#f7f8f7}
+table thead tr th,table thead tr td,table tfoot tr th,table tfoot tr td{padding:.5em .625em .625em;font-size:inherit;color:rgba(0,0,0,.8);text-align:left}
+table tr th,table tr td{padding:.5625em .625em;font-size:inherit;color:rgba(0,0,0,.8)}
+table tr.even,table tr.alt{background:#f8f8f7}
+table thead tr th,table tfoot tr th,table tbody tr td,table tr td,table tfoot tr td{line-height:1.6}
+h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{line-height:1.2;word-spacing:-.05em}
+h1 strong,h2 strong,h3 strong,#toctitle strong,.sidebarblock>.content>.title strong,h4 strong,h5 strong,h6 strong{font-weight:400}
+.center{margin-left:auto;margin-right:auto}
+.stretch{width:100%}
+.clearfix::before,.clearfix::after,.float-group::before,.float-group::after{content:" ";display:table}
+.clearfix::after,.float-group::after{clear:both}
+:not(pre).nobreak{word-wrap:normal}
+:not(pre).nowrap{white-space:nowrap}
+:not(pre).pre-wrap{white-space:pre-wrap}
+:not(pre):not([class^=L])>code{font-size:.9375em;font-style:normal!important;letter-spacing:0;padding:.1em .5ex;word-spacing:-.15em;background:#f7f7f8;border-radius:4px;line-height:1.45;text-rendering:optimizeSpeed}
+pre{color:rgba(0,0,0,.9);font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;line-height:1.45;text-rendering:optimizeSpeed}
+pre code,pre pre{color:inherit;font-size:inherit;line-height:inherit}
+pre>code{display:block}
+pre.nowrap,pre.nowrap pre{white-space:pre;word-wrap:normal}
+em em{font-style:normal}
+strong strong{font-weight:400}
+.keyseq{color:rgba(51,51,51,.8)}
+kbd{font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;display:inline-block;color:rgba(0,0,0,.8);font-size:.65em;line-height:1.45;background:#f7f7f7;border:1px solid #ccc;border-radius:3px;box-shadow:0 1px 0 rgba(0,0,0,.2),inset 0 0 0 .1em #fff;margin:0 .15em;padding:.2em .5em;vertical-align:middle;position:relative;top:-.1em;white-space:nowrap}
+.keyseq kbd:first-child{margin-left:0}
+.keyseq kbd:last-child{margin-right:0}
+.menuseq,.menuref{color:#000}
+.menuseq b:not(.caret),.menuref{font-weight:inherit}
+.menuseq{word-spacing:-.02em}
+.menuseq b.caret{font-size:1.25em;line-height:.8}
+.menuseq i.caret{font-weight:bold;text-align:center;width:.45em}
+b.button::before,b.button::after{position:relative;top:-1px;font-weight:400}
+b.button::before{content:"[";padding:0 3px 0 2px}
+b.button::after{content:"]";padding:0 2px 0 3px}
+p a>code:hover{color:rgba(0,0,0,.9)}
+#header,#content,#footnotes,#footer{width:100%;margin:0 auto;max-width:62.5em;*zoom:1;position:relative;padding-left:.9375em;padding-right:.9375em}
+#header::before,#header::after,#content::before,#content::after,#footnotes::before,#footnotes::after,#footer::before,#footer::after{content:" ";display:table}
+#header::after,#content::after,#footnotes::after,#footer::after{clear:both}
+#content{margin-top:1.25em}
+#content::before{content:none}
+#header>h1:first-child{color:rgba(0,0,0,.85);margin-top:2.25rem;margin-bottom:0}
+#header>h1:first-child+#toc{margin-top:8px;border-top:1px solid #dddddf}
+#header>h1:only-child,body.toc2 #header>h1:nth-last-child(2){border-bottom:1px solid #dddddf;padding-bottom:8px}
+#header .details{border-bottom:1px solid #dddddf;line-height:1.45;padding-top:.25em;padding-bottom:.25em;padding-left:.25em;color:rgba(0,0,0,.6);display:flex;flex-flow:row wrap}
+#header .details span:first-child{margin-left:-.125em}
+#header .details span.email a{color:rgba(0,0,0,.85)}
+#header .details br{display:none}
+#header .details br+span::before{content:"\00a0\2013\00a0"}
+#header .details br+span.author::before{content:"\00a0\22c5\00a0";color:rgba(0,0,0,.85)}
+#header .details br+span#revremark::before{content:"\00a0|\00a0"}
+#header #revnumber{text-transform:capitalize}
+#header #revnumber::after{content:"\00a0"}
+#content>h1:first-child:not([class]){color:rgba(0,0,0,.85);border-bottom:1px solid #dddddf;padding-bottom:8px;margin-top:0;padding-top:1rem;margin-bottom:1.25rem}
+#toc{border-bottom:1px solid #e7e7e9;padding-bottom:.5em}
+#toc>ul{margin-left:.125em}
+#toc ul.sectlevel0>li>a{font-style:italic}
+#toc ul.sectlevel0 ul.sectlevel1{margin:.5em 0}
+#toc ul{font-family:"Open Sans","DejaVu Sans",sans-serif;list-style-type:none}
+#toc li{line-height:1.3334;margin-top:.3334em}
+#toc a{text-decoration:none}
+#toc a:active{text-decoration:underline}
+#toctitle{color:#7a2518;font-size:1.2em}
+@media screen and (min-width:768px){#toctitle{font-size:1.375em}
+body.toc2{padding-left:15em;padding-right:0}
+#toc.toc2{margin-top:0!important;background:#f8f8f7;position:fixed;width:15em;left:0;top:0;border-right:1px solid #e7e7e9;border-top-width:0!important;border-bottom-width:0!important;z-index:1000;padding:1.25em 1em;height:100%;overflow:auto}
+#toc.toc2 #toctitle{margin-top:0;margin-bottom:.8rem;font-size:1.2em}
+#toc.toc2>ul{font-size:.9em;margin-bottom:0}
+#toc.toc2 ul ul{margin-left:0;padding-left:1em}
+#toc.toc2 ul.sectlevel0 ul.sectlevel1{padding-left:0;margin-top:.5em;margin-bottom:.5em}
+body.toc2.toc-right{padding-left:0;padding-right:15em}
+body.toc2.toc-right #toc.toc2{border-right-width:0;border-left:1px solid #e7e7e9;left:auto;right:0}}
+@media screen and (min-width:1280px){body.toc2{padding-left:20em;padding-right:0}
+#toc.toc2{width:20em}
+#toc.toc2 #toctitle{font-size:1.375em}
+#toc.toc2>ul{font-size:.95em}
+#toc.toc2 ul ul{padding-left:1.25em}
+body.toc2.toc-right{padding-left:0;padding-right:20em}}
+#content #toc{border:1px solid #e0e0dc;margin-bottom:1.25em;padding:1.25em;background:#f8f8f7;border-radius:4px}
+#content #toc>:first-child{margin-top:0}
+#content #toc>:last-child{margin-bottom:0}
+#footer{max-width:none;background:rgba(0,0,0,.8);padding:1.25em}
+#footer-text{color:hsla(0,0%,100%,.8);line-height:1.44}
+#content{margin-bottom:.625em}
+.sect1{padding-bottom:.625em}
+@media screen and (min-width:768px){#content{margin-bottom:1.25em}
+.sect1{padding-bottom:1.25em}}
+.sect1:last-child{padding-bottom:0}
+.sect1+.sect1{border-top:1px solid #e7e7e9}
+#content h1>a.anchor,h2>a.anchor,h3>a.anchor,#toctitle>a.anchor,.sidebarblock>.content>.title>a.anchor,h4>a.anchor,h5>a.anchor,h6>a.anchor{position:absolute;z-index:1001;width:1.5ex;margin-left:-1.5ex;display:block;text-decoration:none!important;visibility:hidden;text-align:center;font-weight:400}
+#content h1>a.anchor::before,h2>a.anchor::before,h3>a.anchor::before,#toctitle>a.anchor::before,.sidebarblock>.content>.title>a.anchor::before,h4>a.anchor::before,h5>a.anchor::before,h6>a.anchor::before{content:"\00A7";font-size:.85em;display:block;padding-top:.1em}
+#content h1:hover>a.anchor,#content h1>a.anchor:hover,h2:hover>a.anchor,h2>a.anchor:hover,h3:hover>a.anchor,#toctitle:hover>a.anchor,.sidebarblock>.content>.title:hover>a.anchor,h3>a.anchor:hover,#toctitle>a.anchor:hover,.sidebarblock>.content>.title>a.anchor:hover,h4:hover>a.anchor,h4>a.anchor:hover,h5:hover>a.anchor,h5>a.anchor:hover,h6:hover>a.anchor,h6>a.anchor:hover{visibility:visible}
+#content h1>a.link,h2>a.link,h3>a.link,#toctitle>a.link,.sidebarblock>.content>.title>a.link,h4>a.link,h5>a.link,h6>a.link{color:#ba3925;text-decoration:none}
+#content h1>a.link:hover,h2>a.link:hover,h3>a.link:hover,#toctitle>a.link:hover,.sidebarblock>.content>.title>a.link:hover,h4>a.link:hover,h5>a.link:hover,h6>a.link:hover{color:#a53221}
+details,.audioblock,.imageblock,.literalblock,.listingblock,.stemblock,.videoblock{margin-bottom:1.25em}
+details{margin-left:1.25rem}
+details>summary{cursor:pointer;display:block;position:relative;line-height:1.6;margin-bottom:.625rem;-webkit-tap-highlight-color:transparent}
+details>summary::before{content:"";border:solid transparent;border-left:solid;border-width:.3em 0 .3em .5em;position:absolute;top:.5em;left:-1.25rem;transform:translateX(15%)}
+details[open]>summary::before{border:solid transparent;border-top:solid;border-width:.5em .3em 0;transform:translateY(15%)}
+details>summary::after{content:"";width:1.25rem;height:1em;position:absolute;top:.3em;left:-1.25rem}
+.admonitionblock td.content>.title,.audioblock>.title,.exampleblock>.title,.imageblock>.title,.listingblock>.title,.literalblock>.title,.stemblock>.title,.openblock>.title,.paragraph>.title,.quoteblock>.title,table.tableblock>.title,.verseblock>.title,.videoblock>.title,.dlist>.title,.olist>.title,.ulist>.title,.qlist>.title,.hdlist>.title{text-rendering:optimizeLegibility;text-align:left;font-family:"Noto Serif","DejaVu Serif",serif;font-size:1rem;font-style:italic}
+table.tableblock.fit-content>caption.title{white-space:nowrap;width:0}
+.paragraph.lead>p,#preamble>.sectionbody>[class=paragraph]:first-of-type p{font-size:1.21875em;line-height:1.6;color:rgba(0,0,0,.85)}
+.admonitionblock>table{border-collapse:separate;border:0;background:none;width:100%}
+.admonitionblock>table td.icon{text-align:center;width:80px}
+.admonitionblock>table td.icon img{max-width:none}
+.admonitionblock>table td.icon .title{font-weight:bold;font-family:"Open Sans","DejaVu Sans",sans-serif;text-transform:uppercase}
+.admonitionblock>table td.content{padding-left:1.125em;padding-right:1.25em;border-left:1px solid #dddddf;color:rgba(0,0,0,.6);word-wrap:anywhere}
+.admonitionblock>table td.content>:last-child>:last-child{margin-bottom:0}
+.exampleblock>.content{border:1px solid #e6e6e6;margin-bottom:1.25em;padding:1.25em;background:#fff;border-radius:4px}
+.exampleblock>.content>:first-child{margin-top:0}
+.exampleblock>.content>:last-child{margin-bottom:0}
+.sidebarblock{border:1px solid #dbdbd6;margin-bottom:1.25em;padding:1.25em;background:#f3f3f2;border-radius:4px}
+.sidebarblock>:first-child{margin-top:0}
+.sidebarblock>:last-child{margin-bottom:0}
+.sidebarblock>.content>.title{color:#7a2518;margin-top:0;text-align:center}
+.exampleblock>.content>:last-child>:last-child,.exampleblock>.content .olist>ol>li:last-child>:last-child,.exampleblock>.content .ulist>ul>li:last-child>:last-child,.exampleblock>.content .qlist>ol>li:last-child>:last-child,.sidebarblock>.content>:last-child>:last-child,.sidebarblock>.content .olist>ol>li:last-child>:last-child,.sidebarblock>.content .ulist>ul>li:last-child>:last-child,.sidebarblock>.content .qlist>ol>li:last-child>:last-child{margin-bottom:0}
+.literalblock pre,.listingblock>.content>pre{border-radius:4px;overflow-x:auto;padding:1em;font-size:.8125em}
+@media screen and (min-width:768px){.literalblock pre,.listingblock>.content>pre{font-size:.90625em}}
+@media screen and (min-width:1280px){.literalblock pre,.listingblock>.content>pre{font-size:1em}}
+.literalblock pre,.listingblock>.content>pre:not(.highlight),.listingblock>.content>pre[class=highlight],.listingblock>.content>pre[class^="highlight "]{background:#f7f7f8}
+.literalblock.output pre{color:#f7f7f8;background:rgba(0,0,0,.9)}
+.listingblock>.content{position:relative}
+.listingblock code[data-lang]::before{display:none;content:attr(data-lang);position:absolute;font-size:.75em;top:.425rem;right:.5rem;line-height:1;text-transform:uppercase;color:inherit;opacity:.5}
+.listingblock:hover code[data-lang]::before{display:block}
+.listingblock.terminal pre .command::before{content:attr(data-prompt);padding-right:.5em;color:inherit;opacity:.5}
+.listingblock.terminal pre .command:not([data-prompt])::before{content:"$"}
+.listingblock pre.highlightjs{padding:0}
+.listingblock pre.highlightjs>code{padding:1em;border-radius:4px}
+.listingblock pre.prettyprint{border-width:0}
+.prettyprint{background:#f7f7f8}
+pre.prettyprint .linenums{line-height:1.45;margin-left:2em}
+pre.prettyprint li{background:none;list-style-type:inherit;padding-left:0}
+pre.prettyprint li code[data-lang]::before{opacity:1}
+pre.prettyprint li:not(:first-child) code[data-lang]::before{display:none}
+table.linenotable{border-collapse:separate;border:0;margin-bottom:0;background:none}
+table.linenotable td[class]{color:inherit;vertical-align:top;padding:0;line-height:inherit;white-space:normal}
+table.linenotable td.code{padding-left:.75em}
+table.linenotable td.linenos{border-right:1px solid;opacity:.35;padding-right:.5em}
+pre.pygments .lineno{border-right:1px solid;opacity:.35;display:inline-block;margin-right:.75em}
+pre.pygments .lineno::before{content:"";margin-right:-.125em}
+.quoteblock{margin:0 1em 1.25em 1.5em;display:table}
+.quoteblock:not(.excerpt)>.title{margin-left:-1.5em;margin-bottom:.75em}
+.quoteblock blockquote,.quoteblock p{color:rgba(0,0,0,.85);font-size:1.15rem;line-height:1.75;word-spacing:.1em;letter-spacing:0;font-style:italic;text-align:justify}
+.quoteblock blockquote{margin:0;padding:0;border:0}
+.quoteblock blockquote::before{content:"\201c";float:left;font-size:2.75em;font-weight:bold;line-height:.6em;margin-left:-.6em;color:#7a2518;text-shadow:0 1px 2px rgba(0,0,0,.1)}
+.quoteblock blockquote>.paragraph:last-child p{margin-bottom:0}
+.quoteblock .attribution{margin-top:.75em;margin-right:.5ex;text-align:right}
+.verseblock{margin:0 1em 1.25em}
+.verseblock pre{font-family:"Open Sans","DejaVu Sans",sans-serif;font-size:1.15rem;color:rgba(0,0,0,.85);font-weight:300;text-rendering:optimizeLegibility}
+.verseblock pre strong{font-weight:400}
+.verseblock .attribution{margin-top:1.25rem;margin-left:.5ex}
+.quoteblock .attribution,.verseblock .attribution{font-size:.9375em;line-height:1.45;font-style:italic}
+.quoteblock .attribution br,.verseblock .attribution br{display:none}
+.quoteblock .attribution cite,.verseblock .attribution cite{display:block;letter-spacing:-.025em;color:rgba(0,0,0,.6)}
+.quoteblock.abstract blockquote::before,.quoteblock.excerpt blockquote::before,.quoteblock .quoteblock blockquote::before{display:none}
+.quoteblock.abstract blockquote,.quoteblock.abstract p,.quoteblock.excerpt blockquote,.quoteblock.excerpt p,.quoteblock .quoteblock blockquote,.quoteblock .quoteblock p{line-height:1.6;word-spacing:0}
+.quoteblock.abstract{margin:0 1em 1.25em;display:block}
+.quoteblock.abstract>.title{margin:0 0 .375em;font-size:1.15em;text-align:center}
+.quoteblock.excerpt>blockquote,.quoteblock .quoteblock{padding:0 0 .25em 1em;border-left:.25em solid #dddddf}
+.quoteblock.excerpt,.quoteblock .quoteblock{margin-left:0}
+.quoteblock.excerpt blockquote,.quoteblock.excerpt p,.quoteblock .quoteblock blockquote,.quoteblock .quoteblock p{color:inherit;font-size:1.0625rem}
+.quoteblock.excerpt .attribution,.quoteblock .quoteblock .attribution{color:inherit;font-size:.85rem;text-align:left;margin-right:0}
+p.tableblock:last-child{margin-bottom:0}
+td.tableblock>.content{margin-bottom:1.25em;word-wrap:anywhere}
+td.tableblock>.content>:last-child{margin-bottom:-1.25em}
+table.tableblock,th.tableblock,td.tableblock{border:0 solid #dedede}
+table.grid-all>*>tr>*{border-width:1px}
+table.grid-cols>*>tr>*{border-width:0 1px}
+table.grid-rows>*>tr>*{border-width:1px 0}
+table.frame-all{border-width:1px}
+table.frame-ends{border-width:1px 0}
+table.frame-sides{border-width:0 1px}
+table.frame-none>colgroup+*>:first-child>*,table.frame-sides>colgroup+*>:first-child>*{border-top-width:0}
+table.frame-none>:last-child>:last-child>*,table.frame-sides>:last-child>:last-child>*{border-bottom-width:0}
+table.frame-none>*>tr>:first-child,table.frame-ends>*>tr>:first-child{border-left-width:0}
+table.frame-none>*>tr>:last-child,table.frame-ends>*>tr>:last-child{border-right-width:0}
+table.stripes-all tr,table.stripes-odd tr:nth-of-type(odd),table.stripes-even tr:nth-of-type(even),table.stripes-hover tr:hover{background:#f8f8f7}
+th.halign-left,td.halign-left{text-align:left}
+th.halign-right,td.halign-right{text-align:right}
+th.halign-center,td.halign-center{text-align:center}
+th.valign-top,td.valign-top{vertical-align:top}
+th.valign-bottom,td.valign-bottom{vertical-align:bottom}
+th.valign-middle,td.valign-middle{vertical-align:middle}
+table thead th,table tfoot th{font-weight:bold}
+tbody tr th{background:#f7f8f7}
+tbody tr th,tbody tr th p,tfoot tr th,tfoot tr th p{color:rgba(0,0,0,.8);font-weight:bold}
+p.tableblock>code:only-child{background:none;padding:0}
+p.tableblock{font-size:1em}
+ol{margin-left:1.75em}
+ul li ol{margin-left:1.5em}
+dl dd{margin-left:1.125em}
+dl dd:last-child,dl dd:last-child>:last-child{margin-bottom:0}
+ol>li p,ul>li p,ul dd,ol dd,.olist .olist,.ulist .ulist,.ulist .olist,.olist .ulist{margin-bottom:.625em}
+ul.checklist,ul.none,ol.none,ul.no-bullet,ol.no-bullet,ol.unnumbered,ul.unstyled,ol.unstyled{list-style-type:none}
+ul.no-bullet,ol.no-bullet,ol.unnumbered{margin-left:.625em}
+ul.unstyled,ol.unstyled{margin-left:0}
+ul.checklist>li>p:first-child{margin-left:-1em}
+ul.checklist>li>p:first-child>.fa-square-o:first-child,ul.checklist>li>p:first-child>.fa-check-square-o:first-child{width:1.25em;font-size:.8em;position:relative;bottom:.125em}
+ul.checklist>li>p:first-child>input[type=checkbox]:first-child{margin-right:.25em}
+ul.inline{display:flex;flex-flow:row wrap;list-style:none;margin:0 0 .625em -1.25em}
+ul.inline>li{margin-left:1.25em}
+.unstyled dl dt{font-weight:400;font-style:normal}
+ol.arabic{list-style-type:decimal}
+ol.decimal{list-style-type:decimal-leading-zero}
+ol.loweralpha{list-style-type:lower-alpha}
+ol.upperalpha{list-style-type:upper-alpha}
+ol.lowerroman{list-style-type:lower-roman}
+ol.upperroman{list-style-type:upper-roman}
+ol.lowergreek{list-style-type:lower-greek}
+.hdlist>table,.colist>table{border:0;background:none}
+.hdlist>table>tbody>tr,.colist>table>tbody>tr{background:none}
+td.hdlist1,td.hdlist2{vertical-align:top;padding:0 .625em}
+td.hdlist1{font-weight:bold;padding-bottom:1.25em}
+td.hdlist2{word-wrap:anywhere}
+.literalblock+.colist,.listingblock+.colist{margin-top:-.5em}
+.colist td:not([class]):first-child{padding:.4em .75em 0;line-height:1;vertical-align:top}
+.colist td:not([class]):first-child img{max-width:none}
+.colist td:not([class]):last-child{padding:.25em 0}
+.thumb,.th{line-height:0;display:inline-block;border:4px solid #fff;box-shadow:0 0 0 1px #ddd}
+.imageblock.left{margin:.25em .625em 1.25em 0}
+.imageblock.right{margin:.25em 0 1.25em .625em}
+.imageblock>.title{margin-bottom:0}
+.imageblock.thumb,.imageblock.th{border-width:6px}
+.imageblock.thumb>.title,.imageblock.th>.title{padding:0 .125em}
+.image.left,.image.right{margin-top:.25em;margin-bottom:.25em;display:inline-block;line-height:0}
+.image.left{margin-right:.625em}
+.image.right{margin-left:.625em}
+a.image{text-decoration:none;display:inline-block}
+a.image object{pointer-events:none}
+sup.footnote,sup.footnoteref{font-size:.875em;position:static;vertical-align:super}
+sup.footnote a,sup.footnoteref a{text-decoration:none}
+sup.footnote a:active,sup.footnoteref a:active{text-decoration:underline}
+#footnotes{padding-top:.75em;padding-bottom:.75em;margin-bottom:.625em}
+#footnotes hr{width:20%;min-width:6.25em;margin:-.25em 0 .75em;border-width:1px 0 0}
+#footnotes .footnote{padding:0 .375em 0 .225em;line-height:1.3334;font-size:.875em;margin-left:1.2em;margin-bottom:.2em}
+#footnotes .footnote a:first-of-type{font-weight:bold;text-decoration:none;margin-left:-1.05em}
+#footnotes .footnote:last-of-type{margin-bottom:0}
+#content #footnotes{margin-top:-.625em;margin-bottom:0;padding:.75em 0}
+.gist .file-data>table{border:0;background:#fff;width:100%;margin-bottom:0}
+.gist .file-data>table td.line-data{width:99%}
+div.unbreakable{page-break-inside:avoid}
+.big{font-size:larger}
+.small{font-size:smaller}
+.underline{text-decoration:underline}
+.overline{text-decoration:overline}
+.line-through{text-decoration:line-through}
+.aqua{color:#00bfbf}
+.aqua-background{background:#00fafa}
+.black{color:#000}
+.black-background{background:#000}
+.blue{color:#0000bf}
+.blue-background{background:#0000fa}
+.fuchsia{color:#bf00bf}
+.fuchsia-background{background:#fa00fa}
+.gray{color:#606060}
+.gray-background{background:#7d7d7d}
+.green{color:#006000}
+.green-background{background:#007d00}
+.lime{color:#00bf00}
+.lime-background{background:#00fa00}
+.maroon{color:#600000}
+.maroon-background{background:#7d0000}
+.navy{color:#000060}
+.navy-background{background:#00007d}
+.olive{color:#606000}
+.olive-background{background:#7d7d00}
+.purple{color:#600060}
+.purple-background{background:#7d007d}
+.red{color:#bf0000}
+.red-background{background:#fa0000}
+.silver{color:#909090}
+.silver-background{background:#bcbcbc}
+.teal{color:#006060}
+.teal-background{background:#007d7d}
+.white{color:#bfbfbf}
+.white-background{background:#fafafa}
+.yellow{color:#bfbf00}
+.yellow-background{background:#fafa00}
+span.icon>.fa{cursor:default}
+a span.icon>.fa{cursor:inherit}
+.admonitionblock td.icon [class^="fa icon-"]{font-size:2.5em;text-shadow:1px 1px 2px rgba(0,0,0,.5);cursor:default}
+.admonitionblock td.icon .icon-note::before{content:"\f05a";color:#19407c}
+.admonitionblock td.icon .icon-tip::before{content:"\f0eb";text-shadow:1px 1px 2px rgba(155,155,0,.8);color:#111}
+.admonitionblock td.icon .icon-warning::before{content:"\f071";color:#bf6900}
+.admonitionblock td.icon .icon-caution::before{content:"\f06d";color:#bf3400}
+.admonitionblock td.icon .icon-important::before{content:"\f06a";color:#bf0000}
+.conum[data-value]{display:inline-block;color:#fff!important;background:rgba(0,0,0,.8);border-radius:50%;text-align:center;font-size:.75em;width:1.67em;height:1.67em;line-height:1.67em;font-family:"Open Sans","DejaVu Sans",sans-serif;font-style:normal;font-weight:bold}
+.conum[data-value] *{color:#fff!important}
+.conum[data-value]+b{display:none}
+.conum[data-value]::after{content:attr(data-value)}
+pre .conum[data-value]{position:relative;top:-.125em}
+b.conum *{color:inherit!important}
+.conum:not([data-value]):empty{display:none}
+dt,th.tableblock,td.content,div.footnote{text-rendering:optimizeLegibility}
+h1,h2,p,td.content,span.alt,summary{letter-spacing:-.01em}
+p strong,td.content strong,div.footnote strong{letter-spacing:-.005em}
+p,blockquote,dt,td.content,span.alt,summary{font-size:1.0625rem}
+p{margin-bottom:1.25rem}
+.sidebarblock p,.sidebarblock dt,.sidebarblock td.content,p.tableblock{font-size:1em}
+.exampleblock>.content{background:#fffef7;border-color:#e0e0dc;box-shadow:0 1px 4px #e0e0dc}
+.print-only{display:none!important}
+@page{margin:1.25cm .75cm}
+@media print{*{box-shadow:none!important;text-shadow:none!important}
+html{font-size:80%}
+a{color:inherit!important;text-decoration:underline!important}
+a.bare,a[href^="#"],a[href^="mailto:"]{text-decoration:none!important}
+a[href^="http:"]:not(.bare)::after,a[href^="https:"]:not(.bare)::after{content:"(" attr(href) ")";display:inline-block;font-size:.875em;padding-left:.25em}
+abbr[title]{border-bottom:1px dotted}
+abbr[title]::after{content:" (" attr(title) ")"}
+pre,blockquote,tr,img,object,svg{page-break-inside:avoid}
+thead{display:table-header-group}
+svg{max-width:100%}
+p,blockquote,dt,td.content{font-size:1em;orphans:3;widows:3}
+h2,h3,#toctitle,.sidebarblock>.content>.title{page-break-after:avoid}
+#header,#content,#footnotes,#footer{max-width:none}
+#toc,.sidebarblock,.exampleblock>.content{background:none!important}
+#toc{border-bottom:1px solid #dddddf!important;padding-bottom:0!important}
+body.book #header{text-align:center}
+body.book #header>h1:first-child{border:0!important;margin:2.5em 0 1em}
+body.book #header .details{border:0!important;display:block;padding:0!important}
+body.book #header .details span:first-child{margin-left:0!important}
+body.book #header .details br{display:block}
+body.book #header .details br+span::before{content:none!important}
+body.book #toc{border:0!important;text-align:left!important;padding:0!important;margin:0!important}
+body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-break-before:always}
+.listingblock code[data-lang]::before{display:block}
+#footer{padding:0 .9375em}
+.hide-on-print{display:none!important}
+.print-only{display:block!important}
+.hide-for-print{display:none!important}
+.show-for-print{display:inherit!important}}
+@media amzn-kf8,print{#header>h1:first-child{margin-top:1.25rem}
+.sect1{padding:0!important}
+.sect1+.sect1{border:0}
+#footer{background:none}
+#footer-text{color:rgba(0,0,0,.6);font-size:.9em}}
+@media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
+</style>
+<style>
+
+/* gpsd CSS customization. */
+#header > h1:first-child,
+body {
+  color: #000;
+}
+
+.sidebarblock,
+#toc.toc2 {
+  background: #f8f8f8;
+  border: 1px dashed #999;
+}
+
+.sidebarblock {
+  display: inline-block;
+  float: left;
+  margin-right: 20px;
+  margin-bottom: 20px;
+}
+
+#toctitle {
+  display: none;
+}
+
+#content #toc.toc {
+  background: inherit;
+  border: none;
+  padding: 0em;
+}
+
+#header,
+#content,
+#footnotes,
+#footer {
+  max-width: initial;
+}
+
+@media screen and (min-width: 768px) {
+  body {
+    --left-col: 15em;
+  }
+
+  #content #Menu {
+    border: 1px dashed #999;
+    bottom: 2px;
+    left: 2px;
+    margin: 0 20px 20px 0;
+    position: absolute;
+    top: 2px;
+    width: var(--left-col);
+  }
+
+  #content #preamble,
+  #content .sect1 {
+    margin-left: calc(var(--left-col) + 22px);
+  }
+}
+</style>
+</head>
+<body class="article">
+<div id="header">
+<h1>Notes on Writing a GPSD Driver</h1>
+<div class="details">
+<span id="author" class="author">Mick Durkin</span><br>
+<span id="email" class="email"><a href="mailto:mick.durkin@saunalahti.fi">mick.durkin@saunalahti.fi</a></span><br>
+<span id="revnumber">version 1.16,</span>
+<span id="revdate">25 January 2020</span>
+</div>
+</div>
+<div id="content">
+<div id="preamble">
+<div class="sectionbody">
+<div id="Menu" class="sidebarblock">
+<div class="content">
+<div class="paragraph">
+<p><span class="image"><img src="gpsd-logo-small.png" alt="Small gpsd Logo" width="105" height="126"></span><br>
+<a href="index.html">Home</a><br>
+<a href="faq.html">FAQ</a><br>
+<a href="xgps-sample.html">Screenshots</a><br>
+<a href="hardware.html">Hardware</a><br>
+<a href="for-vendors.html">For GPS Vendors</a><br>
+<a href="wishlist.html">Wish List</a><br>
+<a href="hall-of-shame.html">Hall of Shame</a><br>
+<a href="troubleshooting.html">Troubleshooting Guide</a><br>
+<a href="hacking.html">Hacker&#8217;s Guide</a><br>
+<a href="references.html">References</a><br>
+<a href="protocol-transition.html">Application Compatibility</a><br>
+<a href="history.html">History</a><br>
+<a href="future.html">Future</a><br></p>
+</div>
+<hr>
+<div id="toc" class="toc">
+<div id="toctitle" class="title">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_abstract">Abstract</a></li>
+<li><a href="#_introduction">Introduction</a></li>
+<li><a href="#_what_you_will_need_to_go_ahead">What you will need to go ahead</a></li>
+<li><a href="#_what_is_involved_in_the_coding">What is involved in the coding</a></li>
+<li><a href="#_where_will_your_driver_make_an_impact">Where will your driver make an impact?</a></li>
+<li><a href="#_what_these_important_files_do">What these important files do</a></li>
+<li><a href="#_writing_the_actual_driver_code">Writing the actual driver code</a></li>
+<li><a href="#_details_of_the_driver_parser">Details of the driver parser</a></li>
+<li><a href="#_implementing_the_probe_detect_function">Implementing the .probe_detect function</a></li>
+<li><a href="#_sign_off">Sign off</a></li>
+<li><a href="#_revision_history">Revision History</a></li>
+<li><a href="#_copying">COPYING</a></li>
+</ul>
+</div>
+<hr>
+<div class="paragraph">
+<p><a href="http://www.catb.org/hacker-emblem/"><span class="image"><img src="glider.png" alt="hacker emblem" width="55" height="55"></span></a><br>
+<br>
+<a href="https://validator.w3.org/check/referer"><span class="image"><img src="html5.png" alt="Valid HTML 5" width="88" height="31"></span></a></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_abstract"><a class="link" href="#_abstract">Abstract</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If you are thinking of writing a GPSD driver for some GPS-like device,
+these notes by a person who did it may help you decide whether or not
+it&#8217;s a good idea, and if it is, help you get started.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_introduction"><a class="link" href="#_introduction">Introduction</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>First, ask yourself "Why would I write a driver?" and do that several
+times. At the date of writing, gpsd ships with more than 10 drivers and
+supports around 40 different GPS devices, so it may be that your device
+is already supported by an existing driver.</p>
+</div>
+<div class="paragraph">
+<p>It may be worth noting that these notes were written against gpsd
+version 2.34 as it existed on of November 14th 2006. The situation will
+likely have changed by the time you read this, but the broad principles
+should still apply. Check what version you are using.</p>
+</div>
+<div class="paragraph">
+<p>gpsd supports autodetection, so connect your device and try it; you may
+be lucky and find it is already supported. If you are unlucky, you have
+to be prepared to do a lot of work and research on your own.</p>
+</div>
+<div class="paragraph">
+<p>I found that the device I wanted to use (a Navman Jupiter-T) was not
+supported in its default operation mode. The device actually provides
+two other supported modes, NMEA (exceptional support) and
+Rockwell/Conexant/Navman binary (supported by the Earthmate driver
+<strong>zodiac.c</strong>), I could have possibly avoided writing a driver by
+switching to one of these modes, but there was an overwhelming reason to
+use the unsupported default mode.</p>
+</div>
+<div class="paragraph">
+<p>I use the Jupiter-T as a precision timing device with some dedicated
+hardware to provide a disciplining signal to a house standard 10MHz
+signal. In this application I wanted to keep it as intended; as a drop
+in emulator of the Motorola Oncore UT+ running in fixed-location mode
+giving a 1PPS signal to very high precision (claimed to be 25ns, 1
+sigma).</p>
+</div>
+<div class="paragraph">
+<p>So for me, the decision whether to write a driver or not was already
+made; either write one or forget connecting this high quality time
+source to my network, as gpsd can also use the GPS device to synchronise
+the ntpd daemon either to the GPS data or to the 1PPS, if it is
+available. A 25ns accurate input to <strong>ntpd</strong> looked very appealing.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_you_will_need_to_go_ahead"><a class="link" href="#_what_you_will_need_to_go_ahead">What you will need to go ahead</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To take this decision to maturity, you need to be able to code in C and
+compile/install the results. If you can&#8217;t do that, you should
+temporarily shelve the driver project and start learning to code. While
+I would not advise this as the way to go for a complete novice, you will
+find some good code to follow in the gpsd files and there are some good
+clues in the existing drivers.</p>
+</div>
+<div class="paragraph">
+<p>You will also need some understanding of what a GPS device is and how it
+works, although I guess you are likely to have this knowledge or you
+wouldn&#8217;t be reading this document. You don&#8217;t need to be a satellite
+navigation guru, but it helps if you are familiar with the terms used.</p>
+</div>
+<div class="paragraph">
+<p>You will also need access to the documentation for your GPS device,
+specifically the format (communications protocol, speed etc.) and
+content of the data the device will generate and the commands it needs
+to control it. The ideal source for that would be the manufacturer&#8217;s
+user guide or programming manual.</p>
+</div>
+<div class="paragraph">
+<p>The information available may be a bit sparse and it may even be that
+the device is not best suited for use with gpsd. In my case, I was lucky
+because the Jupiter-T was intended for the professional OEM market. It
+was designed to be used in devices like custom vehicle trackers. It has
+almost no internal intelligence, being designed to interface to an
+external computing device and provide raw navigation and time data, but
+the interfaces and control language were superbly specified in a well
+written technical document of about 200 pages. In actual fact the
+document I used most was the Motorola documentation for the default
+Oncore mode, but the NMEA and Rockwell/Conexant/Navman modes were
+equally well documented in the Navman manuals.</p>
+</div>
+<div class="paragraph">
+<p>You will also need to set aside some time and equipment to do the coding
+and testing. I actually spent several weeks on this task and went to
+some trouble to get the GPS working on my desktop in a temporary harness
+so that I could have the device available to test the code. It took some
+imagination to get a usable satellite signal as I live in a ground floor
+apartment of a 6 floor block in Helsinki with a limited view of the sky.
+I ended up pushing my puck antenna away from the building by fixing it
+to a broom handle and poking it out of a partly open window. As you can
+imagine, I suspended operations in winter as an open window at -15
+centigrade is no joke.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_is_involved_in_the_coding"><a class="link" href="#_what_is_involved_in_the_coding">What is involved in the coding</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>I looked long and hard at the other drivers, at the main parts of gpsd,
+at the test applications ( like <strong>xgps</strong>) and at the descriptions on the
+gpsd web site to get a feel for what my driver needed to do to behave
+like the existing drivers. After some time, I concluded that for me the
+best way forward was to write my driver by modifying an existing driver.</p>
+</div>
+<div class="paragraph">
+<p>Using this approach, I knew that that I would be working on a
+layout/functionality that was already conformant to gpsd&#8217;s internal
+standards and that already actually produced viable output. Apart from
+that, I intended, in the best tradition, to build on everybody else&#8217;s
+good ideas instead of re-inventing the wheel, wherever possible.
+Modification is probably an understatement as actually I ended up
+replacing almost all the original code, but it acted as a template
+during the development.</p>
+</div>
+<div class="paragraph">
+<p>My first efforts were directed to understanding what the different
+sections of the code did (I actually hacked the <strong>zodiac.c</strong> driver).
+This took me into some of the other programs such as <strong>gpsd.c</strong> to see
+why the driver was doing certain things and to see what the inputs
+to/outputs from the driver were. I also looked at <strong>driver-proto.c</strong>, as
+this is a skeleton which contains the minimal set of services and entry
+points. Real drivers provide these and more, but at first, this is a
+less overwhelming piece of code and can act as a guide when unravelling
+a working driver.</p>
+</div>
+<div class="paragraph">
+<p>The real trigger for me writing a new driver was that the native output
+of the Jupiter-T is a binary protocol with variable length strings. None
+of the existing drivers spoke this language, but I could get some
+general ideas on how to handle this from drivers like <strong>zodiac</strong> and
+<strong>evermore</strong>.</p>
+</div>
+<div class="paragraph">
+<p>I found from the manufacturer&#8217;s documentation that the Jupiter-T
+produces output only when instructed, rather than spewing out a set
+sequence at some pre-defined rate. All the commands and responses in
+"Jupiter-T-speak" start with a 4 character ASCII string "@@Nn"
+followed by a payload of 0 to approx 300 binary bytes, a single byte
+binary checksum and an ASCII CR/LF pair. Thus it would be possible to
+generate all the wanted data for gpsd by activating two main messages,
+"@@Bb" and "@@Ea". This particular structure was the cause
+of some headaches in the interpretation, but it means that the important
+data is impressively dense. The first command ("@@Bb") gives the
+status of all visible satellites (up to 12) in 92 bytes and the second
+command ("@@Ea") gives all the navigational data plus receiver status
+in 76 bytes.</p>
+</div>
+<div class="paragraph">
+<p>Once I had determined the two commands and responses that were needed
+(a few others were needed for initialisation and administration), I set
+about writing the decoder to fill in the standard data structures that
+gpsd uses. For this, the <strong>zodiac</strong> driver was very helpful as it had a
+routine "<strong>static gps_mask_t handle1000(struct gps_device_t *session)</strong>"
+that did a very similar job.</p>
+</div>
+<div class="paragraph">
+<p>This brought me neatly to a chicken/egg problem; the device, as I said
+earlier, is mute on power-up and unless you send it some instructions to
+turn on one or more messages, you will have no indication if it is even
+alive. Actually, this is not strictly true, as it does output a 1PPS and
+a 10kHz square wave on power up, but these are free running until
+satellites are acquired, and gpsd needs a data stream if it is to do
+anything. If it has not discovered your GPS device, it cannot lock to
+the 1PPS that is coming in all the while.</p>
+</div>
+<div class="paragraph">
+<p>The gpsd installation instructions give a clue about how to check if
+your device is working, but the method is best suited to NMEA devices or
+others which give real ASCII output. If your device outputs binary, you
+could mistake the output for garbage caused by a serial port speed or
+word size error. A mute device also makes this a non-starter!</p>
+</div>
+<div class="paragraph">
+<p>The manufacturer&#8217;s manual gives the commands to set up the device, but
+to be honest, I was not sure what I really needed to send or even how to
+do it and see the results easily under Linux. I am sure there are many
+of you that are confident in driving and reading a serial port at low
+level and could have done this in a few minutes. I chose a simpler way,
+though it did involve using some Windows software.</p>
+</div>
+<div class="paragraph">
+<p>There is a program available called TAC32 (Totally Accurate Clock)
+written to run under Windows which can talk to several varieties of GPS
+devices and "wake" them in the correct way to generate navigation data
+and timing signals, displaying them in a nice screen, something like
+<strong>xgps</strong> does. This is available for a free evaluation download (about 30
+days expiry, I believe), but I actually shelled out for a license as I
+had a continuing use for this on a laptop which only had Windows on it.
+Information was available at the time of writing at
+<a href="https://www.cnssys.com/">www.cnssys.com</a>.</p>
+</div>
+<div class="paragraph">
+<p>With this software you can monitor the raw data stream and send
+arbitrary commands to the GPS (the command constructor includes a nice
+syntax verifier and CRC generator), so I was able to watch the
+initialisation of the device, check the output stream used to generate
+the navigation data and experiment with the command set.</p>
+</div>
+<div class="paragraph">
+<p>Armed with this information, I was then able to start testing my driver
+as I was able to initialise the device into a working state and be sure
+I had a good fix and valid 1PPS under Windows and then transfer the
+serial connection to my Linux box whilst leaving the device powered up.</p>
+</div>
+<div class="paragraph">
+<p>Later, when I had the basic decoder working, I looked at a better way
+to handle communications to the device for test purposes and general
+monitoring of how the driver was behaving. In the end, I was able to
+get good results by monitoring the serial link to the device with a
+specially made "Y" cable (online diagram no longer available) and some
+Linux based software, SerLook (no longer available). I had access
+to a 4-port RS-232 to USB adapter and so I could use two of the ports on
+this device with special cable and the SerLook software to monitor the
+send and receive streams of my gpsd port.</p>
+</div>
+<div class="paragraph">
+<p>For sending experimental commands, I settled on building the wanted
+commands as simple files using KhexEdit and then sending them to the
+serial port with <strong>cat</strong>. This allowed me to experiment with the
+different commands and to swap between the three modes
+(Oncore/Jupiter/NMEA). This is crude, but I found it hard to get the
+right results with <strong>minicom</strong>.</p>
+</div>
+<div class="paragraph">
+<p>To return to the development, I liberally sprinkled the driver code with
+"<strong>gpsd_log</strong>" statements set to trigger at the lowest level of
+debugging and invoked the daemon in "non-daemon" mode with debugging
+set to LOG_WARN. This made sure that I could watch the code step through
+its various routines.</p>
+</div>
+<div class="paragraph">
+<p>This leads nicely to two things that I had to master early on and write
+down so that I wouldn&#8217;t forget; how to compile/install the daemon and
+how to fire it up. The first is fairly straightforward if you have
+compiled anything before. You simply issue a "<strong>./configure</strong>"
+command to specify what you want compiling and then issue a "
+<strong>make</strong>" command to compile the software to that configuration. If it
+compiles successfully, you can then issue a "<strong>make install</strong>"
+command to install the driver. This last command will need to be done as
+<strong>root</strong> because the daemon is designed to be invoked by root.</p>
+</div>
+<div class="paragraph">
+<p>The second thing is a bit more tricky, at least the first time for me,
+as I find the "<strong>man</strong>" output of how to invoke any command almost
+impossible to understand. I got more out of the source code than I did
+from "<strong>man</strong>", but maybe that is just me! What you basically do,
+again as root, is to invoke the daemon, telling it which port (in my
+case, a serial port) it should use, that it should stay permanently
+active (don&#8217;t wait for an application to ask for data), should not go
+into the background (not "daemonize") and which debug level to run at.
+For me this came out as "<strong>gpsd -n -N -D1 /dev/ttyS0</strong>" from a
+terminal session activated as root.</p>
+</div>
+<div class="paragraph">
+<p>The options for compilation would bear a bit more scrutiny. In the
+initial stages, I wanted to keep things simple, so I figured out from
+the <strong>./configure help</strong> command what options were supported and what
+were the default settings for them. I initially compiled with everything
+except NMEA and my driver disabled. This keeps the code smaller and
+ensures that you don&#8217;t trigger the wrong driver. My reasoning with
+leaving the NMEA active was twofold; I wanted to be able to check at an
+early stage if I could get <em>any</em> output to be understood (remember, my
+GPS also speaks NMEA and I could change the mode in Windows if needed),
+also I was not sure if turning this most basic mode off would break the
+daemon. Later on, I modified the default settings in <strong>configure.ac</strong> to
+default to just this basic configuration automatically.</p>
+</div>
+<div class="paragraph">
+<p>Of course, I have jumped a long way forward in the story as to be able
+to compile your new driver, you have to write it and modify several
+other parts of the existing code to be aware of your work.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_where_will_your_driver_make_an_impact"><a class="link" href="#_where_will_your_driver_make_an_impact">Where will your driver make an impact?</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If we assume for the time being that you are able to write the code for
+your GPS, where does it make its "footprint" on the existing code? I
+turned again to the <strong>zodiac</strong> driver for inspiration and did a search
+over the source code for any mention of the word "<strong>zodiac</strong>". Once I
+knew which files were involved, I then had to figure out why they
+mentioned the driver and see where/if I needed to integrate my driver. I
+had settled on the name <strong>jupiter_t</strong> for my driver, since that did
+not conflict with any existing name space.</p>
+</div>
+<div class="paragraph">
+<p>Several of the files I turned up were obviously not interesting at this
+stage such as <strong>gpsd.spec</strong> and <strong>gpsd.xml</strong> and some others like
+<strong>gpsfake.py</strong> were determined not to be part of the main daemon, but
+"support" files used for things like regression testing or dummy
+traffic generation. Finally, I concluded that I needed to make mention
+of my driver in the following files:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Makefile.am</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">controls what gets "<strong>make</strong>"d</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>configure.ac</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">configuration of compilation options</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>drivers.c</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">generic NMEA driver with device type scanner</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>gpsd.h</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">data type definitions</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>packet.c</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">packet sniffing state machine</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>packet_states.h</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">defines state machine entries each driver uses</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>These files will cause various files to be created which also inherit
+knowledge of your driver such as <strong>packet_names.h</strong> and later on you
+will probably need to modify other files like <strong>gpsfake.py</strong>, but the
+above fairly short list was all I had to handle at first. You will
+probably find something similar is necessary and if you miss one out,
+you will likely fail to get compilation to complete, usually with a
+message telling you where your new code is unknown.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_these_important_files_do"><a class="link" href="#_what_these_important_files_do">What these important files do</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The first two files only need to know simple things for compilation;
+the "<strong>Makefile.am</strong>" needs only to have your driver added to the list
+of "<strong>libgps_c_sources</strong>". I simply duplicated one of the existing lines
+and substituted my driver&#8217;s name for the original copied name. The
+"<strong>config.ac</strong>" needs a few lines to tell the user what compile time
+options are available for your driver and to set its default options. I
+again copied an existing entry and changed the name, making sure I set
+the options so my driver was active by default. I also, as mentioned,
+modified the other drivers to default to inactive. You will also need
+to add your driver name to the list at the end of the file which issues
+a warning if no device drivers at all are selected at compilation
+time. Again, I copied and changed an existing entry.</p>
+</div>
+<div class="paragraph">
+<p>The "<strong>drivers.c</strong>" file handles some basic stuff for the NMEA driver
+and tries to wake up many of the other drivers. It needed four small
+modifications to integrate my code. The first was a copy of an existing
+entry in the generic NMEA handler "<strong>nmea_parse_input</strong>" to generate a
+debug error if one of my packets was detected when the NMEA driver had
+been selected and switch to my driver instead (this is no longer needed
+in versions beyond 2,38). The second was a pointer to simple command to
+send a Jupiter-T specific string to the GPS at detection time to test if
+it is a Jupiter-T in "<strong>nmea_initializer</strong>". If it returns the right
+answer (in my case, the manufacturer&#8217;s PROM header), then the packet
+sniffer should see this and select my driver. The third was a
+(copied/modified) declaration entry in the list of structs known to gpsd
+which is located immediately before and is used by the fourth location,
+" <strong>*gpsd_driver_array[]</strong>", to give the address of the entry point
+table in my driver.</p>
+</div>
+<div class="paragraph">
+<p>The "<strong>gpsd.h</strong>" file is a conventional header file with declarations
+common to the whole application. The changes are again quite simple.
+There is an entry added to put my driver in the list of drivers that use
+binary mode. This depends if your driver is binary or not. I then
+modified the code which sets the maximum packet size as by default the
+largest packet was set to 196 bytes for the SiRF driver and the
+Jupiter-T can generate a maximum packet of 294 bytes. This is not as bad
+as it might seem, as this giant only comes when you dump the device
+identity strings from the PROM. The largest "real" packet is 96 bytes
+for the "Report ASCII Position" message. The largest command sent is
+52 bytes for a "Input Pseudorange Correction". The largest
+received/sent packets used in gpsd so far are 92 and 20 bytes
+respectively. There is a single "#define" in "<strong>gps_device_t</strong>" for
+the new packet type that this driver needs. This is simply an entry at
+the end of the existing list. The last two changes are two "extern"
+declarations of prototypes in "<strong>gpsd_drivers</strong>" that the new
+driver needs to interface to the rest of the code.</p>
+</div>
+<div class="paragraph">
+<p>The file "<strong>packet.c</strong>" is the state engine which scans packets as they
+arrive and tries to match them to an existing driver. Here is where our
+driver will be called, so the changes are a little larger. The driver
+starts at the beginning of each packet and tries to match, character
+by character, until it has determined which (if any) driver owns this
+packet in routine "<strong>nextstate</strong>". As all Jupiter-T packets start with
+"<strong>@@</strong>", this collides with the TNT driver, but fortunately, the TNT
+only uses a single "<strong>@</strong>", so matching the second one allows us to start
+checking more strictly for Jupiter-T data.  This checking is done in a
+new block of code lower down in "<strong>nextstate</strong>" that was modelled on the
+other drivers, but must needs be unique. The packet is scanned byte by
+byte until a fully formed packet has been detected and then it can be
+parsed in the main driver.  If it fails any of the tests, the state
+engine is set back to "<strong>GROUND_STATE</strong>" and detection starts again. The
+code to trigger parsing and deletion of the packet after it has been
+parsed is included lower down in the code "<strong>packet_parse</strong>" and is based
+on existing drivers.</p>
+</div>
+<div class="paragraph">
+<p>The file "<strong>packet_states.h</strong>" is simply a list of every state needed
+by every type of GPS which will produce a long list of unique entries (a
+big <strong>enum</strong> list) for use in the "<strong>packet.c</strong>" state engine. The
+changes here are limited to a small change to the TNT code, since both
+drivers share a common first character, so thus they share a state.
+There then follow the four new states that are required by the Jupiter-T
+state analysis.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_writing_the_actual_driver_code"><a class="link" href="#_writing_the_actual_driver_code">Writing the actual driver code</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>All that remains now is to write the driver and you are done. Actually,
+this part is not too hard, given the existing code base to guide and I
+actually found that the above changes were more troublesome as I did not
+know what would need to be updated; you, on the other hand, now have a
+nice list to guide you.</p>
+</div>
+<div class="paragraph">
+<p>The basic entry points or data values required of every driver are in
+visible in the <strong>struct gps_type_t proto_binary</strong> in
+"<strong>drivers_proto.c</strong>". If any functions are not needed or not provided
+for your device, then the corresponding table entry should be a NULL or
+-1 (as appropriate). If they exist, the entry should contain the name of
+the function or the default value of the data. What follows is a list of
+each of the table entries with a short description of what it is
+expected to do or contain.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">typename</dt>
+<dd>
+<p>is a simple string that uniquely identifies your driver. The
+first few characters are also output in some of the monitor output as
+generated by <strong>cgps</strong> or <strong>xgps</strong>.</p>
+</dd>
+<dt class="hdlist1">packet_type</dt>
+<dd>
+<p>What packet type this driver expects to see. This value
+must be one of those produced by the packet sniffer and <em>must be unique
+to each driver</em>. It is used internally to dispatch to the correct driver
+when it collects a complete packet.</p>
+</dd>
+<dt class="hdlist1">flags</dt>
+<dd>
+<p>Driver property flags. This field is reserved for future
+expansion.</p>
+</dd>
+<dt class="hdlist1">trigger</dt>
+<dd>
+<p>is the unique string that, when seen, will confirm your device
+is present. This will be detected in "<strong>drivers.c</strong>" and will probably
+be the same value as that provoked by sending the command mentioned in
+.probe_detectbelow.</p>
+</dd>
+<dt class="hdlist1">channels</dt>
+<dd>
+<p>is the number of channels your GPS uses. Typically this will
+be 12 for a consumer grade device.</p>
+</dd>
+<dt class="hdlist1">probe_detect</dt>
+<dd>
+<p>points to a block of code that generates a command to send
+to the device that will provoke a response if your device is present.
+The code should then detect and recognise the response, signalling if
+detection was successful or not. Successful detection results in this
+driver claiming the attached device. It may also do some more exotic
+things like set the port to different operation modes (e.g. raw mode)
+from the default. If it makes changes to the port permanently, it should
+store the original settings for later restoration, probably by .wrapup
+mentioned below. Later in this document I discuss my work to implement
+this function.</p>
+</dd>
+<dt class="hdlist1">init_query</dt>
+<dd>
+<p>points to a block of code that will be called to query the
+firmware version of the device. This code <em>must not</em> alter device state
+or settings.</p>
+</dd>
+<dt class="hdlist1">event_hook</dt>
+<dd>
+<p>points to a block of code that will be executed on and after
+various events, distinguished by a second argument that specifies the
+event type. The event_hook hook is called in the following
+circumstances:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>When the main auto-baud hunt loop in the daemon offers a new speed to
+probe at, with event argument <strong>event_wakeup</strong>. Note that this event does
+<em>not</em> fire for USB devices, in order to avoid spamming unidentified
+devices behind USB-to-serial adapters that may not be GPSes at all.</p>
+</li>
+<li>
+<p>When the driver has a trigger string and the NMEA driver sees it,
+<strong>event_triggermatch</strong> fires. An <strong>event_switch_driver</strong> should follow
+immediately.</p>
+</li>
+<li>
+<p>Whenever gpsd first achieves packet lock with a device, with event
+type <strong>identified</strong>.</p>
+</li>
+<li>
+<p>Whenever a full packet is received, with event type <strong>event_configure</strong>.
+On the first such packet, the packet sequence number is zeroed, then
+<strong>event_identify</strong> fires, then <strong>event_configure</strong> fires. On later packets,
+<strong>event_configure</strong> fires with the packet sequence number as its argument.</p>
+</li>
+<li>
+<p>Whenever a call to gpsd_switch_driver() sets a device&#8217;s driver to a
+different type, with event type <strong>event_switch_driver</strong>.</p>
+</li>
+<li>
+<p>When the device is closed, with event type <strong>event_deactivate</strong>. (Closes
+happen when all clients have disconnected and the "<strong>-n</strong>" switch is
+not active.) The premise is that there may be a special mode you
+initialized the device into for gpsd operation which should be turned
+off otherwise. It allows for changing the device to a low power mode,
+for instance. Any changes you made when <strong>event_configure</strong> fired should
+be undone here. This is also where you should undo any port parameter
+changes you made in .probe_detectabove.</p>
+</li>
+<li>
+<p>When a device is reactivated&#8201;&#8212;&#8201;that is, reopened after being been
+closed because no clients were listening to it, with event type
+<strong>event_reactivate</strong></p>
+</li>
+</ul>
+</div>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>The <strong>event_identify</strong> event is normally used to send probe strings that
+are expected to elicit a later response that will reveal the subtype of
+the driver. Such responses are expected to store information about the
+software version in member "<strong>subtype</strong>" of the driver data structure
+<strong>struct gps_device_t *session</strong>.</p>
+</div>
+<div class="paragraph">
+<p>The <strong>event_configure</strong> event should set up the device to deliver the
+correct set of sentences to supply the parser with the data needed by
+<strong>gpsd</strong>.</p>
+</div>
+<div class="paragraph">
+<p>When writing hook code, it is useful to bear in mind that the
+.packet.counter member of the session structure is available; it is
+often useful to take action only when this counter is zero. It is zeroed
+when the device is activated or something triggers a device change.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">get_packet</dt>
+<dd>
+<p>points to a block of code that actually gets the packets
+from the serial stream. You will almost certainly use the generic
+routine <strong>packet_get</strong>. If you know this won&#8217;t do, you already know
+enough not to need this explaining.</p>
+</dd>
+<dt class="hdlist1">parse_packet</dt>
+<dd>
+<p>points to a block of code which parses a packet. This will
+be the main part of your driver.</p>
+</dd>
+<dt class="hdlist1">rtcm_writer</dt>
+<dd>
+<p>points to a block of code used if the GPS type is capable
+of accepting differential-GPS corrections in RTCM-104 format. This is
+the routine needed to ship the data to the device. Usually it is a
+straight binary write of the data, which is provided by the default
+routine <strong>pass_rtcm</strong>. If the device does not accept differential data,
+the value is NULL.</p>
+</dd>
+<dt class="hdlist1">speed_switcher</dt>
+<dd>
+<p>points to a block of code to change baud rate, parity,
+and stop bits (if supported). If your device can support some
+speed/parity/stopbits combinations but not others, it should return
+false on a mode-change request it can&#8217;t handle.</p>
+</dd>
+<dt class="hdlist1">mode_switcher</dt>
+<dd>
+<p>points to a block of code to change the mode (if
+supported) between NMEA (mode 0) and our binary mode (1).</p>
+</dd>
+<dt class="hdlist1">rate_switcher</dt>
+<dd>
+<p>points to a block of code to change the maximum number of
+fixes your device can generate in 1 second. If this method is present,
+you should also fill in .min_cycle to indicate the device&#8217;s minimum
+cycle time in seconds; a 0 value indicates that it is limited only by
+the data throughput of the reporting channel.</p>
+</dd>
+<dt class="hdlist1">control_send</dt>
+<dd>
+<p>points to a block of code that can take a buffer full of
+message payload, wrap iit in appropriate headers and trailers and
+checksumming, and ship it to the device. This entry point is not used by
+gpsd itself; it&#8217;s for diagnostic tools like gpsctl and gpsmon. Once
+you&#8217;ve written it, though, you may find it useful for implementing the
+other switcher methods and whatever other probe strings you need to
+send. Note: if possible, assemble your packet in session&#8594;msgbuf and put
+the length in session&#8594;msgbuflen; this will allow gpsmon to display the
+control messages it sends for you.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_details_of_the_driver_parser"><a class="link" href="#_details_of_the_driver_parser">Details of the driver parser</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This part of the driver is likely to be the most unique part of your
+code and as such you will have to design and implement this your own
+way, but it may be useful to cover the details I included in my driver
+as the problems you will encounter are likely to be the same that I did.</p>
+</div>
+<div class="paragraph">
+<p>It is important not to lose sight of the aim of your driver. You are
+trying to convert the manufacturer-specific output of your GPS into a
+standard data block in gpsd so that a consistent set of information is
+available to client software regardless of what the original source was.
+In fact, gpsd will produce a nice set of NMEA output from your data
+stream for you to look at if you wish. This output can be captured and
+played back into gpsd at a later date and it will be handled as though
+it came from a standard NMEA device.</p>
+</div>
+<div class="paragraph">
+<p>The most important information is the actual navigation
+position/track/speed/time/climb rate information, but we also take note
+of some secondary things like DOP/satellite status if it is available.
+In my case, all the fields could be filled directly from the data
+shipped by the GPS in the two messages which I activated. The satellite
+status data contained exactly what was needed. The navigation data was
+all present but some fields did need some massaging; for example, my GPS
+reports location data in milliArcseconds whilst gpsd works in degrees.
+All conversions were achieved by simple division by constants. A few of
+the more exotic fields such as the quality of the fix (2D/3D etc.) were
+packed bit values in bytes or words, but these were extracted by simple
+masking and testing.</p>
+</div>
+<div class="paragraph">
+<p>Initially, I was able to get testable results from just the two
+command/report strings that were set in Windows, but later on I added
+the capability to bring the device into use from a cold start through
+the daemon by adding the routines such as .probe_detect and .trigger
+along with some status requests.</p>
+</div>
+<div class="paragraph">
+<p>As I hinted earlier, I found that support code like
+"<strong>gpsd_log(LOG_WARN, &#8230;&#8203;, "satellites tracked = %d, seen = %d\n", tracked, seen);</strong>"
+was very helpful in the early stages. Once
+the driver reached a production stage, much of the support code was
+removed and that which was retained had the first parameter (the debug
+level it responds to) increased to a more appropriate level.</p>
+</div>
+<div class="paragraph">
+<p>For me, support code and copious comments were vital since I find that
+the code I wrote as a genius yesterday is incomprehensible today when I
+am an idiot. I realise this is not to everyone&#8217;s taste, but my view is
+that excessive comments can be ignored; missing comments don&#8217;t help
+someone trying to follow your code later &lt;rant mode off&gt;</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_implementing_the_probe_detect_function"><a class="link" href="#_implementing_the_probe_detect_function">Implementing the .probe_detect function</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>As I mentioned earlier, my GPS device needed to be "woken up",
+otherwise it would never be detected by the normal packet scanner. The
+.probe_detect function is intended for just such a case and allows you
+to seek your device and claim the port ahead of the normal
+initialisation, since a check for devices supporting the .probe_detect
+is made at a very early point in the startup. The unfortunate thing is
+that to implement the function could mean getting down to low level
+programming of the tty port since you may find the normal operating mode
+capabilities may not match your device&#8217;s requirement, even if the baud
+rate is correct. This proved to be the case for me and was the single
+most difficult part of writing the driver. This, I am sure, is because
+it involves working virtually directly with the system hardware. I have
+documented this process in some detail in the hope that it may save some
+other poor soul the trials I went through.</p>
+</div>
+<div class="paragraph">
+<p>I looked at the code in "<strong>serial.c</strong>", "<strong>garmin.c</strong>" and
+"<strong>gpsmon.c</strong>" for inspiration and noticed some important things:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>You must read and preserve the existing port settings so that if you
+change anything, it can be restored later. This probably means you will
+have to implement the .wrapup function, but this is likely to be a
+reverse of the settings you finally arrive at in this function.</p>
+</li>
+<li>
+<p>You need to be aware of and understand the low level control settings
+that are needed to manipulate parameters like parity, stop bit number,
+flow control and port mode (raw/cooked). Take some time to read up on
+termios (<strong>man 3 termios</strong> will give the grisly details).</p>
+</li>
+<li>
+<p>You will probably find that you need to verify what delay loops are
+needed to allow your hardware to catch up if you change port settings
+(UART flush and other factors are described in detail in
+"<strong>serial.c</strong>" and you should read it carefully).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>I also found that even this was not the whole story, since even when I
+had allowed the device to catch up on a settings change, I could not get
+it to respond reliably to a "device identify" command. I found that I
+was missing some or all of the response message when operating at 9600
+bps.</p>
+</div>
+<div class="paragraph">
+<p>The reason was that I originally checked the port with a single
+character sniff routine a maximum of 300 times (just bigger than the
+block of text being returned), which comes out at 300 * (1 start bit + 8
+data bits + 1 stop bit) = 3000 bits. I expected this would occupy about
+312 milliseconds which I considered as an acceptable delay during the
+probing phase, but my understanding of how the serial port is accessed
+turned out to be faulty. This method was originally chosen because the
+probe is speculative and must handle cases like wrong port speed or the
+type of device being probed for is not present and should not hold up
+progress for too long. Don&#8217;t forget that all installed drivers get a
+chance to probe, one after another, so the delays for each are
+cumulative and if no driver finds and claims the device, you can have
+many seconds of delay.</p>
+</div>
+<div class="paragraph">
+<p>When it failed to work as expected, I investigated the GPS device&#8217;s
+documentation ("RTFM" did I hear you say!) and I found in the Oncore
+manual that the device&#8217;s internal scheduler uses a 1 second loop time.
+Within this loop, the navigation tasks are handled first, followed by
+processing of the input commands. Any resultant output will be generated
+as soon as the input buffer is processed, assuming the buffer holds one
+or more complete commands.</p>
+</div>
+<div class="paragraph">
+<p>If you are lucky and just finish your input as the buffer is ready to be
+scanned, you can get a result back in 70 milliseconds. If you are
+unlucky, the most extreme delay is 2 seconds. On average, the turnaround
+is 1025 milliseconds. Unfortunately, in the probing code, we have to
+allow for the worst case, so once the code issues a command, it has then
+to allow a full 2 seconds before scanning for output.</p>
+</div>
+<div class="paragraph">
+<p>When I found that my initial scanning method was not viable, I
+experimented and eventually settled on a loop using a <strong>while</strong>
+statement that checked time stamp values and was set to time out at 2
+seconds maximum duration, with an early exit on successfully finding the
+wanted data. Within the loop, I tested the serial port for an available
+character. If one was available, I checked it against my expected
+string; if one was not available, I looped again if the timer had not
+expired. If I encountered an error when reading the port I exited. All
+exits returned a success/fail value.</p>
+</div>
+<div class="paragraph">
+<p>This worked better, but still failed occasionally. I then used the
+"<strong>gpsd_log</strong>" to check the error returned and I saw that I was getting
+lots of "EAGAIN" errors. This suggested that the port was not able to
+handle all my read requests, so I suspected the rate of reading was too
+fast. Not knowing for sure, I trapped this particular error and applied
+a <strong>usleep()</strong> of a couple of milliseconds when it occurred. This was
+enough to cure the problem and I could get the detection to track the
+device&#8217;s responses reliably. I saw a spread of detection timing between
+250 milliseconds and 1.7 seconds over a large number of tests, so I
+concluded that the manufacturer&#8217;s predictions were being satisfied.</p>
+</div>
+<div class="paragraph">
+<p>The only other serial port setting which was not immediately obvious
+to me (although present in both "<strong>serial.c</strong>" and "<strong>sirfmon.c</strong>" ) was
+"<strong>session&#8594;ttyset.c_cflag |= CREAD | CLOCAL;</strong>". This is needed to enable
+the port and cause it to ignore any modem control lines. If you are
+using a binary protocol , you will also need to issue a "<strong>cfmakeraw
+(struct termios *termios_p);</strong>" to quickly set the most important flags
+correctly. I was bitten by this and found that transmitted &lt;CR/LF&gt;
+sequences were being modified to &lt;CR/CR/LF&gt; by the kernel&#8217;s tty port
+driver.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_sign_off"><a class="link" href="#_sign_off">Sign off</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Hopefully this short document has been some use to you and maybe
+encouraged you to "have a go". I had never attempted anything so
+ambitious as this driver before where my code would be put up to public
+scrutiny, but I found the experience very rewarding and found the gpsd
+community, especially Eric Raymond, highly supportive and encouraging.</p>
+</div>
+<div class="paragraph">
+<p>Your feedback on this document, especially any suggestions for
+improvements would be most welcome.</p>
+</div>
+<div class="paragraph">
+<p>Mick Durkin &lt;<a href="mailto:mick.durkin@saunalahti.fi">mick.durkin@saunalahti.fi</a>&gt;</p>
+</div>
+<div class="paragraph">
+<p>Helsinki</p>
+</div>
+<div class="paragraph">
+<p>November 2006</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_revision_history"><a class="link" href="#_revision_history">Revision History</a></h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Version</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Date</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Author</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Comments</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.16</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">25 Jan 2020</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">gem</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Convert Docbook to AsciiDoc.  Remove dead links.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.15</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">7 Mar 2015</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">er</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Updated by esr; track a function rename. Text now fibs about
+the original author thought the name was in order to avoid
+confusing current readers.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.13</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">25 Aug 2014</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">er</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Updated by esr; added init_query method.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.12</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">31 Oct 2013</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">er</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Updated by esr; ntp_offset becomes time_offset</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.11</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">19 Jan 2011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">er</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Updated by esr; driver type flag field added.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.10</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">9 Jan 2011</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">er</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Updated by esr; event_wakeup no longer fires for USB devices,
+in order to avoid spamming unidentified devices behind
+USB-to-serial adapters that may not be GPSes at all.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.9</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">13 Apr 2010</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">er</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Updated by esr; added event_triggermatch and the new
+ntp_offset member.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16 Sep 2009</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">er</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Updated by esr; major rearrangement of driver event set.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">9 Aug 2009</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">er</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Updated by esr; the device_class experiment failed.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.7</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">24 Jul 2009</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">er</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Updated by esr; Added the device_class member.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.6</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">9 Mar 2009</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">er</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Updated by esr; libgpsd_core.c no longr requires modification
+when you add a driver.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.6</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1 Mar 2009</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">er</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Updated by esr to reflect removal of the cycle member.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1 Mar 2009</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">er</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Updated by esr to reflect the parity/stopbits
+extension of the sopeed_switcher method.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">17 February 2009</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">er</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Updated by esr to reflect the renaming of sirfmon to gpsmon,
+and document the control_send method.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">14 November 2006</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">md</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Updated to conform to the fepo source at this date.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_copying"><a class="link" href="#_copying">COPYING</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This file is Copyright 2006 by the GPSD project<br>
+SPDX-License-Identifier: BSD-2-clause</p>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Version 1.16<br>
+Last updated 2023-01-10 17:38:26 -0500
+</div>
+</div>
+</body>
+</html>

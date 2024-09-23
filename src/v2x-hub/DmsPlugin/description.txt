@@ -1,0 +1,43 @@
+/**
+ \page ivpplugins V2I Hub Plugins
+ - \subpage dmsplugin
+ 
+ \page dmsplugin DMS Plugin
+\tableofcontents
+
+The DmsPlugin is a plugin for the V2I Hub that controls the display of a dynamic message sign via
+NTCIP 1203 based on messages it receives.
+
+\section dmsdesign Description
+
+The Dynamic Message Sign (DMS) plugin communicates with a DMS using National Transportation Communications for ITS Protocol (NTCIP) 1203 v3. 
+The plugin receives requests for messages to be displayed from other plugins in the V2I Hub, and sends the appropriate message string from 
+the configuration to the DMS for display. The plugin configures the DMS with four messages that can be called up using their index. This 
+reduces the delay in displaying the message. The four messages can be configured using the configuration values. When the messages are changed, 
+the updated message list is sent to the DMS. A limitation of the plugin is that if a clear display is needed, the plugin must use one of the 
+four messages, reducing the number of messages to three.
+
+\section dmsconfig Configuration
+
+The DMS plugin can be configured to display four messages on a single DMS. The DMS must be connected to the same network as the V2I Hub. 
+The DMS IP Address configuration value contains the IP address of the DMS on the network. The DMS Port is the port used by the DMS for receiving 
+the NTCIP communications. The Message 01, Message 02, Message 03, and Message 04 configuration values contain the string used to configure the 
+sign for message display. The default values showcase messages that worked when testing with the ADDCO DH250 sign. The “[nl]” key word in the 
+message tells the messages to start on a new line. The configuration in Table 5 shows that the DMS is configured to display a blank page when 
+message with id 01 is sent, 25 MPH when message id 02 is sent, Slow Down when message id 03 is sent, and Curve Ahead when message id 04 is sent. 
+Configuration values Enable Sign Simulator, Enable DMS, Sign Sim IP Address, and Sign Sim Port are not shown or described because they are deprecated. 
+
+- DMS IP Address: The IP address of the NTCIP Dynamic Message Sign.
+- DMS Port: The port of the NTCIP Dynamic Message Sign.
+- Force Message ID: Immediately activates the message ID specified, then resets back to -1
+- Message 01: The text to display on the sign for ID 01 with any formatting (see NTCIP 1203).
+- Message 02: The text to display on the sign for ID 02 with any formatting (see NTCIP 1203).
+- Message 03: The text to display on the sign for ID 03 with any formatting (see NTCIP 1203).
+- Message 04: The text to display on the sign for ID 04 with any formatting (see NTCIP 1203).
+
+\section dmsexternals External Resources
+
+- \ref tmx::utils::PluginClient "PluginClient"
+- NetSNMP
+
+*/

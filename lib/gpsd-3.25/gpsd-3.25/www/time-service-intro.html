@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 2.0.16">
+<meta name="description" content="A primer on precision time sources and services.">
+<meta name="keywords" content="time, UTC, atomic clock, GPS, NTP">
+<meta name="author" content="Eric S. Raymond">
+<title>Introduction to Time Service</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
+<style>
+/*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
+/* Uncomment the following line when using as a custom stylesheet */
+/* @import "https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700"; */
+html{font-family:sans-serif;-webkit-text-size-adjust:100%}
+a{background:none}
+a:focus{outline:thin dotted}
+a:active,a:hover{outline:0}
+h1{font-size:2em;margin:.67em 0}
+b,strong{font-weight:bold}
+abbr{font-size:.9em}
+abbr[title]{cursor:help;border-bottom:1px dotted #dddddf;text-decoration:none}
+dfn{font-style:italic}
+hr{height:0}
+mark{background:#ff0;color:#000}
+code,kbd,pre,samp{font-family:monospace;font-size:1em}
+pre{white-space:pre-wrap}
+q{quotes:"\201C" "\201D" "\2018" "\2019"}
+small{font-size:80%}
+sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}
+sup{top:-.5em}
+sub{bottom:-.25em}
+img{border:0}
+svg:not(:root){overflow:hidden}
+figure{margin:0}
+audio,video{display:inline-block}
+audio:not([controls]){display:none;height:0}
+fieldset{border:1px solid silver;margin:0 2px;padding:.35em .625em .75em}
+legend{border:0;padding:0}
+button,input,select,textarea{font-family:inherit;font-size:100%;margin:0}
+button,input{line-height:normal}
+button,select{text-transform:none}
+button,html input[type=button],input[type=reset],input[type=submit]{-webkit-appearance:button;cursor:pointer}
+button[disabled],html input[disabled]{cursor:default}
+input[type=checkbox],input[type=radio]{padding:0}
+button::-moz-focus-inner,input::-moz-focus-inner{border:0;padding:0}
+textarea{overflow:auto;vertical-align:top}
+table{border-collapse:collapse;border-spacing:0}
+*,::before,::after{box-sizing:border-box}
+html,body{font-size:100%}
+body{background:#fff;color:rgba(0,0,0,.8);padding:0;margin:0;font-family:"Noto Serif","DejaVu Serif",serif;line-height:1;position:relative;cursor:auto;-moz-tab-size:4;-o-tab-size:4;tab-size:4;word-wrap:anywhere;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased}
+a:hover{cursor:pointer}
+img,object,embed{max-width:100%;height:auto}
+object,embed{height:100%}
+img{-ms-interpolation-mode:bicubic}
+.left{float:left!important}
+.right{float:right!important}
+.text-left{text-align:left!important}
+.text-right{text-align:right!important}
+.text-center{text-align:center!important}
+.text-justify{text-align:justify!important}
+.hide{display:none}
+img,object,svg{display:inline-block;vertical-align:middle}
+textarea{height:auto;min-height:50px}
+select{width:100%}
+.subheader,.admonitionblock td.content>.title,.audioblock>.title,.exampleblock>.title,.imageblock>.title,.listingblock>.title,.literalblock>.title,.stemblock>.title,.openblock>.title,.paragraph>.title,.quoteblock>.title,table.tableblock>.title,.verseblock>.title,.videoblock>.title,.dlist>.title,.olist>.title,.ulist>.title,.qlist>.title,.hdlist>.title{line-height:1.45;color:#7a2518;font-weight:400;margin-top:0;margin-bottom:.25em}
+div,dl,dt,dd,ul,ol,li,h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6,pre,form,p,blockquote,th,td{margin:0;padding:0}
+a{color:#2156a5;text-decoration:underline;line-height:inherit}
+a:hover,a:focus{color:#1d4b8f}
+a img{border:0}
+p{line-height:1.6;margin-bottom:1.25em;text-rendering:optimizeLegibility}
+p aside{font-size:.875em;line-height:1.35;font-style:italic}
+h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{font-family:"Open Sans","DejaVu Sans",sans-serif;font-weight:300;font-style:normal;color:#ba3925;text-rendering:optimizeLegibility;margin-top:1em;margin-bottom:.5em;line-height:1.0125em}
+h1 small,h2 small,h3 small,#toctitle small,.sidebarblock>.content>.title small,h4 small,h5 small,h6 small{font-size:60%;color:#e99b8f;line-height:0}
+h1{font-size:2.125em}
+h2{font-size:1.6875em}
+h3,#toctitle,.sidebarblock>.content>.title{font-size:1.375em}
+h4,h5{font-size:1.125em}
+h6{font-size:1em}
+hr{border:solid #dddddf;border-width:1px 0 0;clear:both;margin:1.25em 0 1.1875em}
+em,i{font-style:italic;line-height:inherit}
+strong,b{font-weight:bold;line-height:inherit}
+small{font-size:60%;line-height:inherit}
+code{font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;font-weight:400;color:rgba(0,0,0,.9)}
+ul,ol,dl{line-height:1.6;margin-bottom:1.25em;list-style-position:outside;font-family:inherit}
+ul,ol{margin-left:1.5em}
+ul li ul,ul li ol{margin-left:1.25em;margin-bottom:0}
+ul.square li ul,ul.circle li ul,ul.disc li ul{list-style:inherit}
+ul.square{list-style-type:square}
+ul.circle{list-style-type:circle}
+ul.disc{list-style-type:disc}
+ol li ul,ol li ol{margin-left:1.25em;margin-bottom:0}
+dl dt{margin-bottom:.3125em;font-weight:bold}
+dl dd{margin-bottom:1.25em}
+blockquote{margin:0 0 1.25em;padding:.5625em 1.25em 0 1.1875em;border-left:1px solid #ddd}
+blockquote,blockquote p{line-height:1.6;color:rgba(0,0,0,.85)}
+@media screen and (min-width:768px){h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{line-height:1.2}
+h1{font-size:2.75em}
+h2{font-size:2.3125em}
+h3,#toctitle,.sidebarblock>.content>.title{font-size:1.6875em}
+h4{font-size:1.4375em}}
+table{background:#fff;margin-bottom:1.25em;border:1px solid #dedede;word-wrap:normal}
+table thead,table tfoot{background:#f7f8f7}
+table thead tr th,table thead tr td,table tfoot tr th,table tfoot tr td{padding:.5em .625em .625em;font-size:inherit;color:rgba(0,0,0,.8);text-align:left}
+table tr th,table tr td{padding:.5625em .625em;font-size:inherit;color:rgba(0,0,0,.8)}
+table tr.even,table tr.alt{background:#f8f8f7}
+table thead tr th,table tfoot tr th,table tbody tr td,table tr td,table tfoot tr td{line-height:1.6}
+h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{line-height:1.2;word-spacing:-.05em}
+h1 strong,h2 strong,h3 strong,#toctitle strong,.sidebarblock>.content>.title strong,h4 strong,h5 strong,h6 strong{font-weight:400}
+.center{margin-left:auto;margin-right:auto}
+.stretch{width:100%}
+.clearfix::before,.clearfix::after,.float-group::before,.float-group::after{content:" ";display:table}
+.clearfix::after,.float-group::after{clear:both}
+:not(pre).nobreak{word-wrap:normal}
+:not(pre).nowrap{white-space:nowrap}
+:not(pre).pre-wrap{white-space:pre-wrap}
+:not(pre):not([class^=L])>code{font-size:.9375em;font-style:normal!important;letter-spacing:0;padding:.1em .5ex;word-spacing:-.15em;background:#f7f7f8;border-radius:4px;line-height:1.45;text-rendering:optimizeSpeed}
+pre{color:rgba(0,0,0,.9);font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;line-height:1.45;text-rendering:optimizeSpeed}
+pre code,pre pre{color:inherit;font-size:inherit;line-height:inherit}
+pre>code{display:block}
+pre.nowrap,pre.nowrap pre{white-space:pre;word-wrap:normal}
+em em{font-style:normal}
+strong strong{font-weight:400}
+.keyseq{color:rgba(51,51,51,.8)}
+kbd{font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;display:inline-block;color:rgba(0,0,0,.8);font-size:.65em;line-height:1.45;background:#f7f7f7;border:1px solid #ccc;border-radius:3px;box-shadow:0 1px 0 rgba(0,0,0,.2),inset 0 0 0 .1em #fff;margin:0 .15em;padding:.2em .5em;vertical-align:middle;position:relative;top:-.1em;white-space:nowrap}
+.keyseq kbd:first-child{margin-left:0}
+.keyseq kbd:last-child{margin-right:0}
+.menuseq,.menuref{color:#000}
+.menuseq b:not(.caret),.menuref{font-weight:inherit}
+.menuseq{word-spacing:-.02em}
+.menuseq b.caret{font-size:1.25em;line-height:.8}
+.menuseq i.caret{font-weight:bold;text-align:center;width:.45em}
+b.button::before,b.button::after{position:relative;top:-1px;font-weight:400}
+b.button::before{content:"[";padding:0 3px 0 2px}
+b.button::after{content:"]";padding:0 2px 0 3px}
+p a>code:hover{color:rgba(0,0,0,.9)}
+#header,#content,#footnotes,#footer{width:100%;margin:0 auto;max-width:62.5em;*zoom:1;position:relative;padding-left:.9375em;padding-right:.9375em}
+#header::before,#header::after,#content::before,#content::after,#footnotes::before,#footnotes::after,#footer::before,#footer::after{content:" ";display:table}
+#header::after,#content::after,#footnotes::after,#footer::after{clear:both}
+#content{margin-top:1.25em}
+#content::before{content:none}
+#header>h1:first-child{color:rgba(0,0,0,.85);margin-top:2.25rem;margin-bottom:0}
+#header>h1:first-child+#toc{margin-top:8px;border-top:1px solid #dddddf}
+#header>h1:only-child,body.toc2 #header>h1:nth-last-child(2){border-bottom:1px solid #dddddf;padding-bottom:8px}
+#header .details{border-bottom:1px solid #dddddf;line-height:1.45;padding-top:.25em;padding-bottom:.25em;padding-left:.25em;color:rgba(0,0,0,.6);display:flex;flex-flow:row wrap}
+#header .details span:first-child{margin-left:-.125em}
+#header .details span.email a{color:rgba(0,0,0,.85)}
+#header .details br{display:none}
+#header .details br+span::before{content:"\00a0\2013\00a0"}
+#header .details br+span.author::before{content:"\00a0\22c5\00a0";color:rgba(0,0,0,.85)}
+#header .details br+span#revremark::before{content:"\00a0|\00a0"}
+#header #revnumber{text-transform:capitalize}
+#header #revnumber::after{content:"\00a0"}
+#content>h1:first-child:not([class]){color:rgba(0,0,0,.85);border-bottom:1px solid #dddddf;padding-bottom:8px;margin-top:0;padding-top:1rem;margin-bottom:1.25rem}
+#toc{border-bottom:1px solid #e7e7e9;padding-bottom:.5em}
+#toc>ul{margin-left:.125em}
+#toc ul.sectlevel0>li>a{font-style:italic}
+#toc ul.sectlevel0 ul.sectlevel1{margin:.5em 0}
+#toc ul{font-family:"Open Sans","DejaVu Sans",sans-serif;list-style-type:none}
+#toc li{line-height:1.3334;margin-top:.3334em}
+#toc a{text-decoration:none}
+#toc a:active{text-decoration:underline}
+#toctitle{color:#7a2518;font-size:1.2em}
+@media screen and (min-width:768px){#toctitle{font-size:1.375em}
+body.toc2{padding-left:15em;padding-right:0}
+#toc.toc2{margin-top:0!important;background:#f8f8f7;position:fixed;width:15em;left:0;top:0;border-right:1px solid #e7e7e9;border-top-width:0!important;border-bottom-width:0!important;z-index:1000;padding:1.25em 1em;height:100%;overflow:auto}
+#toc.toc2 #toctitle{margin-top:0;margin-bottom:.8rem;font-size:1.2em}
+#toc.toc2>ul{font-size:.9em;margin-bottom:0}
+#toc.toc2 ul ul{margin-left:0;padding-left:1em}
+#toc.toc2 ul.sectlevel0 ul.sectlevel1{padding-left:0;margin-top:.5em;margin-bottom:.5em}
+body.toc2.toc-right{padding-left:0;padding-right:15em}
+body.toc2.toc-right #toc.toc2{border-right-width:0;border-left:1px solid #e7e7e9;left:auto;right:0}}
+@media screen and (min-width:1280px){body.toc2{padding-left:20em;padding-right:0}
+#toc.toc2{width:20em}
+#toc.toc2 #toctitle{font-size:1.375em}
+#toc.toc2>ul{font-size:.95em}
+#toc.toc2 ul ul{padding-left:1.25em}
+body.toc2.toc-right{padding-left:0;padding-right:20em}}
+#content #toc{border:1px solid #e0e0dc;margin-bottom:1.25em;padding:1.25em;background:#f8f8f7;border-radius:4px}
+#content #toc>:first-child{margin-top:0}
+#content #toc>:last-child{margin-bottom:0}
+#footer{max-width:none;background:rgba(0,0,0,.8);padding:1.25em}
+#footer-text{color:hsla(0,0%,100%,.8);line-height:1.44}
+#content{margin-bottom:.625em}
+.sect1{padding-bottom:.625em}
+@media screen and (min-width:768px){#content{margin-bottom:1.25em}
+.sect1{padding-bottom:1.25em}}
+.sect1:last-child{padding-bottom:0}
+.sect1+.sect1{border-top:1px solid #e7e7e9}
+#content h1>a.anchor,h2>a.anchor,h3>a.anchor,#toctitle>a.anchor,.sidebarblock>.content>.title>a.anchor,h4>a.anchor,h5>a.anchor,h6>a.anchor{position:absolute;z-index:1001;width:1.5ex;margin-left:-1.5ex;display:block;text-decoration:none!important;visibility:hidden;text-align:center;font-weight:400}
+#content h1>a.anchor::before,h2>a.anchor::before,h3>a.anchor::before,#toctitle>a.anchor::before,.sidebarblock>.content>.title>a.anchor::before,h4>a.anchor::before,h5>a.anchor::before,h6>a.anchor::before{content:"\00A7";font-size:.85em;display:block;padding-top:.1em}
+#content h1:hover>a.anchor,#content h1>a.anchor:hover,h2:hover>a.anchor,h2>a.anchor:hover,h3:hover>a.anchor,#toctitle:hover>a.anchor,.sidebarblock>.content>.title:hover>a.anchor,h3>a.anchor:hover,#toctitle>a.anchor:hover,.sidebarblock>.content>.title>a.anchor:hover,h4:hover>a.anchor,h4>a.anchor:hover,h5:hover>a.anchor,h5>a.anchor:hover,h6:hover>a.anchor,h6>a.anchor:hover{visibility:visible}
+#content h1>a.link,h2>a.link,h3>a.link,#toctitle>a.link,.sidebarblock>.content>.title>a.link,h4>a.link,h5>a.link,h6>a.link{color:#ba3925;text-decoration:none}
+#content h1>a.link:hover,h2>a.link:hover,h3>a.link:hover,#toctitle>a.link:hover,.sidebarblock>.content>.title>a.link:hover,h4>a.link:hover,h5>a.link:hover,h6>a.link:hover{color:#a53221}
+details,.audioblock,.imageblock,.literalblock,.listingblock,.stemblock,.videoblock{margin-bottom:1.25em}
+details{margin-left:1.25rem}
+details>summary{cursor:pointer;display:block;position:relative;line-height:1.6;margin-bottom:.625rem;-webkit-tap-highlight-color:transparent}
+details>summary::before{content:"";border:solid transparent;border-left:solid;border-width:.3em 0 .3em .5em;position:absolute;top:.5em;left:-1.25rem;transform:translateX(15%)}
+details[open]>summary::before{border:solid transparent;border-top:solid;border-width:.5em .3em 0;transform:translateY(15%)}
+details>summary::after{content:"";width:1.25rem;height:1em;position:absolute;top:.3em;left:-1.25rem}
+.admonitionblock td.content>.title,.audioblock>.title,.exampleblock>.title,.imageblock>.title,.listingblock>.title,.literalblock>.title,.stemblock>.title,.openblock>.title,.paragraph>.title,.quoteblock>.title,table.tableblock>.title,.verseblock>.title,.videoblock>.title,.dlist>.title,.olist>.title,.ulist>.title,.qlist>.title,.hdlist>.title{text-rendering:optimizeLegibility;text-align:left;font-family:"Noto Serif","DejaVu Serif",serif;font-size:1rem;font-style:italic}
+table.tableblock.fit-content>caption.title{white-space:nowrap;width:0}
+.paragraph.lead>p,#preamble>.sectionbody>[class=paragraph]:first-of-type p{font-size:1.21875em;line-height:1.6;color:rgba(0,0,0,.85)}
+.admonitionblock>table{border-collapse:separate;border:0;background:none;width:100%}
+.admonitionblock>table td.icon{text-align:center;width:80px}
+.admonitionblock>table td.icon img{max-width:none}
+.admonitionblock>table td.icon .title{font-weight:bold;font-family:"Open Sans","DejaVu Sans",sans-serif;text-transform:uppercase}
+.admonitionblock>table td.content{padding-left:1.125em;padding-right:1.25em;border-left:1px solid #dddddf;color:rgba(0,0,0,.6);word-wrap:anywhere}
+.admonitionblock>table td.content>:last-child>:last-child{margin-bottom:0}
+.exampleblock>.content{border:1px solid #e6e6e6;margin-bottom:1.25em;padding:1.25em;background:#fff;border-radius:4px}
+.exampleblock>.content>:first-child{margin-top:0}
+.exampleblock>.content>:last-child{margin-bottom:0}
+.sidebarblock{border:1px solid #dbdbd6;margin-bottom:1.25em;padding:1.25em;background:#f3f3f2;border-radius:4px}
+.sidebarblock>:first-child{margin-top:0}
+.sidebarblock>:last-child{margin-bottom:0}
+.sidebarblock>.content>.title{color:#7a2518;margin-top:0;text-align:center}
+.exampleblock>.content>:last-child>:last-child,.exampleblock>.content .olist>ol>li:last-child>:last-child,.exampleblock>.content .ulist>ul>li:last-child>:last-child,.exampleblock>.content .qlist>ol>li:last-child>:last-child,.sidebarblock>.content>:last-child>:last-child,.sidebarblock>.content .olist>ol>li:last-child>:last-child,.sidebarblock>.content .ulist>ul>li:last-child>:last-child,.sidebarblock>.content .qlist>ol>li:last-child>:last-child{margin-bottom:0}
+.literalblock pre,.listingblock>.content>pre{border-radius:4px;overflow-x:auto;padding:1em;font-size:.8125em}
+@media screen and (min-width:768px){.literalblock pre,.listingblock>.content>pre{font-size:.90625em}}
+@media screen and (min-width:1280px){.literalblock pre,.listingblock>.content>pre{font-size:1em}}
+.literalblock pre,.listingblock>.content>pre:not(.highlight),.listingblock>.content>pre[class=highlight],.listingblock>.content>pre[class^="highlight "]{background:#f7f7f8}
+.literalblock.output pre{color:#f7f7f8;background:rgba(0,0,0,.9)}
+.listingblock>.content{position:relative}
+.listingblock code[data-lang]::before{display:none;content:attr(data-lang);position:absolute;font-size:.75em;top:.425rem;right:.5rem;line-height:1;text-transform:uppercase;color:inherit;opacity:.5}
+.listingblock:hover code[data-lang]::before{display:block}
+.listingblock.terminal pre .command::before{content:attr(data-prompt);padding-right:.5em;color:inherit;opacity:.5}
+.listingblock.terminal pre .command:not([data-prompt])::before{content:"$"}
+.listingblock pre.highlightjs{padding:0}
+.listingblock pre.highlightjs>code{padding:1em;border-radius:4px}
+.listingblock pre.prettyprint{border-width:0}
+.prettyprint{background:#f7f7f8}
+pre.prettyprint .linenums{line-height:1.45;margin-left:2em}
+pre.prettyprint li{background:none;list-style-type:inherit;padding-left:0}
+pre.prettyprint li code[data-lang]::before{opacity:1}
+pre.prettyprint li:not(:first-child) code[data-lang]::before{display:none}
+table.linenotable{border-collapse:separate;border:0;margin-bottom:0;background:none}
+table.linenotable td[class]{color:inherit;vertical-align:top;padding:0;line-height:inherit;white-space:normal}
+table.linenotable td.code{padding-left:.75em}
+table.linenotable td.linenos{border-right:1px solid;opacity:.35;padding-right:.5em}
+pre.pygments .lineno{border-right:1px solid;opacity:.35;display:inline-block;margin-right:.75em}
+pre.pygments .lineno::before{content:"";margin-right:-.125em}
+.quoteblock{margin:0 1em 1.25em 1.5em;display:table}
+.quoteblock:not(.excerpt)>.title{margin-left:-1.5em;margin-bottom:.75em}
+.quoteblock blockquote,.quoteblock p{color:rgba(0,0,0,.85);font-size:1.15rem;line-height:1.75;word-spacing:.1em;letter-spacing:0;font-style:italic;text-align:justify}
+.quoteblock blockquote{margin:0;padding:0;border:0}
+.quoteblock blockquote::before{content:"\201c";float:left;font-size:2.75em;font-weight:bold;line-height:.6em;margin-left:-.6em;color:#7a2518;text-shadow:0 1px 2px rgba(0,0,0,.1)}
+.quoteblock blockquote>.paragraph:last-child p{margin-bottom:0}
+.quoteblock .attribution{margin-top:.75em;margin-right:.5ex;text-align:right}
+.verseblock{margin:0 1em 1.25em}
+.verseblock pre{font-family:"Open Sans","DejaVu Sans",sans-serif;font-size:1.15rem;color:rgba(0,0,0,.85);font-weight:300;text-rendering:optimizeLegibility}
+.verseblock pre strong{font-weight:400}
+.verseblock .attribution{margin-top:1.25rem;margin-left:.5ex}
+.quoteblock .attribution,.verseblock .attribution{font-size:.9375em;line-height:1.45;font-style:italic}
+.quoteblock .attribution br,.verseblock .attribution br{display:none}
+.quoteblock .attribution cite,.verseblock .attribution cite{display:block;letter-spacing:-.025em;color:rgba(0,0,0,.6)}
+.quoteblock.abstract blockquote::before,.quoteblock.excerpt blockquote::before,.quoteblock .quoteblock blockquote::before{display:none}
+.quoteblock.abstract blockquote,.quoteblock.abstract p,.quoteblock.excerpt blockquote,.quoteblock.excerpt p,.quoteblock .quoteblock blockquote,.quoteblock .quoteblock p{line-height:1.6;word-spacing:0}
+.quoteblock.abstract{margin:0 1em 1.25em;display:block}
+.quoteblock.abstract>.title{margin:0 0 .375em;font-size:1.15em;text-align:center}
+.quoteblock.excerpt>blockquote,.quoteblock .quoteblock{padding:0 0 .25em 1em;border-left:.25em solid #dddddf}
+.quoteblock.excerpt,.quoteblock .quoteblock{margin-left:0}
+.quoteblock.excerpt blockquote,.quoteblock.excerpt p,.quoteblock .quoteblock blockquote,.quoteblock .quoteblock p{color:inherit;font-size:1.0625rem}
+.quoteblock.excerpt .attribution,.quoteblock .quoteblock .attribution{color:inherit;font-size:.85rem;text-align:left;margin-right:0}
+p.tableblock:last-child{margin-bottom:0}
+td.tableblock>.content{margin-bottom:1.25em;word-wrap:anywhere}
+td.tableblock>.content>:last-child{margin-bottom:-1.25em}
+table.tableblock,th.tableblock,td.tableblock{border:0 solid #dedede}
+table.grid-all>*>tr>*{border-width:1px}
+table.grid-cols>*>tr>*{border-width:0 1px}
+table.grid-rows>*>tr>*{border-width:1px 0}
+table.frame-all{border-width:1px}
+table.frame-ends{border-width:1px 0}
+table.frame-sides{border-width:0 1px}
+table.frame-none>colgroup+*>:first-child>*,table.frame-sides>colgroup+*>:first-child>*{border-top-width:0}
+table.frame-none>:last-child>:last-child>*,table.frame-sides>:last-child>:last-child>*{border-bottom-width:0}
+table.frame-none>*>tr>:first-child,table.frame-ends>*>tr>:first-child{border-left-width:0}
+table.frame-none>*>tr>:last-child,table.frame-ends>*>tr>:last-child{border-right-width:0}
+table.stripes-all tr,table.stripes-odd tr:nth-of-type(odd),table.stripes-even tr:nth-of-type(even),table.stripes-hover tr:hover{background:#f8f8f7}
+th.halign-left,td.halign-left{text-align:left}
+th.halign-right,td.halign-right{text-align:right}
+th.halign-center,td.halign-center{text-align:center}
+th.valign-top,td.valign-top{vertical-align:top}
+th.valign-bottom,td.valign-bottom{vertical-align:bottom}
+th.valign-middle,td.valign-middle{vertical-align:middle}
+table thead th,table tfoot th{font-weight:bold}
+tbody tr th{background:#f7f8f7}
+tbody tr th,tbody tr th p,tfoot tr th,tfoot tr th p{color:rgba(0,0,0,.8);font-weight:bold}
+p.tableblock>code:only-child{background:none;padding:0}
+p.tableblock{font-size:1em}
+ol{margin-left:1.75em}
+ul li ol{margin-left:1.5em}
+dl dd{margin-left:1.125em}
+dl dd:last-child,dl dd:last-child>:last-child{margin-bottom:0}
+ol>li p,ul>li p,ul dd,ol dd,.olist .olist,.ulist .ulist,.ulist .olist,.olist .ulist{margin-bottom:.625em}
+ul.checklist,ul.none,ol.none,ul.no-bullet,ol.no-bullet,ol.unnumbered,ul.unstyled,ol.unstyled{list-style-type:none}
+ul.no-bullet,ol.no-bullet,ol.unnumbered{margin-left:.625em}
+ul.unstyled,ol.unstyled{margin-left:0}
+ul.checklist>li>p:first-child{margin-left:-1em}
+ul.checklist>li>p:first-child>.fa-square-o:first-child,ul.checklist>li>p:first-child>.fa-check-square-o:first-child{width:1.25em;font-size:.8em;position:relative;bottom:.125em}
+ul.checklist>li>p:first-child>input[type=checkbox]:first-child{margin-right:.25em}
+ul.inline{display:flex;flex-flow:row wrap;list-style:none;margin:0 0 .625em -1.25em}
+ul.inline>li{margin-left:1.25em}
+.unstyled dl dt{font-weight:400;font-style:normal}
+ol.arabic{list-style-type:decimal}
+ol.decimal{list-style-type:decimal-leading-zero}
+ol.loweralpha{list-style-type:lower-alpha}
+ol.upperalpha{list-style-type:upper-alpha}
+ol.lowerroman{list-style-type:lower-roman}
+ol.upperroman{list-style-type:upper-roman}
+ol.lowergreek{list-style-type:lower-greek}
+.hdlist>table,.colist>table{border:0;background:none}
+.hdlist>table>tbody>tr,.colist>table>tbody>tr{background:none}
+td.hdlist1,td.hdlist2{vertical-align:top;padding:0 .625em}
+td.hdlist1{font-weight:bold;padding-bottom:1.25em}
+td.hdlist2{word-wrap:anywhere}
+.literalblock+.colist,.listingblock+.colist{margin-top:-.5em}
+.colist td:not([class]):first-child{padding:.4em .75em 0;line-height:1;vertical-align:top}
+.colist td:not([class]):first-child img{max-width:none}
+.colist td:not([class]):last-child{padding:.25em 0}
+.thumb,.th{line-height:0;display:inline-block;border:4px solid #fff;box-shadow:0 0 0 1px #ddd}
+.imageblock.left{margin:.25em .625em 1.25em 0}
+.imageblock.right{margin:.25em 0 1.25em .625em}
+.imageblock>.title{margin-bottom:0}
+.imageblock.thumb,.imageblock.th{border-width:6px}
+.imageblock.thumb>.title,.imageblock.th>.title{padding:0 .125em}
+.image.left,.image.right{margin-top:.25em;margin-bottom:.25em;display:inline-block;line-height:0}
+.image.left{margin-right:.625em}
+.image.right{margin-left:.625em}
+a.image{text-decoration:none;display:inline-block}
+a.image object{pointer-events:none}
+sup.footnote,sup.footnoteref{font-size:.875em;position:static;vertical-align:super}
+sup.footnote a,sup.footnoteref a{text-decoration:none}
+sup.footnote a:active,sup.footnoteref a:active{text-decoration:underline}
+#footnotes{padding-top:.75em;padding-bottom:.75em;margin-bottom:.625em}
+#footnotes hr{width:20%;min-width:6.25em;margin:-.25em 0 .75em;border-width:1px 0 0}
+#footnotes .footnote{padding:0 .375em 0 .225em;line-height:1.3334;font-size:.875em;margin-left:1.2em;margin-bottom:.2em}
+#footnotes .footnote a:first-of-type{font-weight:bold;text-decoration:none;margin-left:-1.05em}
+#footnotes .footnote:last-of-type{margin-bottom:0}
+#content #footnotes{margin-top:-.625em;margin-bottom:0;padding:.75em 0}
+.gist .file-data>table{border:0;background:#fff;width:100%;margin-bottom:0}
+.gist .file-data>table td.line-data{width:99%}
+div.unbreakable{page-break-inside:avoid}
+.big{font-size:larger}
+.small{font-size:smaller}
+.underline{text-decoration:underline}
+.overline{text-decoration:overline}
+.line-through{text-decoration:line-through}
+.aqua{color:#00bfbf}
+.aqua-background{background:#00fafa}
+.black{color:#000}
+.black-background{background:#000}
+.blue{color:#0000bf}
+.blue-background{background:#0000fa}
+.fuchsia{color:#bf00bf}
+.fuchsia-background{background:#fa00fa}
+.gray{color:#606060}
+.gray-background{background:#7d7d7d}
+.green{color:#006000}
+.green-background{background:#007d00}
+.lime{color:#00bf00}
+.lime-background{background:#00fa00}
+.maroon{color:#600000}
+.maroon-background{background:#7d0000}
+.navy{color:#000060}
+.navy-background{background:#00007d}
+.olive{color:#606000}
+.olive-background{background:#7d7d00}
+.purple{color:#600060}
+.purple-background{background:#7d007d}
+.red{color:#bf0000}
+.red-background{background:#fa0000}
+.silver{color:#909090}
+.silver-background{background:#bcbcbc}
+.teal{color:#006060}
+.teal-background{background:#007d7d}
+.white{color:#bfbfbf}
+.white-background{background:#fafafa}
+.yellow{color:#bfbf00}
+.yellow-background{background:#fafa00}
+span.icon>.fa{cursor:default}
+a span.icon>.fa{cursor:inherit}
+.admonitionblock td.icon [class^="fa icon-"]{font-size:2.5em;text-shadow:1px 1px 2px rgba(0,0,0,.5);cursor:default}
+.admonitionblock td.icon .icon-note::before{content:"\f05a";color:#19407c}
+.admonitionblock td.icon .icon-tip::before{content:"\f0eb";text-shadow:1px 1px 2px rgba(155,155,0,.8);color:#111}
+.admonitionblock td.icon .icon-warning::before{content:"\f071";color:#bf6900}
+.admonitionblock td.icon .icon-caution::before{content:"\f06d";color:#bf3400}
+.admonitionblock td.icon .icon-important::before{content:"\f06a";color:#bf0000}
+.conum[data-value]{display:inline-block;color:#fff!important;background:rgba(0,0,0,.8);border-radius:50%;text-align:center;font-size:.75em;width:1.67em;height:1.67em;line-height:1.67em;font-family:"Open Sans","DejaVu Sans",sans-serif;font-style:normal;font-weight:bold}
+.conum[data-value] *{color:#fff!important}
+.conum[data-value]+b{display:none}
+.conum[data-value]::after{content:attr(data-value)}
+pre .conum[data-value]{position:relative;top:-.125em}
+b.conum *{color:inherit!important}
+.conum:not([data-value]):empty{display:none}
+dt,th.tableblock,td.content,div.footnote{text-rendering:optimizeLegibility}
+h1,h2,p,td.content,span.alt,summary{letter-spacing:-.01em}
+p strong,td.content strong,div.footnote strong{letter-spacing:-.005em}
+p,blockquote,dt,td.content,span.alt,summary{font-size:1.0625rem}
+p{margin-bottom:1.25rem}
+.sidebarblock p,.sidebarblock dt,.sidebarblock td.content,p.tableblock{font-size:1em}
+.exampleblock>.content{background:#fffef7;border-color:#e0e0dc;box-shadow:0 1px 4px #e0e0dc}
+.print-only{display:none!important}
+@page{margin:1.25cm .75cm}
+@media print{*{box-shadow:none!important;text-shadow:none!important}
+html{font-size:80%}
+a{color:inherit!important;text-decoration:underline!important}
+a.bare,a[href^="#"],a[href^="mailto:"]{text-decoration:none!important}
+a[href^="http:"]:not(.bare)::after,a[href^="https:"]:not(.bare)::after{content:"(" attr(href) ")";display:inline-block;font-size:.875em;padding-left:.25em}
+abbr[title]{border-bottom:1px dotted}
+abbr[title]::after{content:" (" attr(title) ")"}
+pre,blockquote,tr,img,object,svg{page-break-inside:avoid}
+thead{display:table-header-group}
+svg{max-width:100%}
+p,blockquote,dt,td.content{font-size:1em;orphans:3;widows:3}
+h2,h3,#toctitle,.sidebarblock>.content>.title{page-break-after:avoid}
+#header,#content,#footnotes,#footer{max-width:none}
+#toc,.sidebarblock,.exampleblock>.content{background:none!important}
+#toc{border-bottom:1px solid #dddddf!important;padding-bottom:0!important}
+body.book #header{text-align:center}
+body.book #header>h1:first-child{border:0!important;margin:2.5em 0 1em}
+body.book #header .details{border:0!important;display:block;padding:0!important}
+body.book #header .details span:first-child{margin-left:0!important}
+body.book #header .details br{display:block}
+body.book #header .details br+span::before{content:none!important}
+body.book #toc{border:0!important;text-align:left!important;padding:0!important;margin:0!important}
+body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-break-before:always}
+.listingblock code[data-lang]::before{display:block}
+#footer{padding:0 .9375em}
+.hide-on-print{display:none!important}
+.print-only{display:block!important}
+.hide-for-print{display:none!important}
+.show-for-print{display:inherit!important}}
+@media amzn-kf8,print{#header>h1:first-child{margin-top:1.25rem}
+.sect1{padding:0!important}
+.sect1+.sect1{border:0}
+#footer{background:none}
+#footer-text{color:rgba(0,0,0,.6);font-size:.9em}}
+@media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
+</style>
+<style>
+
+/* gpsd CSS customization. */
+#header > h1:first-child,
+body {
+  color: #000;
+}
+
+.sidebarblock,
+#toc.toc2 {
+  background: #f8f8f8;
+  border: 1px dashed #999;
+}
+
+.sidebarblock {
+  display: inline-block;
+  float: left;
+  margin-right: 20px;
+  margin-bottom: 20px;
+}
+
+#toctitle {
+  display: none;
+}
+
+#content #toc.toc {
+  background: inherit;
+  border: none;
+  padding: 0em;
+}
+
+#header,
+#content,
+#footnotes,
+#footer {
+  max-width: initial;
+}
+
+@media screen and (min-width: 768px) {
+  body {
+    --left-col: 15em;
+  }
+
+  #content #Menu {
+    border: 1px dashed #999;
+    bottom: 2px;
+    left: 2px;
+    margin: 0 20px 20px 0;
+    position: absolute;
+    top: 2px;
+    width: var(--left-col);
+  }
+
+  #content #preamble,
+  #content .sect1 {
+    margin-left: calc(var(--left-col) + 22px);
+  }
+}
+</style>
+</head>
+<body class="article">
+<div id="header">
+<h1>Introduction to Time Service</h1>
+<div class="details">
+<span id="author" class="author">Eric S. Raymond</span><br>
+<span id="email" class="email">&lt;<a href="mailto:esr@thyrsus.com">esr@thyrsus.com</a>&gt;</span><br>
+<span id="revnumber">version 1.6,</span>
+<span id="revdate">Jan 2021</span>
+</div>
+</div>
+<div id="content">
+<div id="preamble">
+<div class="sectionbody">
+<div id="Menu" class="sidebarblock">
+<div class="content">
+<div class="paragraph">
+<p><span class="image"><img src="gpsd-logo-small.png" alt="Small gpsd Logo" width="105" height="126"></span><br>
+<a href="index.html">Home</a><br>
+<a href="faq.html">FAQ</a><br>
+<a href="xgps-sample.html">Screenshots</a><br>
+<a href="hardware.html">Hardware</a><br>
+<a href="for-vendors.html">For GPS Vendors</a><br>
+<a href="wishlist.html">Wish List</a><br>
+<a href="hall-of-shame.html">Hall of Shame</a><br>
+<a href="troubleshooting.html">Troubleshooting Guide</a><br>
+<a href="hacking.html">Hacker&#8217;s Guide</a><br>
+<a href="references.html">References</a><br>
+<a href="protocol-transition.html">Application Compatibility</a><br>
+<a href="history.html">History</a><br>
+<a href="future.html">Future</a><br></p>
+</div>
+<hr>
+<div id="toc" class="toc">
+<div id="toctitle" class="title">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_introduction">Introduction</a></li>
+<li><a href="#_use_cases_for_precision_time_service">Use cases for precision time service</a></li>
+<li><a href="#_time_service_types">Time service types</a></li>
+<li><a href="#_clock_types">Clock types</a></li>
+<li><a href="#_basics_of_ntp">Basics of NTP</a></li>
+<li><a href="#_cost_effective_clocks">Cost-effective clocks</a></li>
+<li><a href="#_summary">Summary</a></li>
+<li><a href="#_further_reading">Further Reading</a></li>
+<li><a href="#_references">References</a></li>
+<li><a href="#_history">History</a></li>
+<li><a href="#_copying">COPYING</a></li>
+</ul>
+</div>
+<hr>
+<div class="paragraph">
+<p><a href="http://www.catb.org/hacker-emblem/"><span class="image"><img src="glider.png" alt="hacker emblem" width="55" height="55"></span></a><br>
+<br>
+<a href="https://validator.w3.org/check/referer"><span class="image"><img src="html5.png" alt="Valid HTML 5" width="88" height="31"></span></a></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This document is mastered in asciidoc format.  If you are reading it in HTML,
+you can find the original at the GPSD project website.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_introduction"><a class="link" href="#_introduction">Introduction</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This is a background paper on technological means for high-precision
+time measurement. We discuss time source types, relative accuracy,
+relative cost, and how those figures of merit have changed in recent
+decades. A brief introduction to NTP (Network Time Protocol) is
+included.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_use_cases_for_precision_time_service"><a class="link" href="#_use_cases_for_precision_time_service">Use cases for precision time service</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>More applications than are commonly realized require precise time;
+which, in practice, means time accurate to a tenth of a second or
+less.  While sub-millisecond time requirements are rare outside of
+scientific work and the sharper end of industrial process control,
+the range between 0.1sec and 0.001sec has a lot of customers.</p>
+</div>
+<div class="paragraph">
+<p>As one large example, the Payment Card Industry (PCI) standards used
+by the credit card industry mandate "correct and consistent time" and
+gives NTP as an example of qualifying synchronization technology
+<a href="#PCI3">[PCI3]</a>.</p>
+</div>
+<div class="paragraph">
+<p>The Financial Industry Regulatory Authority (FINRA) currently requires
+that clocks used for business must be synchronized to within one second
+of NIST time.  The synchronization must occur at least once a day and
+before the start of business.  A pending rule change <a href="#FINRA_14-47">[FINRA_14-47]</a>
+proposes to tighten that to just 50 ms.</p>
+</div>
+<div class="paragraph">
+<p>Modern cryptographic systems, such as Kerberos, require accurate time.
+So do cellular networks and navigation systems for autonomous
+vehicles.  As these cases suggest, the economic value of
+high-precision time is likely to rise significantly in the future.</p>
+</div>
+<div class="paragraph">
+<p>There are several equivalent ways to state the precision of a clock.
+In the remainder of this introduction we will use "jitter" - the
+width of its short-term random variation from its "correct" time -
+(commonly Universal Coordinated Time or UTC); usually in nanoseconds
+(ns), microsconds (&mu;s), or milliseconds (ms).  In these units the
+range of interest for most precision time applications is from 100 ms
+down to 1000 ns.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_time_service_types"><a class="link" href="#_time_service_types">Time service types</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A "primary time source" is a very high-precision, very stable
+oscillator (popularly called an "atomic clock") used as a source
+standard by a national time authority.  By international agreement,
+the U.S. and other major national time authorities use primary
+standards based on electronic transitions between the two hyperfine
+energy levels of the ground states of Cesium-133 atoms.</p>
+</div>
+<div class="paragraph">
+<p>National time standards are synchronized (essentially, averaged after
+removing outliers and consistent errors) to yield an international
+reference called Universal Coordinated Time.  The US national time
+standard, UTC(NIST), normally tracks UTC to within 5 ns <a href="#BIPM-T">[BIPM-T]</a>.</p>
+</div>
+<div class="paragraph">
+<p>In practice, the U.S. has another time standard; UTC(USNO),
+military clock time propagated through the GPS system.  As the skew
+between UTC(NIST) and UTC(USNO seldom if ever exceeds 10ns
+<a href="#TIMESCALE">[TIMESCALE]</a> they are for practical purposes identical.</p>
+</div>
+<div class="paragraph">
+<p>GPS enables receivers to generate a pulse-per-second
+signal ("1PPS" or just "PPS") accurate to the top of the current
+UTC second within 50 ns.</p>
+</div>
+<div class="paragraph">
+<p>National time standards are also propagated through time radios. In
+the U.S., digital time signal is provided by WWVB in Colorado, driven
+directly by the NIST (National Institute of Standards and Technology)
+master civil time standard.  Propagation delay to U.S. receivers
+varies but is constant by location and no more than 20 ms; being
+fixed, this can be easily compensated out. The jitter added to NIST
+time by the WWVB transmission system is about 6 ns,
+for a total jitter relative to UTC of about 26 ns at the
+transmitter. Atmospheric conditions and signal-processing jitter in
+the receiver may degrade this considerably, to the tune of 10-100ns
+- however some of that is fixed delay that can be compensated out by
+knowing your distance from the transmitter. Accuracy is better at night.</p>
+</div>
+<div class="paragraph">
+<p>National time authorities may also offer a digital time reference via
+landline phone; the U.S.'s has two, supported by NIST and the U.S.
+Naval Observatory. NIST has a claimed accuracy of "a few milliseconds"
+<a href="#ACTS1">[ACTS1]</a>; USNO says 4 ms <a href="#ACTS2">[ACTS2]</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_clock_types"><a class="link" href="#_clock_types">Clock types</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A clock, in this context, is a device for delivering an approximation
+of a national time standard at a user&#8217;s location.</p>
+</div>
+<div class="paragraph">
+<p>High-end precision clocks are based on rubidium oscillators (close
+relatives of the cesium time standards). Less expensive ones are based
+on a temperature-compensated crystal oscillator or TCXO, sometimes also
+seen as OCXO for "oven-compensated crystal oscillator"; these are more
+closely related to the non-temperature-stabilized oscillator in a
+quartz-crystal watch.</p>
+</div>
+<div class="paragraph">
+<p>Due to frequency drift (induced mainly by temperature variations), all
+such clocks need to be periodically conditioned by an external signal
+from a time authority.  The cost of a clock correlates with its
+"holdover" performance - how stable the oscillator&#8217;s frequency is and
+thus how little the time drifts between conditioning signals.</p>
+</div>
+<div class="paragraph">
+<p>A "time radio" or "time receiver" is a clock that is conditioned by a
+national time radio source.  High-end dedicated time receivers can
+achieve 50 ns accuracy <a href="#RADIO">[RADIO]</a>; consumer-grade "atomic clocks" (not
+actually atomic at all but using a radio time signal) achieve a much
+less impressive 30 ms <a href="#HARCC">[HARCC]</a> or even as poor as 150 ms <a href="#JUNGHANS">[JUNGHANS]</a>.
+Both are often constrained by siting problems and poor longwave
+propagation, leading to frequent loss of signal.  In some parts of the
+U.S., most notably the Boswash corridor and the southern tip of
+Florida, coverage is so intermittent <a href="#WWVBMAP">[WWVBMAP]</a> as to make the WWVB
+signal nearly unusable.  The technology works better for smaller,
+European-sized countries.</p>
+</div>
+<div class="paragraph">
+<p>Time receivers' model designations often include the call sign of
+their radio source; for example, a 'WWVB' receiver uses the
+U.S. national time radio, a 'DCF77' receiver uses the German national
+time radio, an 'MSF' receiver uses the British national time radio,
+and a 'JJY' receiver uses the Japanese national time radio. Some time
+receivers (especially those made for the European market) can use
+multiple stations. A useful table of national time radio stations is
+at <a href="#WIKISOURCE">[WIKISOURCE]</a>.</p>
+</div>
+<div class="paragraph">
+<p>Devices described as "GPS clocks" (or more technically as "GPS
+Disciplined Oscillators" or GPSDOs) are conditioned by the 1PPS output
+of a GPS receiver.  Worst-case accuracy depends on the accuracy of the
+1PPS and vendor data sheets commonly claim 100 ns, sometimes even 20 ns.</p>
+</div>
+<div class="paragraph">
+<p>The GPS system standard <a href="#IS-GPS-200G">[IS-GPS-200G]</a> Section 3.3.4 specifies that
+GPS satellite clock (MSC) from each satellite be within 90 ns of USNO
+time to a certainty of one sigma. Adding in GPS satellite position
+uncertainty widens the time uncertainty as broadcast from the GPS Sat
+to 97 ns at one sigma.  Any GPS propagation and reception errors will
+add to that uncertainly.  Thus one needs to assume a GPSDO will track
+USNO time to better than to about 120-200 ns.</p>
+</div>
+<div class="paragraph">
+<p>A plain GPS, without a stabilized crystal, can serve as a clock
+source.  However, it will generally be unable to deliver time at all when
+it lacks memory of a previous 3D position fix and current lock on at
+least one satellite.  In other words, it has no "holdover".  (NTP
+patches around this by using the system clock for holdover.)</p>
+</div>
+<div class="paragraph">
+<p>GPSes actually deliver two times: 1PPS at top of second, and in-band
+time expressed in a message packet over the serial or USB link.  In
+consumer-grade GPSes, 1PPS may not be shipped to the serial connector;
+if it is, it becomes a pulse on a handshake line, usually DCD.</p>
+</div>
+<div class="paragraph">
+<p>In-band time is usually delivered accurate to the second only and is
+shipped with significant and variable delay after 1PPS, typically on
+the order of 100 ms. By contrast, 1PPS time output total error will
+typically be close to 1&mu;s.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_basics_of_ntp"><a class="link" href="#_basics_of_ntp">Basics of NTP</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>NTP (Network Time Protocol) is a set of protocols that attempts to
+synchronize computer clocks across the Internet - ultimately, Universal
+Coordinated Time (UTC) as defined by several scale-related atomic clocks
+run by national standards institutes.  NTP Version 4 is defined in
+<a href="#RFC-5905">[RFC-5905]</a>.</p>
+</div>
+<div class="paragraph">
+<p>NTP service daemons running on each host do clock synchronization in
+the presence of variable network latency by monitoring those delays in
+real time and passing around messages that say, essentially, "I
+received your request at time X, I&#8217;m sending the reply at time Y and
+the propagation delay to my source of time is Z".  Each daemon then
+uses rather complex algorithms that we won&#8217;t attempt to describe here
+to digest incoming messages into a composite "NTP time".</p>
+</div>
+<div class="paragraph">
+<p>NTP conditions your system clock by noticing how your system clock time
+differs from deduced NTP time, then speeding up or slowing down your
+clock&#8217;s tick rate until it is synchronized. These tick-rate changes
+are usually extremely small, much too small for a human or even most
+software timing loops to ever notice. But large changes are possible.</p>
+</div>
+<div class="paragraph">
+<p>NTP&#8217;s technique exploits the fact that while the quartz crystals used
+in PC clocks are not very accurate, they are quite stable - that is,
+their frequency drift in response to environmental changes is slow.</p>
+</div>
+<div class="paragraph">
+<p>Most computers are just NTP clients.  They send NTP requests to a set
+of servers and use the replies to adjust the local clock.  It is
+generally expected that NTP clients will have an accuracy (that is,
+maximum divergence from the master atomic clock) of of "a few tens of
+milliseconds" <a href="#RFC-5905">[RFC-5905]</a>; however, problems such as asymmetric
+routing, bufferbloat, or large time jitter (especially likely on cable
+networks) can degrade accuracy to around 100 ms and even worse in
+extreme cases.</p>
+</div>
+<div class="paragraph">
+<p>Some NTP hosts are time <strong>servers</strong>.  They respond to NTP clients with
+time read from high-precision reference clocks (often abbreviated
+"refclocks") synchronized to national time standards. The refclocks
+are all the kinds of precision time source discussed earlier in this
+document.</p>
+</div>
+<div class="paragraph">
+<p>You will hear time service people speak of "Stratum 0" (the reference
+clocks) "Stratum 1" (NTP servers directly connected to reference
+clocks) and "Stratum 2" (servers that get time from Stratum
+1). Stratum 3 servers redistribute time from Stratum 2, and so
+forth. There are defined higher strata up to 15, but you will probably
+never see a public time server higher than Stratum 3 or 4.</p>
+</div>
+<div class="paragraph">
+<p>Jitter induced by variable WAN propagation delays
+(including variations in switch latency and routing) makes it
+impractical to try to improve the accuracy of NTP time to much better
+than the "a few tens of milliseconds" of <a href="#RFC-5905">[RFC-5905]</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cost_effective_clocks"><a class="link" href="#_cost_effective_clocks">Cost-effective clocks</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>There is about three orders of magnitude between the best achievable
+wide-area-network accuracy and even the lowest-end GPS-constrained
+clock or time radio.  Of all the time sources described here, the only
+one not precise enough to drive WAN NTP is in-band time from a GPS
+without 1PPS <sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup>.</p>
+</div>
+<div class="paragraph">
+<p>Since the year 2000 GPSes have drastically decreased in price and
+improved in performance.  For time-service purposes the important
+performance metric is weak-signal performance and ability to operate
+indoors.</p>
+</div>
+<div class="paragraph">
+<p>A 1PPS-capable plain GPS that can operate reliably near a window is
+for NTP purposes nearly as good as a time radio or GPS clock, and
+orders of magnitude less expensive.  Even the USB 1.1 polling interval
+of 1 ms does not introduce a disqualifying amount of jitter for WAN
+service.</p>
+</div>
+<div class="paragraph">
+<p>LANs are a different matter. Because their propagation delays are
+lower and less variable, NTP can do about two orders of magnitude better
+in this context, easily sustaining 1 ms accuracy.  The combination of
+NTP and <a href="#PTP">[PTP]</a> can achieve LAN time service another two orders of
+magnitude better.</p>
+</div>
+<div class="paragraph">
+<p>GPS clocks and time radios remain, therefore, cost effective for
+driving NTP over LAN.  This is significant in many scientific,
+industrial, and government deployments.</p>
+</div>
+<div class="paragraph">
+<p>While pressure from plain GPSes has eroded the competitiveness of both
+GPS clocks and time radios, time radios have suffered more.  While
+theoretically more accurate than GPS clocks, they have not improved in
+weak-signal performance in the dramatic way GPSes and GPS clocks
+have; they remain finicky and nearly as vulnerable to siting and
+skyview problems as the GPSes of decades ago.</p>
+</div>
+<div class="paragraph">
+<p>Furthermore, the U.S. radio-clock industry was impacted when <a href="#WWVB">[WWVB]</a>
+changed its modulation scheme at 2012-10-29T15:00:00Z.  This didn&#8217;t
+affect consumer-grade "atomic" clocks, which resynchronize once a day
+and don&#8217;t use the fine details of the signal, but it obsolesced all
+the high-end equipment that conditioned on shorter time scales. At
+least one major timing-systems vendor (Spectracom) bailed out of the
+time-radio market entirely, and it is not clear there are any high-end
+vendors at all left in the U.S.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_summary"><a class="link" href="#_summary">Summary</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Some figures in this table are from <a href="#GPSD-HOWTO">[GPSD-HOWTO]</a> and are explained
+in more detail there.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Summary of worst-case deviation from UTC</caption>
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">National primary time standard</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">20 ns</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">WWVB time radio broadcast</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">26 ns</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">GPS 1PPS top of second</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">50 ns</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Dedicated time receiver</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">50 ns</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">GPS-constrained clock</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100 ns</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1PPS delivered by OS kernel</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1 &mu;s (1000 ns)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Serial 1PPS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5 &mu;s (5000 ns)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1PPS over USB 1.1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1 ms (1000000 ns)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1PPS over USB 2.0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100 &mu;s (100000 ns)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NIST/USNO modem time</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4 ms (4000000 ns)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Consumer-grade time radio</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">30-150 ms</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Normal accuracy of NTP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">~ 30 ms (3000000 ns)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Jitter of in-band GPS time</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">&gt; 100 ms (100000000 ns)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_further_reading"><a class="link" href="#_further_reading">Further Reading</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You can find a practical how-to on setting up a local Stratum 1 time
+server using GPSD and an inexpensive GPS at <a href="#GPSD-HOWTO">[GPSD-HOWTO]</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_references"><a class="link" href="#_references">References</a></h2>
+<div class="sectionbody">
+<div class="ulist bibliography">
+<ul class="bibliography">
+<li>
+<p><a id="PCI3"></a>[PCI3] <a href="https://www.pcisecuritystandards.org/documents/PCI_DSS_v3-2-1.pdf">Requirements and Security Assessment
+Procedures</a></p>
+</li>
+<li>
+<p><a id="FINRA_14-47"></a>[FINRA_14-47]
+<a href="http://www.finra.org/sites/default/files/notice_doc_file_ref/Notice_Regulatory_14-47.pdf">14-47</a></p>
+</li>
+<li>
+<p><a id="RFC-5905"></a>[RFC-5905] <a href="http://www.ietf.org/rfc/rfc5905.txt">Network Time Protocol Version 4: Protocol and Algorithms Specification</a></p>
+</li>
+<li>
+<p><a id="BIPM-T"></a>[BIPM-T] <a href="ftp://ftp2.bipm.org/pub/tai/publication/cirt/">See latest Circular T from BIPM</a></p>
+</li>
+<li>
+<p><a id="WWVBMAP"></a>[WWVBMAP] <a href="http://tf.nist.gov/stations/wwvbcoverage.htm">WWVB Coverage Area</a></p>
+</li>
+<li>
+<p><a id="WIKISOURCE"></a>[WIKISOURCE] <a href="https://en.wikipedia.org/wiki/Radio_clock">Radio Clock</a></p>
+</li>
+<li>
+<p><a id="IS-GPS-200G"></a>[IS-GPS-200G] <a href="https://www.gps.gov/technical/icwg/IS-GPS-200G.pdf">IS-GPS-200G</a></p>
+</li>
+<li>
+<p><a id="TIMESCALE"></a>[TIMESCALE] <a href="https://www.nist.gov/pml/time-and-frequency-division/atomic-standards/nist-usno">NIST Time Scale Data Archive</a></p>
+</li>
+<li>
+<p><a id="ACTS1"></a>[ACTS1] <a href="http://www.nist.gov/pml/div688/grp40/acts.cfm">NIST Automated Computer Time Service (ACTS)</a></p>
+</li>
+<li>
+<p><a id="ACTS2"></a>[ACTS2] <a href="http://tycho.usno.navy.mil/modem_time.html">USNO Master
+Clock via Modem</a></p>
+</li>
+<li>
+<p><a id="RADIO"></a>[RADIO] <a href="https://en.wikipedia.org/wiki/Radio_clock">Radio clock</a></p>
+</li>
+<li>
+<p><a id="HARCC"></a>[HARCC] <a href="http://tf.nist.gov/general/pdf/2429.pdf">How Accurate is a Radio Controlled Clock?</a></p>
+</li>
+<li>
+<p><a id="JUNGHANS"></a>[JUNGHANS] <a href="http://www.leapsecond.com/pages/Junghans/">Junghans Solar WWVB watch</a></p>
+</li>
+<li>
+<p><a id="PTP"></a>[PTP] <a href="https://en.wikipedia.org/wiki/Precision_Time_Protocol">PTP</a></p>
+</li>
+<li>
+<p><a id="GPSD-HOWTO"></a>[GPSD-HOWTO] <a href="gpsd-time-service-howto.html">GPSD Time Service HOWTO</a></p>
+</li>
+<li>
+<p><a id="WWVB"></a>[WWVB] <a href="http://www.nist.gov/pml/div688/grp40/wwvb.cfm">NIST Radio Station WWVB</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_history"><a class="link" href="#_history">History</a></h2>
+<div class="sectionbody">
+<div class="dlist">
+<dl>
+<dt class="hdlist1">v1.0, 2015-03-10</dt>
+<dd>
+<p>Initial version.</p>
+</dd>
+<dt class="hdlist1">v1.1, 2015-03-11</dt>
+<dd>
+<p>Lots of tiny corrections from G+ and the blog.  Use the NTP
+accuracy estimate from RFC 5905.</p>
+</dd>
+<dt class="hdlist1">v1.2, 2015-03-15</dt>
+<dd>
+<p>Clarifying language, proof-reading, and minor corrections.</p>
+</dd>
+<dt class="hdlist1">v1.3, 2015-03-16</dt>
+<dd>
+<p>Text polishing, terminological cleanup.</p>
+</dd>
+<dt class="hdlist1">v1.4, 2015-07-11</dt>
+<dd>
+<p>Text polishing, note upcoming change in FINRA, more about GPSDO precision.</p>
+</dd>
+<dt class="hdlist1">v1.5, 2015-12-10</dt>
+<dd>
+<p>Fix typo in WWVB delay figure and date of modulation change.</p>
+</dd>
+<dt class="hdlist1">v1.6, 2019-06-02</dt>
+<dd>
+<p>Fix linkrot, and link to https where possible.</p>
+</dd>
+<dt class="hdlist1">v1.7, 2021-01-13</dt>
+<dd>
+<p>Add Table of Contents.  Cleanup markup.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_copying"><a class="link" href="#_copying">COPYING</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This file is Copyright 2010 by the GPSD project<br>
+SPDX-License-Identifier: BSD-2-clause</p>
+</div>
+</div>
+</div>
+</div>
+<div id="footnotes">
+<hr>
+<div class="footnote" id="_footnotedef_1">
+<a href="#_footnoteref_1">1</a>. Actually, a non-1PPS GPS with sufficiently clever firmware can be good enough - but they almost never are in practice, and never in consumer-grade hardware.
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Version 1.6<br>
+Last updated 2023-01-10 17:38:26 -0500
+</div>
+</div>
+</body>
+</html>

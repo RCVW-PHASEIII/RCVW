@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<J2735.GID.blob xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <MapType>Roadway</MapType>
+  <MapName>Mobile Devices 5th and Perry</MapName>
+  <Version>1</Version>
+  <MapId>33</MapId>
+  <Elevation>false</Elevation>
+  <Resolution>centimeter</Resolution>
+  <Geometry>
+    <ReferencePoint>
+      <Latitude>39.9875767948346</Latitude>
+      <Longitude>-83.0188783047214</Longitude>
+    </ReferencePoint>
+    <Approach>
+      <Lane Number="1">
+		<LaneName>Landing</LaneName>
+        <Type>Vehicle</Type>
+        <Width>320</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>-420</Eastern>
+            <Nothern>-150</Nothern>
+          </Node>
+          <Node Number="2">
+            <Eastern>-1740</Eastern>
+            <Nothern>70</Nothern>
+          </Node>
+        </Nodes>
+        <Connections />
+        <ReferenceLane />
+      </Lane>	  
+      <Lane Number="2">
+		<LaneName>Approach</LaneName>
+        <Type>Vehicle</Type>
+        <Width>320</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>-2170</Eastern>
+            <Nothern>-80</Nothern>
+          </Node>
+          <Node Number="2">
+            <Eastern>-4910</Eastern>
+            <Nothern>230</Nothern>
+          </Node>
+        </Nodes>
+        <Connections />
+        <ReferenceLane />
+      </Lane>
+      <Lane Number="3">
+		<LaneName>Passing</LaneName>
+        <Type>Vehicle</Type>
+        <Width>320</Width>
+        <Nodes>
+          <Node Number="1">
+            <Eastern>-410</Eastern>
+            <Nothern>160</Nothern>
+          </Node>
+          <Node Number="2">
+            <Eastern>-6420</Eastern>
+            <Nothern>310</Nothern>
+          </Node>
+        </Nodes>
+        <Connections />
+        <ReferenceLane />
+      </Lane>	
+    </Approach>
+    <Egress />
+  </Geometry>
+</J2735.GID.blob>

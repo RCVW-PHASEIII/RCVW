@@ -1,0 +1,55 @@
+#!/bin/sh -e
+
+# Source debconf library.
+. /usr/share/debconf/confmodule
+
+# Get the MySQL login and password
+db_input medium tmxcore/mysql_root_login || true
+db_go
+
+db_get tmxcore/mysql_root_login
+DBROOTUSER="${RET}"
+
+db_input high tmxcore/mysql_root_password || true
+db_go
+
+db_get tmxcore/mysql_root_password
+DBROOTPASS="${RET}"
+
+# Test out the connection to the server
+mysql -u$DBROOTUSER -p$DBROOTPASS --silent -e "SHOW STATUS WHERE Variable_name = 'Uptime' and Value > 0;"
+
+# Install the database
+DBUSER="IVP"
+DBPASS="ivp"
+mysql -u$DBROOTUSER -p$DBROOTPASS -e "CREATE DATABASE IF NOT EXISTS $DBUSER; GRANT ALL PRIVILEGES ON $DBUSER.* To '$DBUSER'@'localhost' IDENTIFIED BY '$DBPASS';"
+if [ -f /var/tmp/tmx/localhost.sql ]; then
+	mysql -v -u$DBUSER -p$DBPASS < /var/tmp/tmx/localhost.sql
+	rm -f /var/tmp/tmx/localhost.sql
+fi
+db_stop
+
+# Set up the files
+chown -h root:root /usr/local/bin/tmxcore 
+
+mkdir -p /var/log/tmx
+chmod 755 /var/log/tmx
+
+mkdir -p /var/www/plugins
+chown plugin:adm /var/www /var/www/plugins
+chmod 755 /var/www/plugins
+
+set +e
+id plugin >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+	adduser --system --disabled-login --disabled-password --gecos --no-create-home plugin
+fi
+
+usermod -a -G dialout plugin
+set -e
+
+systemctl daemon-reload 
+systemctl is-enabled tmxcore.service >/dev/null 2>&1 || systemctl enable tmxcore.service
+systemctl restart tmxcore.service
+
+sleep 1

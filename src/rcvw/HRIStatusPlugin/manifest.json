@@ -1,0 +1,34 @@
+{
+	"name":"@TMX_PLUGIN_NAME@",
+	"description":"Sends HRI Status as SPAT Message",
+	"version":"@PROJECT_VERSION@",
+	"exe": "bin/@PROJECT_NAME@",
+	"channels":[
+		{
+			"context": "kafka://localhost:29092"
+		},
+		{
+			"comment": "TMX CBS cloud connection. Sending generated messages and status",
+			"id": "tmx-cbs",
+			"context": "amqps://CBSReceiver:hdJ+udbmcmgoM9BZvGm/0P0yHpXKt/NZt+ASbAxAnwg=@rcvwcbssb.servicebus.windows.net",
+			"config": {
+				"auto-subscribe": false,
+				"write-only": true,
+				"topics": "^(J2735|tmx)/",
+				"thread-count": 2,
+				"thread-assignment": "ShortestQueue"
+			}
+		}
+	],
+	"Frequency": 100,
+	"RailPinNumber": 0,
+	"LaneMap": [
+		{ "tracked": true, "signalGroup": 1 },
+		{ "vehicle": true, "signalGroup": 2 }
+	],
+	"IntersectionID": 10785,
+	"IntersectionName": "Rail Crossing",
+	"AlwaysSend": true,
+	"PortName": "/dev/ttyS0",
+	"SerialDataTimeout": 1500
+}

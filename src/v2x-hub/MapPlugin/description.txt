@@ -1,0 +1,48 @@
+/**
+ \page ivpplugins V2I Hub Plugins
+ - \subpage mapplugin
+ 
+ \page mapplugin MAP Plugin
+\tableofcontents
+
+The MapPlugin is a plugin for the V2I Hub that publishes a SAE J2735 MAP Message containing 
+data to describe complex intersections, curve outlines, and roadway segments which are used 
+by a variety of other J2735 messages.
+
+\section mapdesign Description
+
+The MAP plugin creates J2735 MAP messages in J2735 2016 format. Inputs into the plugin can be created using the Battelle 
+MAP Input Tool or U.S. DOTs ISD Message Creator. The V2I Hub MAP Input Tool creates the input into an Extensible Markup Language (XML) 
+format that describes the intersection with approach and egress lanes. More information on the XML MAP file format can be found in Appendix D 
+of the V2I Hub Plugins document.  The V2I Hub MAP Input Tool is available in the U.S. DOT’s OSADP repository along with documentation on how 
+to use the tool to generate inputs for the MAP plugin. The ISD Message Creator 
+(<a href="https://webapp.connectedvcs.com/isd/">https://webapp.connectedvcs.com/isd/</a>) is a MAP and SPaT creation tool for intersections in the 
+U.S. DOT CV Tools Library (a href="https://webapp.connectedvcs.com/">https://webapp.connectedvcs.com/"</a>). This online tool aids in the 
+creation of J2735 2016 MAP files, which can be used as inputs for the V2I Hub MAP plugin. The input needed by the MAP plugin can be created
+by using the export tool, setting the Message Type dropdown to MAP, and copying the JavaScript Object Notation (JSON) from the MAP Data text 
+block into a file with a .json extension. The JSON format is a lightweight data exchange format that is human readable and easy for machines 
+to serialize and de-serialize.
+
+\section mapconfig Configuration
+
+The MAP plugin can be configured to send different MAP files based on the action value received by the SPaT plugin. The frequency to which the
+MAP Plugin can transmit its output can be configured by the Frequency configuration value, in milliseconds.  The MAP plugin uses a JSON value for 
+the configuration key MAP_files which contains the MAP file to load associated with an action id. The action id is associated to an action plan in 
+the Traffic Signal Controller (TSC). The SPaT plugin will transmit the current action plan that it retrieves from the TSC to the V2I Hub, where the 
+MAP plugin will receive it. The MAP plugin will load the appropriate MAP based on the action id. If an action id is supplied by the SPaT plugin 
+doesn’t have a corresponding item in the MAP_Files list, the MAP file associated with the first action 0 will be loaded. 
+
+- Frequency: The frequency to send the MAP message in milliseconds.
+- MapFiles: JSON data defining a list of MAP files. One MAP file for each action set specified by the TSC.  Ex: { "MapFiles": [  {"Action":0, "FilePath":"GID_Test.xml"}] }
+
+\section mapexternals External Resources
+
+- MapData
+- \ref tmx::messages::MapDataMessage "MapDataMessage"
+- \ref tmx::messages::MapDataEncodedMessage "MapDataEncodedMessage"
+- \ref tmx::utils::PluginClient "PluginClient"
+- XercesC
+
+\section mappublish Published Messages
+- SAE J2735 MAP Message
+*/

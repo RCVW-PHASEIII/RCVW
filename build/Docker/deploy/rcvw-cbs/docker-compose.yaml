@@ -1,0 +1,50 @@
+services:
+  rcvw-cbs-api:
+    build:
+      context: ../../..
+      dockerfile: Docker/deploy/rcvw-cbs/Dockerfile
+      target: rcvw-cbs-api-azure
+
+    image: rcvw-cbs-api-azure:4.0.0
+    network_mode: "host"
+
+  rcvw-cbs-ingest:
+    build:
+      context: ../../..
+      dockerfile: Docker/deploy/rcvw-cbs/Dockerfile
+      target: rcvw-cbs-ingest-azure
+
+    image: rcvw-cbs-ingest-azure:4.0.0
+    network_mode: "host"
+    environment:
+      AZURE_SQL_CONNECTIONSTRING: #TODO
+      rcvwcbssb_CBSReceiver_SERVICEBUS: #TODO
+
+  rcvw-cbs-rtcm:
+    build:
+      context: ../../..
+      dockerfile: Docker/deploy/rcvw-cbs/Dockerfile
+      target: rcvw-cbs-rtcm-azure
+    image: rcvw-cbs-rtcm-azure:4.0.0
+    network_mode: "host"
+    environment:
+      AZURE_SQL_CONNECTIONSTRING: #TODO
+      rcvwcbssb_CBSReceiver_SERVICEBUS: #TODO
+
+  rcvw-cbs-event-mgr:
+    build:
+      context: ../../..
+      dockerfile: Docker/deploy/rcvw-cbs/Dockerfile
+      target: rcvw-cbs-event-mgr-azure
+
+    image: rcvw-cbs-event-mgr-azure:4.0.0
+    network_mode: "host"
+    environment:
+      MINIMUM_SPAT_RATE: 8.00
+      MINIMUM_MAP_RATE: 1.00
+      MINIMUM_MSG_RATE: 1.00
+      HRI_STATUS_TOPIC: tmx.plugin.v2x.hristatusplugin.hristatusplugin.status
+      MAP_STATUS_TOPIC: tmx.plugin.v2x.map.mapplugin.status
+      RSUIFM_STATUS_TOPIC: tmx.plugin.v2x.rsu.rsuimmediateforwardplugin.status
+      AZURE_SQL_CONNECTIONSTRING: #TODO
+      rcvwcbssb_CBSReceiver_SERVICEBUS: #TODO

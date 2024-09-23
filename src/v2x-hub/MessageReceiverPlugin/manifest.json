@@ -1,0 +1,26 @@
+{
+	"name":"@TMX_PLUGIN_NAME@",
+	"description":"Plugin to receive messages from an external C-V2X radio or other source",
+	"version":"@PROJECT_VERSION@",
+	"exe": "bin/@PROJECT_NAME@",
+	"channels":[
+		{
+			"context": "kafka://localhost:29092",
+			"config": {
+				"topics": "gpsd/"
+			}
+		},
+		{
+			"id": "listener",
+			"context": "udp-d://0.0.0.0:24601",
+			"config": {
+				"auto-publish": false,
+				"read-only": true,
+				"topics": "^UNKNOWN$",
+				"thread-count": 2,
+				"thread-assignment": "ShortestQueue"
+			}
+		}
+	],
+	"status-Hz": 60
+}

@@ -1,0 +1,180 @@
+//
+// Created by cas on 6/4/24.
+//
+
+#ifndef TRANSPORTATION_MESSAGE_EXCHANGE_RCVWPARAMETERS_HPP
+#define TRANSPORTATION_MESSAGE_EXCHANGE_RCVWPARAMETERS_HPP
+
+constexpr auto RCVW_PLUGIN_PARAMETERS = R"(
+[
+   {
+       "key":"Friction",
+       "default": 0.8,
+       "description":"The coefficient of friction to use for the stopping distance calculation. This is the value that will differentiate the vehicle types. Should probably use the kinetic coeeficient of friction to be more conservative."
+   },
+   {
+       "key":"Reaction Time",
+       "default": 1.0,
+       "description":"The driver reaction time to use in the stopping distance calculation in seconds."
+   },
+   {
+       "key":"Safety Offset",
+       "default": 1.5,
+       "description":"The multiplier to apply to the stopping distance to ensure a safe stop."
+   },
+   {
+       "key":"Message Expiration",
+       "default": 2000,
+       "description":"The amount of time in ms to wait before issuing a warning that the current message data is stale."
+   },
+   {
+       "key":"Output Interface",
+       "default": 0,
+       "description":"The type of interface that the application needs to display its messages on. 0=HID, 1=Ford SYNC, 2=Android Auto"
+   },
+   {
+       "key":"Distance To HRI",
+       "default": 480.0,
+       "description":"Distance to a known HRI for warning a driver that communications with the RBS are down."
+   },
+   {
+        "key":"HRI Locations",
+        "default": [
+            { "Latitude":0, "Longitude":0, "HRIName":"Hilliard-Davidson"}
+        ],
+        "description":"JSON data defining a list of equipped HRI locations."
+   },
+   {
+        "key":"Extended Intersection",
+        "default": 0.1,
+        "description":"The percentage to add to the radius of the intersection"
+   },
+   {
+       "key":"HRI Warning Threshold Speed",
+       "default": 1.0,
+       "description":"The maximum vehicle speed in meters per second for which the HRI warning will be active if the vehicle is in the HRI."
+   },
+   {
+       "key":"Use Calculated Deceleration",
+       "default": false,
+       "description":"Use calculated deceleration to determine if vehicle will stop before HRI in addition to velocity based warning calculation"
+   },
+   {
+       "key":"V2 Antenna Placement X",
+       "default": 0.5,
+       "description":"Antenna placement X with respect to front left corner of vehicle in meters"
+   },
+   {
+       "key":"V2 Antenna Placement Y",
+       "default": 2.5,
+       "description":"Antenna placement Y with respect to front left corner of vehicle in meters"
+   },
+   {
+       "key":"V2 Antenna Height",
+       "default": 1.5,
+       "description":"Antenna height with respect to the road surface in meters"
+   },
+   {
+       "key":"V2 GPS Error",
+       "default": 3.12,
+       "description":"GPS error in meters"
+   },
+   {
+       "key":"V2 Reaction Time",
+       "default": 2.5,
+       "description":"Reaction time in seconds"
+   },
+   {
+       "key":"V2 Communication Latency",
+       "default": 0.3,
+       "description":"Communication latency in seconds"
+   },
+   {
+       "key":"V2 Application Latency",
+       "default": 0.085,
+       "description":"Application latency in seconds"
+   },
+   {
+       "key":"V2 Deceleration Car",
+       "default": 3.4,
+       "description":"Minimum expected controlled deceleration for a car in m/s^2"
+   },
+   {
+       "key":"V2 Deceleration Light Truck",
+       "default": 2.148,
+       "description":"Minimum expected controlled deceleration for a light truck in m/s^2"
+   },
+   {
+       "key":"V2 Deceleration Heavy Truck",
+       "default": 2.322,
+       "description":"Minimum expected controlled deceleration for a heavy truck in m/s^2"
+   },
+   {
+       "key":"V2 Vehicle Type",
+       "default": 1,
+       "description":"Vehicle type, 1 = Car, 2 = Light Truck, 3 = Heavy Truck"
+   },
+   {
+       "key":"V2 Vehicle Length",
+       "default": 4.8,
+       "description":"The length of the vehicle in meters"
+   },
+   {
+       "key":"V2 Use VBM Deceleration",
+       "default": true,
+       "description":"Use VBM deceleration to determine if vehicle will stop before HRI in addition to velocity based warning calculation"
+   },
+   {
+       "key":"V2 Log SPAT",
+       "default": false,
+       "description":"Log SPAT messages at DEBUG level"
+   },
+   {
+       "key":"V2 Critical Message Expiration",
+       "default": 500,
+       "description":"The amount of time in ms to wait before issuing a warning that the current critical message data is stale."
+   },
+   {
+       "key":"V2 Use Config Grade",
+       "default": false,
+       "description":"Use the V2 Grade config variable for grade calculations."
+   },
+   {
+       "key":"V2 Grade",
+       "default": 0,
+       "description":"If enabled, this grade value will be used in grade calculations."
+   },
+   {
+       "key":"V2 Check RTK",
+       "default": true,
+       "description":"If enabled check location message for RTK fix while in range of HRI."
+   },
+   {
+       "key":"V2 Check Location Frequency",
+       "default": true,
+       "description":"If enabled check location message frequency."
+   },
+   {
+       "key":"V2 Location Frequency Sample Size",
+       "default": 30,
+       "description":"The number of location messages to sample to determine frequency."
+   },
+   {
+       "key":"V2 Minimum Location Frequency",
+       "default": 8,
+       "description":"The minimum allowed average location message frequency in messages per second."
+   },
+   {
+       "key":"V2 Max Heading Change",
+       "default": 45,
+       "description":"The maximum allowed heading change in degrees before ignoring the new position."
+   },
+   {
+       "key":"V2 Max Ignored Positions",
+       "default": 7,
+       "description":"The maximum number of consecutively ignored positions due to heading change."
+   }
+]
+)";
+
+#endif //TRANSPORTATION_MESSAGE_EXCHANGE_RCVWPARAMETERS_HPP

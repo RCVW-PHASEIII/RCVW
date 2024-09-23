@@ -1,0 +1,21 @@
+{
+    "name":"${TMX_COMPONENT}-${RCVW_COMPONENT}-DGPS",
+    "description":"Applies Differential GPS corrections, namely RTCM, to the on-board GPS device.",
+    "version":"${RCVW_VERSION}",
+    "exe": "bin/${DGPS_PLUGIN}",
+    "channels":[
+        {
+            "comment": "TMX core connection. Must use unique IDs for Kafka.",
+            "context": "kafka://localhost:${KAFKA_PORT}",
+            "config": {
+                "topics": "^(J2735|tmx)/(plugin|RTCM)",
+                "thread-count": 3,
+                "thread-assignment": "ShortestQueue",
+                "global": {
+                    "auto.offset.reset": "end"
+                }
+            }
+        }
+    ],
+    "device": "${RCVW_GPS_INPUT}"
+}

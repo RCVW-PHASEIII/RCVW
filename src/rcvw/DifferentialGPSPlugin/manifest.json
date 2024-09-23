@@ -1,0 +1,25 @@
+{
+    "name":"@TMX_PLUGIN_NAME@",
+    "description":"Applies Differential GPS corrections, namely RTCM, to the on-board GPS device.",
+    "version":"@PROJECT_VERSION@",
+    "exe": "bin/@PROJECT_NAME@",
+    "channels":[
+        {
+            "id": "tmx-core",
+            "context": "kafka://localhost:29092",
+            "thread-count": 2
+        }
+    ],
+    "configuration":[
+        {
+            "key":"RTCM-VERSION",
+            "default":"3.3",
+            "description":"Only apply incoming RTCM correction messages of the given version.  Set to 0 to disable RTCM corrections."
+        },
+        {
+            "key":"DEVICE",
+            "default":"/dev/ttyACM0",
+            "description":"The serial device for the GPS to write the corrections to"
+        }
+    ]
+}

@@ -1,0 +1,51 @@
+/**
+ \page ivpplugins V2I Hub Plugins
+ - \subpage rtcmplugin
+ 
+ \page rtcmplugin RTCM Plugin
+\tableofcontents
+
+The RtcmPlugin is a plugin for the V2I Hub that publishes a SAE J2735 RTCMcorrection messages containing 
+GPS correction data intended on improving upon position accuracy for any rover that passes through a given
+roadside area.  The source of the corrections should be from official terrestrial base stations nearby. 
+
+\section rtcmdesign Description
+
+The Radio Technical Commission for Maritime Services (RTCM) is an international standards organization that has created 
+the RTCM 10402.3 RTCM Recommended Standards for Differential Global Navigation Satellite System (GNSS) Service v2.3 and
+RTCM 10403.3 Differential GNSS Service 3. The RTCM plugin uses the Networked Transport of RTCM via Internet Protocol (NTRIP) 
+to receive the RTCM real time correction information, create the corresponding RTCM J2735 2016 message, and transmit it into 
+the V2I Hub. For best results, it is suggested that an RTCM base station be within 20km of the V2I Hub.  This plugin supports 
+either RTCM v 2.3 or RTCM v 3.3 encodings, but it is up to the deployment personnel to ensure that the appropriate message 
+types are supported by the NTRIP caster used, including Differential GPS (DGPS) and Real-time Kinematics (RTK).
+
+\section rtcmconfig Configuration
+
+The RTCM plugin can be configured to create J2735 2016 RTCM correction messages from one NTRIP network.  The network information is 
+configured by the Endpoint IP and Endpoint Port. The network authentication information is supplied by the Username and Password 
+configuration values. The NTRIP mountpoint to receive the RTCM stream is configured using the Mountpoint configuration values. 
+It is recommended to specify the RTCM version (2.3 or 3.3) to use for encoding and decoding purposes, although it is possible 
+that the system can automatically which version through trial and error.  The default values, not including the username 
+and password, are used to retrieve RTCM 2.3 data from the state of Ohio’s NTRIP network.
+
+- Endpoint IP: NTRIP caster endpoint IP address.
+- Endpoint Port: NTRIP caster endpoint port
+- Username: NTRIP caster authentication username
+- Password: NTRIP caster authentication password
+- Mountpoint: NTRIP caster mountpoint.
+- RTCM Version: Specify the expected RTCM message version (2.3 or 3.3) coming from the caster. Use Unknown to auto detect the version, which is done using trial and error, thus may be slow.
+- Route RTCM: Route the RTCM messages created from NTRIP internally for use by other plugins.
+
+\section rtcmexternals External Resources
+
+- RTCMcorrections
+- \ref tmx::messages::RtcmMessage "RtcmMessage"
+- \ref tmx::messages::RtcmEncodedMessage "RtcmEncodedMessage"
+- \ref tmx::messages::rtcm::RTCM_VERSION "RTCM_VERSION"
+- \ref tmx::messages::TmxRtcmMessage "TmxRtcmMessage"
+- tmx::messages::rtcm
+- \ref tmx::utils::PluginClient "PluginClient"
+
+\section rtcmpublish Published Messages
+- SAE J2735 RTCMcorrection Message
+*/

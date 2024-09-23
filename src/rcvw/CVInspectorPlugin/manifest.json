@@ -1,0 +1,31 @@
+{
+	"name":"@TMX_PLUGIN_NAME@",
+	"description":"Plugin used to forward decoded J2735 message to a tablet running an old version of CV Inspector. This is meant as a stop gap solution until CV inspector can be updated to directly use TMX messages from Kafka or AMQP.",
+	"version":"@PROJECT_VERSION@",
+	"exe": "bin/@PROJECT_NAME@",
+	"channels":[
+		{
+			"context": "kafka://localhost:29092",
+			"config": {
+				"topics": "^(Decoded|J2735|tmx)/",
+				"thread-count": 3,
+				"thread-assignment": "RoundRobin",
+				"global": {
+					"auto.offset.reset": "end"
+				}
+			}
+		},
+		{
+			"id": "tablet",
+			"context": "udp://192.168.1.94:4387",
+			"config": {
+				"write-only": true,
+				"auto-subscribe": false,
+				"topics": "Decoded/J2735/(SPAT|MAP|BSM|TIM)$",
+				"thread-count": 2,
+				"thread-assignment": "RoundRobin"
+			}
+		}
+	],
+	"repair-file": "/home/cas/git/TMX/src/rcvw/CVInspectorPlugin/treerepair.xml"
+}

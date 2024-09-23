@@ -1,0 +1,56 @@
+/**
+ \page ivpplugins V2I Hub Plugins
+ - \subpage cswplugin
+ 
+ \page cswplugin CSW Plugin
+\tableofcontents
+
+The CswPlugin is a plugin for the V2I Hub that generates J2735 TIM Messages for warning of an upcoming curve when an incoming J2735 BSM
+Message is received that violates the safe conditions programmed for the curve.  This plugin can also send instructions to the DmsPlugin
+in order to post an appropriate warning message to the dynamic message sign.
+
+\section cswdesign Description
+
+The Curve Speed Warning (CSW) plugin transmits information pertaining to an approaching sharp curve, monitors basic safety messages (BSM), 
+and requests display of messages on a DMS when conditions are met. The CSW application monitors and transmits geometry leading up to the 
+entrance of the curve using four zones.  The zones are transmitted with the recommended speed for each zone using the J2735 TIM messages 
+in J2735 2016 format. The zones for the CSW message lead up to the entrance of the curve and are numbered from one to four, with one 
+being the closest zone to the entrance of the curve. This means a vehicle driving towards the curve will enter zone four first, then three 
+and so on until the vehicle enters the curve. The zones are directional, meaning that the vehicle traveling towards the curve will interact 
+with the zones, but the vehicle traveling away from the curve will not. To give CSW alerts in both directions, zones will need to be created 
+for each direction of travel. The four zones are used by an in-vehicle application which can give different alerts or warnings to the driver 
+depending on zone and speed. When the CSW plugin detects that a BSM is going over the recommended speed in zones three through one, the CSW 
+plugin will sending a DMS request to display “Slow Down” on the DMS.
+
+\section cswconfig Configuration
+
+Configuration for the CSW plugin is done using the following configuration values. The frequency of TIM transmission by the CSW plugin can 
+be changed using the Frequency configuration values. This value is defaulted to 1000 milliseconds, or one second. The TIM geometry zones 
+are configured using the MapFile configuration value. This value points to an xml file on the V2I Hub, in the CSW plugin’s home directory, 
+that contains the configuration of the zones in xml format. This xml format is like that of the MAP plugin. The default location for the 
+xml file is /var/www/plugings/CswPlugin. More information of the structure of the CSW input xml format can be found in Appendix C of the 
+V2I Hub Plugin guide.
+
+Snap Interval and Vehicle Timeout config are used by the vehicle monitoring algorithm portion of the CSW plugin. The CSW will timeout a 
+vehicle that it has not received an update from after the value in Vehicle Timeout, which is defaulted to two seconds. The snap interval 
+is used to reduce jitter in the GPS position, and requires that 300 milliseconds elapse before transitioning a vehicle out of a zone.
+
+- Frequency: The frequency to send the TIM in milliseconds.
+- MapFile: The CSW xml input file.
+- Snap Interval: The interval in milliseconds to keep a vehicle within a zone before allowing it to transition out of all zones.
+- Vehicle Timeout: Timeout in milliseconds when a vehicle is removed from all zones if a BSM has not been received.
+
+\section cswexternals External Resources
+
+- TravelerInformation
+- \ref tmx::messages::TimMessage "TimMessage"
+- \ref tmx::messages::TimEncodedMessage "TimEncodedMessage"
+- BasicSafetyMessage
+- \ref tmx::messages::BsmMessage "BsmMessage"
+- \ref tmx::messages::BsmEncodedMessage "BsmEncodedMessage"
+- \ref tmx::utils::PluginClient "PluginClient"
+- XercesC
+
+\section cswpublish Published Messages
+- SAE J2735 TIM Message
+*/

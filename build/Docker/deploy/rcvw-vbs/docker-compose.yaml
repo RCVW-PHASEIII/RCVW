@@ -1,0 +1,109 @@
+services:
+  rcvw-vbs-zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.4
+    restart: always
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 22181:2181
+  
+  rcvw-vbs-kafka:
+    image: confluentinc/cp-kafka:7.5.4
+    restart: always
+    depends_on:
+      - rcvw-vbs-zookeeper
+    ports:
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: rcvw-vbs-zookeeper:2181
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://rcvw-vbs-kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  rcvw-vbs:
+    build:
+      context: ../../..
+      dockerfile: Docker/deploy/rcvw-vbs/runtime-vbs/Dockerfile
+    image: rcvw-vbs:4.0.0
+    restart: always
+    network_mode: "host"
+    privileged: true
+    volumes:
+      - /dev/ttyACM0:/dev/gps
+      - /etc/services:/etc/services
+    environment:
+      TMX_COMPONENT: RCVW
+      RCVW_COMPONENT: VBS
+      RCVW_OBU_IP: 10.30.100.25
+      RCVW_OBU_FWD_PORT: 26789
+      RCVW_CV_INSPECTOR_IP: 192.168.1.101
+      RCVW_CV_INSPECTOR_PORT: 4387
+      RCVW_GPS_INPUT: /dev/gps
+      RCVW_VBS_ANTENNA_X: 0.8128
+      RCVW_VBS_ANTENNA_Y: 2.286
+      RCVW_VBS_ANTENNA_HEIGHT: 1.651
+      RCVW_VBS_TYPE: 1
+      KAFKA_PORT: 29092
+      GNSS_PLUGIN: GNSSPlugin
+      RECEIVER_PLUGIN: MessageReceiverPlugin
+      DGPS_PLUGIN: DifferentialGPSPlugin
+      RCVW_PLUGIN: RCVWPlugin
+      CVI_PLUGIN: CVInspectorPlugin
+      CFG_RATE_MEAS: 100           # Begin GPS configuration
+      CFG_NAVSPG_DYNMODEL: 4
+      CFG_NMEA_PROTVER: 41
+      CFG_NMEA_HIGHPREC: 1
+      CFG_RATE_TIMEREF: 1
+      CFG_UART1_BAUDRATE: 460800
+      CFG_UART1INPROT_UBX: 1
+      CFG_UART1INPROT_NMEA: 0
+      CFG_UART1INPROT_RTCM3X: 1
+      CFG_UART1OUTPROT_UBX: 1
+      CFG_UART1OUTPROT_NMEA: 1
+      CFG_UART1OUTPROT_RTCM3X: 0
+      CFG_USBINPROT_UBX: 1
+      CFG_USBINPROT_NMEA: 1
+      CFG_USBINPROT_RTCM3X: 1
+      CFG_USBOUTPROT_UBX: 1
+      CFG_USBOUTPROT_NMEA: 1
+      CFG_USBOUTPROT_RTCM3X: 0
+      CFG_MSGOUT_UBX_NAV_PVT_USB: 1
+      CFG_MSGOUT_UBX_NAV_SVIN_USB: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1005_UART1: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1074_UART1: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1084_UART1: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1094_UART1: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1124_UART1: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1230_UART1: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1005_USB: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1074_USB: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1084_USB: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1094_USB: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1124_USB: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1230_USB: 0
+      CFG_TMODE_MODE: 0
+      CFG_TMODE_POS_TYPE: 1
+      CFG_TMODE_LAT: 0
+      CFG_TMODE_LON: 0
+      CFG_TMODE_HEIGHT: 0
+    depends_on:
+      - rcvw-vbs-zookeeper
+      - rcvw-vbs-kafka
+
+  rcvw-vbs-kafka2ws:
+    image: stefanat/kafka2websocket
+    restart: always
+    entrypoint: ./kafka_ws
+    network_mode: host
+    environment:
+      WS_PORT: 24603
+      WS_HOST: 0.0.0.0
+      KAFKA_HOST_PORT: 29092
+      KAFKA_TOPIC: V2X.Application
+    depends_on:
+      - rcvw-vbs-zookeeper
+      - rcvw-vbs-kafka

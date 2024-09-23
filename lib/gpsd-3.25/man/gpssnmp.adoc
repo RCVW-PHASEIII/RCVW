@@ -1,0 +1,151 @@
+= gpssnmp(1)
+:date: 8 September 2022
+:keywords: gps, gpsd, gpssnmp
+:manmanual: GPSD Documentation
+:mansource: GPSD Version {gpsdver}
+:robots: index,follow
+:sectlinks:
+:toc: macro
+:type: manpage
+:webfonts!:
+
+include::../www/inc-menu.adoc[]
+
+== NAME
+
+gpssnmp - SNMP helper client for gpsd
+
+== SYNOPSIS
+
+*gpssnmp* [OPTIONS] [server[:port[:device]]]
+
+*gpssnmp* -h
+
+*gpssnmp* -g OID
+
+*gpssnmp* -n OID
+
+*gpssnmp* -p
+
+*gpssnmp* -V
+
+== DESCRIPTION
+
+*gpssnmp* is a *gpsd* client that works as an SNMP helper for *MRTG*.
+
+*gpssnmp* does not require root privileges. It will also run fine as root.
+
+*gpssnmp* can act as an agent to *snmpd* in _pass_ mode or in
+_pass_persist_ mode. So it can be used to extend *snmpd* with the
+*GPSD-MIB*.  Given the nature of the *SNMP* protocol, do not expect
+good latency.  Data from different epochs may be mixed up together.
+
+NOTE: this program is new in version 3.24.1 and will be subject to
+change for a few revisions.  Consider it a Work In Progress (WIP).
+
+== OPTIONS
+
+*-?*, *-h*, *--help*::
+  Print a summary of options and then exit.
+  Use with "-D 1" to see valid OID values.
+  Use with "-D 2" to see valid OID values with scale values and descriptions.
+*-g OID*::
+  Get the specified OID.
+*-n OID*::
+  Get the next OID starting at OID.
+*-p*, *--persist*::
+  Enter _pass_persist_ mode.  This allows better performance when used as
+  an agent for the *snmpd* daemon.  See the snmpd.conf man page for details.
+*-V*, *--version*::
+  Print the package version and exit.
+
+
+== EXAMPLES:
+
+To get the number of saltellits seen with the OID
+
+----
+   $ gpssnmp -g .1.3.6.1.4.1.59054.11.2.1.3.1
+   .1.3.6.1.4.1.59054.11.2.1.3.1
+   INTEGER
+   15
+----
+
+To get the number of saltellits seen with the MIB name
+
+----
+   $ gpssnmp -g skynSat.1
+   .1.3.6.1.4.1.59054.11.2.1.3.1
+   INTEGER
+   15
+----
+
+=== Connecting to snmpd
+
+*gpssnmp* can work as a "pass-through script" with *snmpd*.  To enable
+this functionality on an already working snmpd installation, add this to your
+*snmpd.conf* file, and then restart *snmpd*:
+
+----
+# be sure SNMPv2 community "public" can access all MIBs:
+rocommunity public  localhost
+
+# configure pass-thur of GPSD-MIB to gpssnmp
+pass .1.3.6.1.4.1.59054  /usr/local/bin/gpssnmp
+----
+
+You can then query the number of satlettites in use this way:
+
+----
+$ snmpget -c public -v 2c localhost skynSat.1
+GPSD-MIB::skynSat.1 = INTEGER: 16
+----
+
+Dump the entire "sky" OID this way:
+
+----
+$ snmpwalk -c public -v 2c localhost GPSD-MIB::sky
+GPSD-MIB::skynSat.1 = INTEGER: 17
+GPSD-MIB::skyuSat.1 = INTEGER: 8
+GPSD-MIB::skySNRavg.1 = INTEGER: 2000
+----
+
+Dump the entire GPSD-MIB this way:
+
+----
+$ snmpwalk -c public -v 2c localhost gpsd
+GPSD-MIB::tpvLeapSeconds = INTEGER: 18
+GPSD-MIB::tpvNumber = INTEGER: 1
+GPSD-MIB::tpvIndex.1 = INTEGER: 1
+[...]
+----
+
+*gpssnmp* supports the _pass_persist_ mode of snmpd.  To have
+*snmpd* use *gpssnmp* in this mode put this in your _snmpd.conf_
+file:
+
+----
+pass_persist .1.3.6.1.4.1.59054  /usr/local/bin/gpssnmp --persist
+----
+
+== RETURN VALUES
+
+*0*:: on success.
+*1*:: on failure
+
+== SEE ALSO
+
+*cgps*(1), *gps*(1), *gpspipe*(1), *snmpget*(1), *snmpwalk*(1), *xgps*(1)
+
+*snmpd.conf*(5)
+
+*gpsd*(8), *snmpd*(8)
+
+== RESOURCES
+
+*Project web site:* {gpsdweb}
+
+== COPYING
+
+This file is Copyright 2022 by the GPSD project +
+SPDX-License-Identifier: BSD-2-clause

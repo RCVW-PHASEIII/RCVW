@@ -1,0 +1,3192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 2.0.16">
+<meta name="description" content="How to set up an NTP Stratum 1 server using GPSD.">
+<meta name="keywords" content="time, GPSD, NTP, time, precision, 1PPS, PPS, stratum, jitter">
+<meta name="author" content="Gary E. Miller &lt;gem@rellim.com&gt;, Eric S. Raymond &lt;esr@thyrsus.com&gt;">
+<title>GPSD Time Service HOWTO</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
+<style>
+/*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
+/* Uncomment the following line when using as a custom stylesheet */
+/* @import "https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700"; */
+html{font-family:sans-serif;-webkit-text-size-adjust:100%}
+a{background:none}
+a:focus{outline:thin dotted}
+a:active,a:hover{outline:0}
+h1{font-size:2em;margin:.67em 0}
+b,strong{font-weight:bold}
+abbr{font-size:.9em}
+abbr[title]{cursor:help;border-bottom:1px dotted #dddddf;text-decoration:none}
+dfn{font-style:italic}
+hr{height:0}
+mark{background:#ff0;color:#000}
+code,kbd,pre,samp{font-family:monospace;font-size:1em}
+pre{white-space:pre-wrap}
+q{quotes:"\201C" "\201D" "\2018" "\2019"}
+small{font-size:80%}
+sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}
+sup{top:-.5em}
+sub{bottom:-.25em}
+img{border:0}
+svg:not(:root){overflow:hidden}
+figure{margin:0}
+audio,video{display:inline-block}
+audio:not([controls]){display:none;height:0}
+fieldset{border:1px solid silver;margin:0 2px;padding:.35em .625em .75em}
+legend{border:0;padding:0}
+button,input,select,textarea{font-family:inherit;font-size:100%;margin:0}
+button,input{line-height:normal}
+button,select{text-transform:none}
+button,html input[type=button],input[type=reset],input[type=submit]{-webkit-appearance:button;cursor:pointer}
+button[disabled],html input[disabled]{cursor:default}
+input[type=checkbox],input[type=radio]{padding:0}
+button::-moz-focus-inner,input::-moz-focus-inner{border:0;padding:0}
+textarea{overflow:auto;vertical-align:top}
+table{border-collapse:collapse;border-spacing:0}
+*,::before,::after{box-sizing:border-box}
+html,body{font-size:100%}
+body{background:#fff;color:rgba(0,0,0,.8);padding:0;margin:0;font-family:"Noto Serif","DejaVu Serif",serif;line-height:1;position:relative;cursor:auto;-moz-tab-size:4;-o-tab-size:4;tab-size:4;word-wrap:anywhere;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased}
+a:hover{cursor:pointer}
+img,object,embed{max-width:100%;height:auto}
+object,embed{height:100%}
+img{-ms-interpolation-mode:bicubic}
+.left{float:left!important}
+.right{float:right!important}
+.text-left{text-align:left!important}
+.text-right{text-align:right!important}
+.text-center{text-align:center!important}
+.text-justify{text-align:justify!important}
+.hide{display:none}
+img,object,svg{display:inline-block;vertical-align:middle}
+textarea{height:auto;min-height:50px}
+select{width:100%}
+.subheader,.admonitionblock td.content>.title,.audioblock>.title,.exampleblock>.title,.imageblock>.title,.listingblock>.title,.literalblock>.title,.stemblock>.title,.openblock>.title,.paragraph>.title,.quoteblock>.title,table.tableblock>.title,.verseblock>.title,.videoblock>.title,.dlist>.title,.olist>.title,.ulist>.title,.qlist>.title,.hdlist>.title{line-height:1.45;color:#7a2518;font-weight:400;margin-top:0;margin-bottom:.25em}
+div,dl,dt,dd,ul,ol,li,h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6,pre,form,p,blockquote,th,td{margin:0;padding:0}
+a{color:#2156a5;text-decoration:underline;line-height:inherit}
+a:hover,a:focus{color:#1d4b8f}
+a img{border:0}
+p{line-height:1.6;margin-bottom:1.25em;text-rendering:optimizeLegibility}
+p aside{font-size:.875em;line-height:1.35;font-style:italic}
+h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{font-family:"Open Sans","DejaVu Sans",sans-serif;font-weight:300;font-style:normal;color:#ba3925;text-rendering:optimizeLegibility;margin-top:1em;margin-bottom:.5em;line-height:1.0125em}
+h1 small,h2 small,h3 small,#toctitle small,.sidebarblock>.content>.title small,h4 small,h5 small,h6 small{font-size:60%;color:#e99b8f;line-height:0}
+h1{font-size:2.125em}
+h2{font-size:1.6875em}
+h3,#toctitle,.sidebarblock>.content>.title{font-size:1.375em}
+h4,h5{font-size:1.125em}
+h6{font-size:1em}
+hr{border:solid #dddddf;border-width:1px 0 0;clear:both;margin:1.25em 0 1.1875em}
+em,i{font-style:italic;line-height:inherit}
+strong,b{font-weight:bold;line-height:inherit}
+small{font-size:60%;line-height:inherit}
+code{font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;font-weight:400;color:rgba(0,0,0,.9)}
+ul,ol,dl{line-height:1.6;margin-bottom:1.25em;list-style-position:outside;font-family:inherit}
+ul,ol{margin-left:1.5em}
+ul li ul,ul li ol{margin-left:1.25em;margin-bottom:0}
+ul.square li ul,ul.circle li ul,ul.disc li ul{list-style:inherit}
+ul.square{list-style-type:square}
+ul.circle{list-style-type:circle}
+ul.disc{list-style-type:disc}
+ol li ul,ol li ol{margin-left:1.25em;margin-bottom:0}
+dl dt{margin-bottom:.3125em;font-weight:bold}
+dl dd{margin-bottom:1.25em}
+blockquote{margin:0 0 1.25em;padding:.5625em 1.25em 0 1.1875em;border-left:1px solid #ddd}
+blockquote,blockquote p{line-height:1.6;color:rgba(0,0,0,.85)}
+@media screen and (min-width:768px){h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{line-height:1.2}
+h1{font-size:2.75em}
+h2{font-size:2.3125em}
+h3,#toctitle,.sidebarblock>.content>.title{font-size:1.6875em}
+h4{font-size:1.4375em}}
+table{background:#fff;margin-bottom:1.25em;border:1px solid #dedede;word-wrap:normal}
+table thead,table tfoot{background:#f7f8f7}
+table thead tr th,table thead tr td,table tfoot tr th,table tfoot tr td{padding:.5em .625em .625em;font-size:inherit;color:rgba(0,0,0,.8);text-align:left}
+table tr th,table tr td{padding:.5625em .625em;font-size:inherit;color:rgba(0,0,0,.8)}
+table tr.even,table tr.alt{background:#f8f8f7}
+table thead tr th,table tfoot tr th,table tbody tr td,table tr td,table tfoot tr td{line-height:1.6}
+h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{line-height:1.2;word-spacing:-.05em}
+h1 strong,h2 strong,h3 strong,#toctitle strong,.sidebarblock>.content>.title strong,h4 strong,h5 strong,h6 strong{font-weight:400}
+.center{margin-left:auto;margin-right:auto}
+.stretch{width:100%}
+.clearfix::before,.clearfix::after,.float-group::before,.float-group::after{content:" ";display:table}
+.clearfix::after,.float-group::after{clear:both}
+:not(pre).nobreak{word-wrap:normal}
+:not(pre).nowrap{white-space:nowrap}
+:not(pre).pre-wrap{white-space:pre-wrap}
+:not(pre):not([class^=L])>code{font-size:.9375em;font-style:normal!important;letter-spacing:0;padding:.1em .5ex;word-spacing:-.15em;background:#f7f7f8;border-radius:4px;line-height:1.45;text-rendering:optimizeSpeed}
+pre{color:rgba(0,0,0,.9);font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;line-height:1.45;text-rendering:optimizeSpeed}
+pre code,pre pre{color:inherit;font-size:inherit;line-height:inherit}
+pre>code{display:block}
+pre.nowrap,pre.nowrap pre{white-space:pre;word-wrap:normal}
+em em{font-style:normal}
+strong strong{font-weight:400}
+.keyseq{color:rgba(51,51,51,.8)}
+kbd{font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;display:inline-block;color:rgba(0,0,0,.8);font-size:.65em;line-height:1.45;background:#f7f7f7;border:1px solid #ccc;border-radius:3px;box-shadow:0 1px 0 rgba(0,0,0,.2),inset 0 0 0 .1em #fff;margin:0 .15em;padding:.2em .5em;vertical-align:middle;position:relative;top:-.1em;white-space:nowrap}
+.keyseq kbd:first-child{margin-left:0}
+.keyseq kbd:last-child{margin-right:0}
+.menuseq,.menuref{color:#000}
+.menuseq b:not(.caret),.menuref{font-weight:inherit}
+.menuseq{word-spacing:-.02em}
+.menuseq b.caret{font-size:1.25em;line-height:.8}
+.menuseq i.caret{font-weight:bold;text-align:center;width:.45em}
+b.button::before,b.button::after{position:relative;top:-1px;font-weight:400}
+b.button::before{content:"[";padding:0 3px 0 2px}
+b.button::after{content:"]";padding:0 2px 0 3px}
+p a>code:hover{color:rgba(0,0,0,.9)}
+#header,#content,#footnotes,#footer{width:100%;margin:0 auto;max-width:62.5em;*zoom:1;position:relative;padding-left:.9375em;padding-right:.9375em}
+#header::before,#header::after,#content::before,#content::after,#footnotes::before,#footnotes::after,#footer::before,#footer::after{content:" ";display:table}
+#header::after,#content::after,#footnotes::after,#footer::after{clear:both}
+#content{margin-top:1.25em}
+#content::before{content:none}
+#header>h1:first-child{color:rgba(0,0,0,.85);margin-top:2.25rem;margin-bottom:0}
+#header>h1:first-child+#toc{margin-top:8px;border-top:1px solid #dddddf}
+#header>h1:only-child,body.toc2 #header>h1:nth-last-child(2){border-bottom:1px solid #dddddf;padding-bottom:8px}
+#header .details{border-bottom:1px solid #dddddf;line-height:1.45;padding-top:.25em;padding-bottom:.25em;padding-left:.25em;color:rgba(0,0,0,.6);display:flex;flex-flow:row wrap}
+#header .details span:first-child{margin-left:-.125em}
+#header .details span.email a{color:rgba(0,0,0,.85)}
+#header .details br{display:none}
+#header .details br+span::before{content:"\00a0\2013\00a0"}
+#header .details br+span.author::before{content:"\00a0\22c5\00a0";color:rgba(0,0,0,.85)}
+#header .details br+span#revremark::before{content:"\00a0|\00a0"}
+#header #revnumber{text-transform:capitalize}
+#header #revnumber::after{content:"\00a0"}
+#content>h1:first-child:not([class]){color:rgba(0,0,0,.85);border-bottom:1px solid #dddddf;padding-bottom:8px;margin-top:0;padding-top:1rem;margin-bottom:1.25rem}
+#toc{border-bottom:1px solid #e7e7e9;padding-bottom:.5em}
+#toc>ul{margin-left:.125em}
+#toc ul.sectlevel0>li>a{font-style:italic}
+#toc ul.sectlevel0 ul.sectlevel1{margin:.5em 0}
+#toc ul{font-family:"Open Sans","DejaVu Sans",sans-serif;list-style-type:none}
+#toc li{line-height:1.3334;margin-top:.3334em}
+#toc a{text-decoration:none}
+#toc a:active{text-decoration:underline}
+#toctitle{color:#7a2518;font-size:1.2em}
+@media screen and (min-width:768px){#toctitle{font-size:1.375em}
+body.toc2{padding-left:15em;padding-right:0}
+#toc.toc2{margin-top:0!important;background:#f8f8f7;position:fixed;width:15em;left:0;top:0;border-right:1px solid #e7e7e9;border-top-width:0!important;border-bottom-width:0!important;z-index:1000;padding:1.25em 1em;height:100%;overflow:auto}
+#toc.toc2 #toctitle{margin-top:0;margin-bottom:.8rem;font-size:1.2em}
+#toc.toc2>ul{font-size:.9em;margin-bottom:0}
+#toc.toc2 ul ul{margin-left:0;padding-left:1em}
+#toc.toc2 ul.sectlevel0 ul.sectlevel1{padding-left:0;margin-top:.5em;margin-bottom:.5em}
+body.toc2.toc-right{padding-left:0;padding-right:15em}
+body.toc2.toc-right #toc.toc2{border-right-width:0;border-left:1px solid #e7e7e9;left:auto;right:0}}
+@media screen and (min-width:1280px){body.toc2{padding-left:20em;padding-right:0}
+#toc.toc2{width:20em}
+#toc.toc2 #toctitle{font-size:1.375em}
+#toc.toc2>ul{font-size:.95em}
+#toc.toc2 ul ul{padding-left:1.25em}
+body.toc2.toc-right{padding-left:0;padding-right:20em}}
+#content #toc{border:1px solid #e0e0dc;margin-bottom:1.25em;padding:1.25em;background:#f8f8f7;border-radius:4px}
+#content #toc>:first-child{margin-top:0}
+#content #toc>:last-child{margin-bottom:0}
+#footer{max-width:none;background:rgba(0,0,0,.8);padding:1.25em}
+#footer-text{color:hsla(0,0%,100%,.8);line-height:1.44}
+#content{margin-bottom:.625em}
+.sect1{padding-bottom:.625em}
+@media screen and (min-width:768px){#content{margin-bottom:1.25em}
+.sect1{padding-bottom:1.25em}}
+.sect1:last-child{padding-bottom:0}
+.sect1+.sect1{border-top:1px solid #e7e7e9}
+#content h1>a.anchor,h2>a.anchor,h3>a.anchor,#toctitle>a.anchor,.sidebarblock>.content>.title>a.anchor,h4>a.anchor,h5>a.anchor,h6>a.anchor{position:absolute;z-index:1001;width:1.5ex;margin-left:-1.5ex;display:block;text-decoration:none!important;visibility:hidden;text-align:center;font-weight:400}
+#content h1>a.anchor::before,h2>a.anchor::before,h3>a.anchor::before,#toctitle>a.anchor::before,.sidebarblock>.content>.title>a.anchor::before,h4>a.anchor::before,h5>a.anchor::before,h6>a.anchor::before{content:"\00A7";font-size:.85em;display:block;padding-top:.1em}
+#content h1:hover>a.anchor,#content h1>a.anchor:hover,h2:hover>a.anchor,h2>a.anchor:hover,h3:hover>a.anchor,#toctitle:hover>a.anchor,.sidebarblock>.content>.title:hover>a.anchor,h3>a.anchor:hover,#toctitle>a.anchor:hover,.sidebarblock>.content>.title>a.anchor:hover,h4:hover>a.anchor,h4>a.anchor:hover,h5:hover>a.anchor,h5>a.anchor:hover,h6:hover>a.anchor,h6>a.anchor:hover{visibility:visible}
+#content h1>a.link,h2>a.link,h3>a.link,#toctitle>a.link,.sidebarblock>.content>.title>a.link,h4>a.link,h5>a.link,h6>a.link{color:#ba3925;text-decoration:none}
+#content h1>a.link:hover,h2>a.link:hover,h3>a.link:hover,#toctitle>a.link:hover,.sidebarblock>.content>.title>a.link:hover,h4>a.link:hover,h5>a.link:hover,h6>a.link:hover{color:#a53221}
+details,.audioblock,.imageblock,.literalblock,.listingblock,.stemblock,.videoblock{margin-bottom:1.25em}
+details{margin-left:1.25rem}
+details>summary{cursor:pointer;display:block;position:relative;line-height:1.6;margin-bottom:.625rem;-webkit-tap-highlight-color:transparent}
+details>summary::before{content:"";border:solid transparent;border-left:solid;border-width:.3em 0 .3em .5em;position:absolute;top:.5em;left:-1.25rem;transform:translateX(15%)}
+details[open]>summary::before{border:solid transparent;border-top:solid;border-width:.5em .3em 0;transform:translateY(15%)}
+details>summary::after{content:"";width:1.25rem;height:1em;position:absolute;top:.3em;left:-1.25rem}
+.admonitionblock td.content>.title,.audioblock>.title,.exampleblock>.title,.imageblock>.title,.listingblock>.title,.literalblock>.title,.stemblock>.title,.openblock>.title,.paragraph>.title,.quoteblock>.title,table.tableblock>.title,.verseblock>.title,.videoblock>.title,.dlist>.title,.olist>.title,.ulist>.title,.qlist>.title,.hdlist>.title{text-rendering:optimizeLegibility;text-align:left;font-family:"Noto Serif","DejaVu Serif",serif;font-size:1rem;font-style:italic}
+table.tableblock.fit-content>caption.title{white-space:nowrap;width:0}
+.paragraph.lead>p,#preamble>.sectionbody>[class=paragraph]:first-of-type p{font-size:1.21875em;line-height:1.6;color:rgba(0,0,0,.85)}
+.admonitionblock>table{border-collapse:separate;border:0;background:none;width:100%}
+.admonitionblock>table td.icon{text-align:center;width:80px}
+.admonitionblock>table td.icon img{max-width:none}
+.admonitionblock>table td.icon .title{font-weight:bold;font-family:"Open Sans","DejaVu Sans",sans-serif;text-transform:uppercase}
+.admonitionblock>table td.content{padding-left:1.125em;padding-right:1.25em;border-left:1px solid #dddddf;color:rgba(0,0,0,.6);word-wrap:anywhere}
+.admonitionblock>table td.content>:last-child>:last-child{margin-bottom:0}
+.exampleblock>.content{border:1px solid #e6e6e6;margin-bottom:1.25em;padding:1.25em;background:#fff;border-radius:4px}
+.exampleblock>.content>:first-child{margin-top:0}
+.exampleblock>.content>:last-child{margin-bottom:0}
+.sidebarblock{border:1px solid #dbdbd6;margin-bottom:1.25em;padding:1.25em;background:#f3f3f2;border-radius:4px}
+.sidebarblock>:first-child{margin-top:0}
+.sidebarblock>:last-child{margin-bottom:0}
+.sidebarblock>.content>.title{color:#7a2518;margin-top:0;text-align:center}
+.exampleblock>.content>:last-child>:last-child,.exampleblock>.content .olist>ol>li:last-child>:last-child,.exampleblock>.content .ulist>ul>li:last-child>:last-child,.exampleblock>.content .qlist>ol>li:last-child>:last-child,.sidebarblock>.content>:last-child>:last-child,.sidebarblock>.content .olist>ol>li:last-child>:last-child,.sidebarblock>.content .ulist>ul>li:last-child>:last-child,.sidebarblock>.content .qlist>ol>li:last-child>:last-child{margin-bottom:0}
+.literalblock pre,.listingblock>.content>pre{border-radius:4px;overflow-x:auto;padding:1em;font-size:.8125em}
+@media screen and (min-width:768px){.literalblock pre,.listingblock>.content>pre{font-size:.90625em}}
+@media screen and (min-width:1280px){.literalblock pre,.listingblock>.content>pre{font-size:1em}}
+.literalblock pre,.listingblock>.content>pre:not(.highlight),.listingblock>.content>pre[class=highlight],.listingblock>.content>pre[class^="highlight "]{background:#f7f7f8}
+.literalblock.output pre{color:#f7f7f8;background:rgba(0,0,0,.9)}
+.listingblock>.content{position:relative}
+.listingblock code[data-lang]::before{display:none;content:attr(data-lang);position:absolute;font-size:.75em;top:.425rem;right:.5rem;line-height:1;text-transform:uppercase;color:inherit;opacity:.5}
+.listingblock:hover code[data-lang]::before{display:block}
+.listingblock.terminal pre .command::before{content:attr(data-prompt);padding-right:.5em;color:inherit;opacity:.5}
+.listingblock.terminal pre .command:not([data-prompt])::before{content:"$"}
+.listingblock pre.highlightjs{padding:0}
+.listingblock pre.highlightjs>code{padding:1em;border-radius:4px}
+.listingblock pre.prettyprint{border-width:0}
+.prettyprint{background:#f7f7f8}
+pre.prettyprint .linenums{line-height:1.45;margin-left:2em}
+pre.prettyprint li{background:none;list-style-type:inherit;padding-left:0}
+pre.prettyprint li code[data-lang]::before{opacity:1}
+pre.prettyprint li:not(:first-child) code[data-lang]::before{display:none}
+table.linenotable{border-collapse:separate;border:0;margin-bottom:0;background:none}
+table.linenotable td[class]{color:inherit;vertical-align:top;padding:0;line-height:inherit;white-space:normal}
+table.linenotable td.code{padding-left:.75em}
+table.linenotable td.linenos{border-right:1px solid;opacity:.35;padding-right:.5em}
+pre.pygments .lineno{border-right:1px solid;opacity:.35;display:inline-block;margin-right:.75em}
+pre.pygments .lineno::before{content:"";margin-right:-.125em}
+.quoteblock{margin:0 1em 1.25em 1.5em;display:table}
+.quoteblock:not(.excerpt)>.title{margin-left:-1.5em;margin-bottom:.75em}
+.quoteblock blockquote,.quoteblock p{color:rgba(0,0,0,.85);font-size:1.15rem;line-height:1.75;word-spacing:.1em;letter-spacing:0;font-style:italic;text-align:justify}
+.quoteblock blockquote{margin:0;padding:0;border:0}
+.quoteblock blockquote::before{content:"\201c";float:left;font-size:2.75em;font-weight:bold;line-height:.6em;margin-left:-.6em;color:#7a2518;text-shadow:0 1px 2px rgba(0,0,0,.1)}
+.quoteblock blockquote>.paragraph:last-child p{margin-bottom:0}
+.quoteblock .attribution{margin-top:.75em;margin-right:.5ex;text-align:right}
+.verseblock{margin:0 1em 1.25em}
+.verseblock pre{font-family:"Open Sans","DejaVu Sans",sans-serif;font-size:1.15rem;color:rgba(0,0,0,.85);font-weight:300;text-rendering:optimizeLegibility}
+.verseblock pre strong{font-weight:400}
+.verseblock .attribution{margin-top:1.25rem;margin-left:.5ex}
+.quoteblock .attribution,.verseblock .attribution{font-size:.9375em;line-height:1.45;font-style:italic}
+.quoteblock .attribution br,.verseblock .attribution br{display:none}
+.quoteblock .attribution cite,.verseblock .attribution cite{display:block;letter-spacing:-.025em;color:rgba(0,0,0,.6)}
+.quoteblock.abstract blockquote::before,.quoteblock.excerpt blockquote::before,.quoteblock .quoteblock blockquote::before{display:none}
+.quoteblock.abstract blockquote,.quoteblock.abstract p,.quoteblock.excerpt blockquote,.quoteblock.excerpt p,.quoteblock .quoteblock blockquote,.quoteblock .quoteblock p{line-height:1.6;word-spacing:0}
+.quoteblock.abstract{margin:0 1em 1.25em;display:block}
+.quoteblock.abstract>.title{margin:0 0 .375em;font-size:1.15em;text-align:center}
+.quoteblock.excerpt>blockquote,.quoteblock .quoteblock{padding:0 0 .25em 1em;border-left:.25em solid #dddddf}
+.quoteblock.excerpt,.quoteblock .quoteblock{margin-left:0}
+.quoteblock.excerpt blockquote,.quoteblock.excerpt p,.quoteblock .quoteblock blockquote,.quoteblock .quoteblock p{color:inherit;font-size:1.0625rem}
+.quoteblock.excerpt .attribution,.quoteblock .quoteblock .attribution{color:inherit;font-size:.85rem;text-align:left;margin-right:0}
+p.tableblock:last-child{margin-bottom:0}
+td.tableblock>.content{margin-bottom:1.25em;word-wrap:anywhere}
+td.tableblock>.content>:last-child{margin-bottom:-1.25em}
+table.tableblock,th.tableblock,td.tableblock{border:0 solid #dedede}
+table.grid-all>*>tr>*{border-width:1px}
+table.grid-cols>*>tr>*{border-width:0 1px}
+table.grid-rows>*>tr>*{border-width:1px 0}
+table.frame-all{border-width:1px}
+table.frame-ends{border-width:1px 0}
+table.frame-sides{border-width:0 1px}
+table.frame-none>colgroup+*>:first-child>*,table.frame-sides>colgroup+*>:first-child>*{border-top-width:0}
+table.frame-none>:last-child>:last-child>*,table.frame-sides>:last-child>:last-child>*{border-bottom-width:0}
+table.frame-none>*>tr>:first-child,table.frame-ends>*>tr>:first-child{border-left-width:0}
+table.frame-none>*>tr>:last-child,table.frame-ends>*>tr>:last-child{border-right-width:0}
+table.stripes-all tr,table.stripes-odd tr:nth-of-type(odd),table.stripes-even tr:nth-of-type(even),table.stripes-hover tr:hover{background:#f8f8f7}
+th.halign-left,td.halign-left{text-align:left}
+th.halign-right,td.halign-right{text-align:right}
+th.halign-center,td.halign-center{text-align:center}
+th.valign-top,td.valign-top{vertical-align:top}
+th.valign-bottom,td.valign-bottom{vertical-align:bottom}
+th.valign-middle,td.valign-middle{vertical-align:middle}
+table thead th,table tfoot th{font-weight:bold}
+tbody tr th{background:#f7f8f7}
+tbody tr th,tbody tr th p,tfoot tr th,tfoot tr th p{color:rgba(0,0,0,.8);font-weight:bold}
+p.tableblock>code:only-child{background:none;padding:0}
+p.tableblock{font-size:1em}
+ol{margin-left:1.75em}
+ul li ol{margin-left:1.5em}
+dl dd{margin-left:1.125em}
+dl dd:last-child,dl dd:last-child>:last-child{margin-bottom:0}
+ol>li p,ul>li p,ul dd,ol dd,.olist .olist,.ulist .ulist,.ulist .olist,.olist .ulist{margin-bottom:.625em}
+ul.checklist,ul.none,ol.none,ul.no-bullet,ol.no-bullet,ol.unnumbered,ul.unstyled,ol.unstyled{list-style-type:none}
+ul.no-bullet,ol.no-bullet,ol.unnumbered{margin-left:.625em}
+ul.unstyled,ol.unstyled{margin-left:0}
+ul.checklist>li>p:first-child{margin-left:-1em}
+ul.checklist>li>p:first-child>.fa-square-o:first-child,ul.checklist>li>p:first-child>.fa-check-square-o:first-child{width:1.25em;font-size:.8em;position:relative;bottom:.125em}
+ul.checklist>li>p:first-child>input[type=checkbox]:first-child{margin-right:.25em}
+ul.inline{display:flex;flex-flow:row wrap;list-style:none;margin:0 0 .625em -1.25em}
+ul.inline>li{margin-left:1.25em}
+.unstyled dl dt{font-weight:400;font-style:normal}
+ol.arabic{list-style-type:decimal}
+ol.decimal{list-style-type:decimal-leading-zero}
+ol.loweralpha{list-style-type:lower-alpha}
+ol.upperalpha{list-style-type:upper-alpha}
+ol.lowerroman{list-style-type:lower-roman}
+ol.upperroman{list-style-type:upper-roman}
+ol.lowergreek{list-style-type:lower-greek}
+.hdlist>table,.colist>table{border:0;background:none}
+.hdlist>table>tbody>tr,.colist>table>tbody>tr{background:none}
+td.hdlist1,td.hdlist2{vertical-align:top;padding:0 .625em}
+td.hdlist1{font-weight:bold;padding-bottom:1.25em}
+td.hdlist2{word-wrap:anywhere}
+.literalblock+.colist,.listingblock+.colist{margin-top:-.5em}
+.colist td:not([class]):first-child{padding:.4em .75em 0;line-height:1;vertical-align:top}
+.colist td:not([class]):first-child img{max-width:none}
+.colist td:not([class]):last-child{padding:.25em 0}
+.thumb,.th{line-height:0;display:inline-block;border:4px solid #fff;box-shadow:0 0 0 1px #ddd}
+.imageblock.left{margin:.25em .625em 1.25em 0}
+.imageblock.right{margin:.25em 0 1.25em .625em}
+.imageblock>.title{margin-bottom:0}
+.imageblock.thumb,.imageblock.th{border-width:6px}
+.imageblock.thumb>.title,.imageblock.th>.title{padding:0 .125em}
+.image.left,.image.right{margin-top:.25em;margin-bottom:.25em;display:inline-block;line-height:0}
+.image.left{margin-right:.625em}
+.image.right{margin-left:.625em}
+a.image{text-decoration:none;display:inline-block}
+a.image object{pointer-events:none}
+sup.footnote,sup.footnoteref{font-size:.875em;position:static;vertical-align:super}
+sup.footnote a,sup.footnoteref a{text-decoration:none}
+sup.footnote a:active,sup.footnoteref a:active{text-decoration:underline}
+#footnotes{padding-top:.75em;padding-bottom:.75em;margin-bottom:.625em}
+#footnotes hr{width:20%;min-width:6.25em;margin:-.25em 0 .75em;border-width:1px 0 0}
+#footnotes .footnote{padding:0 .375em 0 .225em;line-height:1.3334;font-size:.875em;margin-left:1.2em;margin-bottom:.2em}
+#footnotes .footnote a:first-of-type{font-weight:bold;text-decoration:none;margin-left:-1.05em}
+#footnotes .footnote:last-of-type{margin-bottom:0}
+#content #footnotes{margin-top:-.625em;margin-bottom:0;padding:.75em 0}
+.gist .file-data>table{border:0;background:#fff;width:100%;margin-bottom:0}
+.gist .file-data>table td.line-data{width:99%}
+div.unbreakable{page-break-inside:avoid}
+.big{font-size:larger}
+.small{font-size:smaller}
+.underline{text-decoration:underline}
+.overline{text-decoration:overline}
+.line-through{text-decoration:line-through}
+.aqua{color:#00bfbf}
+.aqua-background{background:#00fafa}
+.black{color:#000}
+.black-background{background:#000}
+.blue{color:#0000bf}
+.blue-background{background:#0000fa}
+.fuchsia{color:#bf00bf}
+.fuchsia-background{background:#fa00fa}
+.gray{color:#606060}
+.gray-background{background:#7d7d7d}
+.green{color:#006000}
+.green-background{background:#007d00}
+.lime{color:#00bf00}
+.lime-background{background:#00fa00}
+.maroon{color:#600000}
+.maroon-background{background:#7d0000}
+.navy{color:#000060}
+.navy-background{background:#00007d}
+.olive{color:#606000}
+.olive-background{background:#7d7d00}
+.purple{color:#600060}
+.purple-background{background:#7d007d}
+.red{color:#bf0000}
+.red-background{background:#fa0000}
+.silver{color:#909090}
+.silver-background{background:#bcbcbc}
+.teal{color:#006060}
+.teal-background{background:#007d7d}
+.white{color:#bfbfbf}
+.white-background{background:#fafafa}
+.yellow{color:#bfbf00}
+.yellow-background{background:#fafa00}
+span.icon>.fa{cursor:default}
+a span.icon>.fa{cursor:inherit}
+.admonitionblock td.icon [class^="fa icon-"]{font-size:2.5em;text-shadow:1px 1px 2px rgba(0,0,0,.5);cursor:default}
+.admonitionblock td.icon .icon-note::before{content:"\f05a";color:#19407c}
+.admonitionblock td.icon .icon-tip::before{content:"\f0eb";text-shadow:1px 1px 2px rgba(155,155,0,.8);color:#111}
+.admonitionblock td.icon .icon-warning::before{content:"\f071";color:#bf6900}
+.admonitionblock td.icon .icon-caution::before{content:"\f06d";color:#bf3400}
+.admonitionblock td.icon .icon-important::before{content:"\f06a";color:#bf0000}
+.conum[data-value]{display:inline-block;color:#fff!important;background:rgba(0,0,0,.8);border-radius:50%;text-align:center;font-size:.75em;width:1.67em;height:1.67em;line-height:1.67em;font-family:"Open Sans","DejaVu Sans",sans-serif;font-style:normal;font-weight:bold}
+.conum[data-value] *{color:#fff!important}
+.conum[data-value]+b{display:none}
+.conum[data-value]::after{content:attr(data-value)}
+pre .conum[data-value]{position:relative;top:-.125em}
+b.conum *{color:inherit!important}
+.conum:not([data-value]):empty{display:none}
+dt,th.tableblock,td.content,div.footnote{text-rendering:optimizeLegibility}
+h1,h2,p,td.content,span.alt,summary{letter-spacing:-.01em}
+p strong,td.content strong,div.footnote strong{letter-spacing:-.005em}
+p,blockquote,dt,td.content,span.alt,summary{font-size:1.0625rem}
+p{margin-bottom:1.25rem}
+.sidebarblock p,.sidebarblock dt,.sidebarblock td.content,p.tableblock{font-size:1em}
+.exampleblock>.content{background:#fffef7;border-color:#e0e0dc;box-shadow:0 1px 4px #e0e0dc}
+.print-only{display:none!important}
+@page{margin:1.25cm .75cm}
+@media print{*{box-shadow:none!important;text-shadow:none!important}
+html{font-size:80%}
+a{color:inherit!important;text-decoration:underline!important}
+a.bare,a[href^="#"],a[href^="mailto:"]{text-decoration:none!important}
+a[href^="http:"]:not(.bare)::after,a[href^="https:"]:not(.bare)::after{content:"(" attr(href) ")";display:inline-block;font-size:.875em;padding-left:.25em}
+abbr[title]{border-bottom:1px dotted}
+abbr[title]::after{content:" (" attr(title) ")"}
+pre,blockquote,tr,img,object,svg{page-break-inside:avoid}
+thead{display:table-header-group}
+svg{max-width:100%}
+p,blockquote,dt,td.content{font-size:1em;orphans:3;widows:3}
+h2,h3,#toctitle,.sidebarblock>.content>.title{page-break-after:avoid}
+#header,#content,#footnotes,#footer{max-width:none}
+#toc,.sidebarblock,.exampleblock>.content{background:none!important}
+#toc{border-bottom:1px solid #dddddf!important;padding-bottom:0!important}
+body.book #header{text-align:center}
+body.book #header>h1:first-child{border:0!important;margin:2.5em 0 1em}
+body.book #header .details{border:0!important;display:block;padding:0!important}
+body.book #header .details span:first-child{margin-left:0!important}
+body.book #header .details br{display:block}
+body.book #header .details br+span::before{content:none!important}
+body.book #toc{border:0!important;text-align:left!important;padding:0!important;margin:0!important}
+body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-break-before:always}
+.listingblock code[data-lang]::before{display:block}
+#footer{padding:0 .9375em}
+.hide-on-print{display:none!important}
+.print-only{display:block!important}
+.hide-for-print{display:none!important}
+.show-for-print{display:inherit!important}}
+@media amzn-kf8,print{#header>h1:first-child{margin-top:1.25rem}
+.sect1{padding:0!important}
+.sect1+.sect1{border:0}
+#footer{background:none}
+#footer-text{color:rgba(0,0,0,.6);font-size:.9em}}
+@media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
+</style>
+<style>
+
+/* gpsd CSS customization. */
+#header > h1:first-child,
+body {
+  color: #000;
+}
+
+.sidebarblock,
+#toc.toc2 {
+  background: #f8f8f8;
+  border: 1px dashed #999;
+}
+
+.sidebarblock {
+  display: inline-block;
+  float: left;
+  margin-right: 20px;
+  margin-bottom: 20px;
+}
+
+#toctitle {
+  display: none;
+}
+
+#content #toc.toc {
+  background: inherit;
+  border: none;
+  padding: 0em;
+}
+
+#header,
+#content,
+#footnotes,
+#footer {
+  max-width: initial;
+}
+
+@media screen and (min-width: 768px) {
+  body {
+    --left-col: 15em;
+  }
+
+  #content #Menu {
+    border: 1px dashed #999;
+    bottom: 2px;
+    left: 2px;
+    margin: 0 20px 20px 0;
+    position: absolute;
+    top: 2px;
+    width: var(--left-col);
+  }
+
+  #content #preamble,
+  #content .sect1 {
+    margin-left: calc(var(--left-col) + 22px);
+  }
+}
+</style>
+</head>
+<body class="article">
+<div id="header">
+<h1>GPSD Time Service HOWTO</h1>
+<div class="details">
+<span id="author" class="author">Gary E. Miller &lt;gem@rellim.com&gt;, Eric S. Raymond &lt;esr@thyrsus.com&gt;</span><br>
+</div>
+</div>
+<div id="content">
+<div id="preamble">
+<div class="sectionbody">
+<div id="Menu" class="sidebarblock">
+<div class="content">
+<div class="paragraph">
+<p><span class="image"><img src="gpsd-logo-small.png" alt="Small gpsd Logo" width="105" height="126"></span><br>
+<a href="index.html">Home</a><br>
+<a href="faq.html">FAQ</a><br>
+<a href="xgps-sample.html">Screenshots</a><br>
+<a href="hardware.html">Hardware</a><br>
+<a href="for-vendors.html">For GPS Vendors</a><br>
+<a href="wishlist.html">Wish List</a><br>
+<a href="hall-of-shame.html">Hall of Shame</a><br>
+<a href="troubleshooting.html">Troubleshooting Guide</a><br>
+<a href="hacking.html">Hacker&#8217;s Guide</a><br>
+<a href="references.html">References</a><br>
+<a href="protocol-transition.html">Application Compatibility</a><br>
+<a href="history.html">History</a><br>
+<a href="future.html">Future</a><br></p>
+</div>
+<hr>
+<div id="toc" class="toc">
+<div id="toctitle" class="title">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_introduction">Introduction</a></li>
+<li><a href="#_ntp_with_gpsd">NTP with GPSD</a></li>
+<li><a href="#_gps_time">GPS time</a></li>
+<li><a href="#_1pps_quality_issues">1PPS quality issues</a></li>
+<li><a href="#_software_prerequisites">Software Prerequisites</a>
+<ul class="sectlevel2">
+<li><a href="#_building_gpsd">Building gpsd</a></li>
+<li><a href="#_kernel_support">Kernel support</a></li>
+<li><a href="#_time_service_daemon">Time service daemon</a></li>
+<li><a href="#_ntpsec">NTPSec</a></li>
+</ul>
+</li>
+<li><a href="#_choice_of_hardware">Choice of Hardware</a></li>
+<li><a href="#_enabling_pps">Enabling PPS</a></li>
+<li><a href="#_running_gpsd">Running GPSD</a></li>
+<li><a href="#_feeding_ntpd_from_gpsd">Feeding NTPD from GPSD</a></li>
+<li><a href="#_feeding_chrony_from_gpsd">Feeding chrony from GPSD</a></li>
+<li><a href="#_performance_tuning">Performance Tuning</a>
+<ul class="sectlevel2">
+<li><a href="#_arp_is_the_sound_of_your_server_choking">ARP is the sound of your server choking</a></li>
+<li><a href="#_watch_your_temperatures">Watch your temperatures</a></li>
+<li><a href="#_power_saving_is_not_your_friend">Power saving is not your friend</a></li>
+</ul>
+</li>
+<li><a href="#_ntp_tuning_and_performance_details">NTP tuning and performance details</a>
+<ul class="sectlevel2">
+<li><a href="#_ntp_performance_tuning">NTP performance tuning</a></li>
+<li><a href="#_polling_interval">Polling Interval</a></li>
+</ul>
+</li>
+<li><a href="#_chrony_performance_tuning">Chrony performance tuning</a></li>
+<li><a href="#_providing_local_ntp_service_using_ptp">Providing local NTP service using PTP</a>
+<ul class="sectlevel2">
+<li><a href="#_ptp_with_software_timestamping">PTP with software timestamping</a></li>
+<li><a href="#_ptp_with_hardware_timestamping">PTP with hardware timestamping</a></li>
+</ul>
+</li>
+<li><a href="#_providing_public_ntp_service">Providing public NTP service</a></li>
+<li><a href="#_acknowledgments">Acknowledgments</a></li>
+<li><a href="#_references">References</a></li>
+<li><a href="#_changelog">Changelog</a></li>
+<li><a href="#_copying">COPYING</a></li>
+</ul>
+</div>
+<hr>
+<div class="paragraph">
+<p><a href="http://www.catb.org/hacker-emblem/"><span class="image"><img src="glider.png" alt="hacker emblem" width="55" height="55"></span></a><br>
+<br>
+<a href="https://validator.w3.org/check/referer"><span class="image"><img src="html5.png" alt="Valid HTML 5" width="88" height="31"></span></a></p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This document is mastered in asciidoc format.  If you are reading it in HTML,
+you can find the original at the GPSD project website.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_introduction"><a class="link" href="#_introduction">Introduction</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>GPSD, NTP and a GPS receiver supplying 1PPS (one pulse-per-second)
+output can be used to set up a high-quality NTP time server. This
+HOWTO explains the method and various options you have in setting it
+up.</p>
+</div>
+<div class="paragraph">
+<p>Here is the quick-start sequence. The rest of this document goes
+into more detail about the steps.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Ensure that gpsd and either ntpd or chronyd are installed on your
+system. (Both gpsd and ntpd are pre-installed in many stock Linux
+distributions; chronyd is normally not.) You don&#8217;t have to choose
+which to use yet if you have easy access to both, but knowing which
+alternatives are readily available to you is a good place to start.</p>
+</li>
+<li>
+<p>Verify that your gpsd version is at least 3.22.  Many problems are
+caused by the use of old versions.  When in doubt, reinstall
+gpsd from the upstream source.  Many distributions ship old
+and/or broken versions of gpsd.</p>
+</li>
+<li>
+<p>Connect a PPS-capable GPS receiver to one of your serial or USB
+ports.  A random cheap consumer-grade GPS receiver won&#8217;t do; you
+may have to do some hunting to find a usable one.</p>
+</li>
+<li>
+<p>Check that it actually emits PPS by pointing GPSD&#8217;s gpsmon utility
+at the port.  If it has a good (3D-mode) fix, lines marked "PPS"
+should scroll by in the packet-logging window.  A new device out of
+the box may take up to 30 minutes for the first 3D fix.  If gpsmon
+shows a 3D fix, but does not show PPS lines, try running ppscheck.</p>
+</li>
+<li>
+<p>If you persistently fail to get live PPS, (a) you may have a
+skyview problem, (b) you may have a cabling problem, (c) your GPS
+may not support PPS, (d) you may have a gpsd or kernel configuration
+problem, (e) you may have a device problem, (e) there may be a bug
+in the core GPSD code used by gpsmon.  These are listed in roughly
+decreasing probability.  Troubleshoot appropriately.</p>
+</li>
+<li>
+<p>Edit your ntpd or chronyd configuration to tell your NTP daemon to
+listen for time hints. (This step is somewhat tricky.)</p>
+</li>
+<li>
+<p>Start up gpsd.  If you are using ntpd, you can use ipcrm(1) to check that
+verify that the shared-memory segment that gpsd and ntpd want to
+use to communicate has been attached; or you can impatiently skip
+to the next step and look for the segment only if that fails.</p>
+</li>
+<li>
+<p>Use cgps or xgps to verify that your GNSS receiver has a good 3D fix.</p>
+</li>
+<li>
+<p>Use ntpshmmon to verify that gpsd is sending time corrections to SHM
+memory.</p>
+</li>
+<li>
+<p>Use ntpq or the chronyc sources command to verify that your device
+is feeding time corrections to your NTP daemon.</p>
+</li>
+<li>
+<p>(Optional and challenging.) Hand-tune your installation for the
+best possible performance.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>This document does not attempt to explain all the intricacies of time
+service; it is focused on practical advice for one specific deployment
+case.  There is an introduction <a href="#TIME-INTRO">[TIME-INTRO]</a> to basic concepts and
+terminology for those new to time service. An overview of the NTP
+protocols can be found at <a href="#WIKI-NTP">[WIKI-NTP]</a>, and the official NTP FAQ
+<a href="#NTP-FAQ">[NTP-FAQ]</a> is probably as gentle an introduction to the NTP reference
+implementation as presently exists.</p>
+</div>
+<div class="paragraph">
+<p>We encourage others to contribute additions and corrections.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Units table</caption>
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">nSec</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">nanoSecond</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1/1,000,000,000 of a second</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uSec</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">microSecond</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1/1,000,000 of a second</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">mSec</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">milliSecond</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1/1,000 of a second</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>There are a few important terms we need to define up front.  <strong>Latency</strong>
+is delay from a time measurement until a report on it arrives where it
+is needed. <strong>Jitter</strong> is short-term variation in latency. <strong>Wobble</strong> is a
+jitter-like variation that is long compared to typical measurement
+periods.  <strong>Accuracy</strong> is the traceable offset from 'true' time as
+defined by a national standard institute.</p>
+</div>
+<div class="paragraph">
+<p>A good analogy to jitter vs wobble is changes in sea level on a beach.
+Jitter is caused by wave action, wobble is the daily effect of tides.
+For a time server, the most common causes of wobble are varying GPS
+satellite geometries and the effect of daily temperature variations on
+the oscillators in your equipment.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_ntp_with_gpsd"><a class="link" href="#_ntp_with_gpsd">NTP with GPSD</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>See <a href="#TIME-INTRO">[TIME-INTRO]</a> for a technical description of how NTP corrects
+your computer&#8217;s clock against wobble. For purposes of this how-to, the
+important concepts to take way are those of time strata, servers, and
+reference clocks.</p>
+</div>
+<div class="paragraph">
+<p>Ordinary NTP client computers are normally configured to get time from
+one or more Stratum 2 (or less commonly Stratum 3) NTP
+servers. However, with GPSD and a suitable GPS receiver, you can easily
+condition your clock to higher accuracy than what you get from typical
+Stratum 2; with a little effort, you can do better than you can get
+from most public Stratum 1 servers.</p>
+</div>
+<div class="paragraph">
+<p>You can then make your high-quality time available to other systems on
+your network, or even run a public NTP server.  Anyone can do this;
+there is no official authority, and any NTP client may choose to use
+your host as a server by requesting time from it. The time-service
+network is self-regulating, with NTP daemons constantly pruning
+statistical outliers so the timebase cannot be accidentally or
+deliberately compromised.</p>
+</div>
+<div class="paragraph">
+<p>In fact many public and widely-trusted Stratum 1 servers use GPS
+receivers as their reference clocks, and a significant fraction of
+those use GPSD in the way we will describe here.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_gps_time"><a class="link" href="#_gps_time">GPS time</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The way time is shipped from GPS satellites causes problems to
+beware of in certain edge cases.</p>
+</div>
+<div class="paragraph">
+<p>Date and time in GPS is represented as number of weeks from the start
+of zero second of 6 January 1980, plus number of seconds into the
+week. GPS time is <strong>not</strong> leap-second corrected, though satellites also
+broadcast a current leap-second correction which is updated on
+six-month boundaries according to rotational bulletins issued by the
+International Earth Rotation and Reference Systems Service (IERS).</p>
+</div>
+<div class="paragraph">
+<p>The leap-second correction is only included in the multiplexed satellite
+subframe broadcast, once every 12.5 minutes.  While the satellites do
+notify GPSes of upcoming leap-seconds, this notification is not
+necessarily processed correctly on consumer-grade devices, and may not
+be available at all when a GPS receiver has just cold-booted. Thus,
+reported UTC time may be slightly inaccurate between a cold boot or leap
+second and the following subframe broadcast.</p>
+</div>
+<div class="paragraph">
+<p>GPS date and time are subject to a rollover problem in the 10-bit week
+number counter, which will re-zero every 1024 weeks (roughly every 19.6
+years). The first rollover since GPS went live in 1980 was in Aug-1999,
+followed by Apr-2019, the next will be in Nov-2038 (the 32-bit and POSIX
+issues will probably be more important by then).  The new "CNAV" data
+format extends the week number to 13 bits, with the first rollover
+occurring in Jan-2137, but this is only used with some newly added GPS
+signals, and is unlikely to be usable in most consumer-grade receivers
+currently.</p>
+</div>
+<div class="paragraph">
+<p>For accurate time reporting, therefore, a GPS requires a supplemental
+time references sufficient to identify the current rollover period,
+e.g. accurate to within 512 weeks. Many GPSes have a wired-in (and
+undocumented) assumption about the UTC time of the last rollover and
+will thus report incorrect times outside the rollover period they were
+designed in.</p>
+</div>
+<div class="paragraph">
+<p>For accurate time service via GPSD, you require three things:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A GPS made since the last rollover, so its hidden assumption about
+the epoch will be correct.</p>
+</li>
+<li>
+<p>Enough time elapsed since a cold boot or IERS leap-second adjustment
+for the current leap-second to get update.</p>
+</li>
+<li>
+<p>A GPS that properly handles leap-second adjustments.  Anything
+based on a u-blox from v6 onward should be good; the status of
+SiRFs is unknown and doubtful.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_1pps_quality_issues"><a class="link" href="#_1pps_quality_issues">1PPS quality issues</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>GPSD is useful for precision time service because it can use the 1PPS
+pulse delivered by some GPS receivers to discipline (correct) a local
+NTP instance.</p>
+</div>
+<div class="paragraph">
+<p>It&#8217;s tempting to think one could use a GPS receiver for time service
+just by timestamping the arrival of the first character in the report
+on each fix and correcting for a relatively small fixed latency
+composed of fix-processing and RS232 transmission time.</p>
+</div>
+<div class="paragraph">
+<p>At one character per ten bits (counting framing and stopbits) a
+9600-bps serial link introduces about a mSec of latency <strong>per
+character</strong>; furthermore, your kernel will normally delay delivery
+of characters to your application until the next timer tick, about
+every 4 mSec in modern kernels. Both USB and RS232 will incur that
+approximately 5mSec-per-char latency overhead.  You&#8217;ll have to deal
+with this latency even on chips like the Venus 6 that claim the
+beginning of their reporting burst is synced to PPS.  (Such claims are
+not always reliable, in any case.)</p>
+</div>
+<div class="paragraph">
+<p>Unfortunately, fix reports are also delayed in the receiver and on
+the link by as much as several hundred mSec, and this delay is not
+constant. This latency varies (wobbles) throughout the day.  It may be
+stable to 10 mSec for hours and then jump by 200mSec.  Under these
+circumstances you can&#8217;t expect accuracy to UTC much better than 1
+second from this method.</p>
+</div>
+<div class="paragraph">
+<p>For example: SiRF receivers, the make currently most popular in
+consumer-grade GPS receivers, exhibit a wobble of about 170mSec in the
+offset between actual top-of-second and the transmission of the first
+sentence in each reporting cycle.</p>
+</div>
+<div class="paragraph">
+<p>To get accurate time, then, the in-band fix report from the GPS
+receiver needs to be supplemented with an out-of-band signal that has
+a low and constant or near-constant latency with respect to the time
+of the fix.  GPS satellites deliver a top-of-GPS-second
+notification that is nominally accurate to 50nSec; in capable GPS
+receivers that becomes the 1PPS signal.</p>
+</div>
+<div class="paragraph">
+<p>1PPS-capable GPS receivers use an RS-232 control line to ship the 1PPS
+edge of second to the host system (usually Carrier Detect or Ring
+Indicator; GPSD will quietly accept either).  Satellite top-of-second
+loses some accuracy on the way down due mainly to variable delays in
+the ionosphere; processing overhead in the GPS receiver itself adds a
+bit more latency, and your local host detecting that pulse adds still
+more latency and jitter.  But it&#8217;s still often accurate to on the
+order of 1 uSec.</p>
+</div>
+<div class="paragraph">
+<p>Under most Unixes there are two ways to watch 1PPS; Kernel PPS (KPPS)
+and plain PPS latching.  KPPS is an implementation of RFC 2783 <a href="#RFC-2783">[RFC-2783]</a>.
+Plain PPS just references the pulse to the system clock as
+measured in user space.  These have different error budgets.</p>
+</div>
+<div class="paragraph">
+<p>Kernel PPS uses a kernel function to accurately timestamp the status
+change on the PPS line.  Plain PPS has the kernel wake up the GPSD PPS
+thread and then the PPS thread reads the current system clock.  As
+noted in the GPSD code, having the kernel do the time stamp yields
+lower latency and less jitter. Both methods have accuracy degraded by
+interrupt-processing latency in the kernel serial layer, but plain
+PPS incurs additional context-switching overhead that KPPS does not.</p>
+</div>
+<div class="paragraph">
+<p>With KPPS it is very doable to get the system clock stable to &plusmn;1
+uSec.  Otherwise, you are lucky to get &plusmn;5 uSec, and there will be
+about 20uSec of jitter. All these figures were observed on
+plain-vanilla x86 PCs with clock speeds in the 2GHz range.</p>
+</div>
+<div class="paragraph">
+<p>All the previous figures assume you&#8217;re using PPS delivered over RS232.
+USB GPS receivers that deliver 1PPS are rare, but do exist. Notably,
+there&#8217;s the Navisys GR-601W/GR-701W/GR-801W <a href="#MACX-1">[MACX-1]</a>. In case these devices go
+out of production it&#8217;s worth noting that they are a trivial
+modification of the stock two-chip-on-a-miniboard
+commodity-GPS-receiver design of engine plus USB-to-serial adapter;
+the GR-[678]01W wires a u-blox 6/7/8 to a Prolific Logic PL23203.  To
+get 1PPS out, this design just wires the 1PPS pin from the GPS engine
+to the Carrier Detect pin on the USB adapter. (This is known as the
+"Macx-1 mod".)</p>
+</div>
+<div class="paragraph">
+<p>With this design, 1PPS from the engine will turn into a USB event that
+becomes visible to the host system (and GPSD) the next time the USB
+device is polled. USB 1.1 polls 1024 slots every second.  Each slot is
+polled in the same order every second.  When a device is added it is
+assigned to one of those 1024 polling slots.  It should then be clear
+that the accuracy of a USB 1.1 connected GPS receiver would be about 1
+mSec.</p>
+</div>
+<div class="paragraph">
+<p>As of mid-2016 no USB GPS receiver we know of implements the higher
+polling-rate options in USB 2 and 3 or the interrupt capability in USB
+3.  When one does, and if it has the Macx-1 mod, higher USB accuracy
+will ensue.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 2. Summary of typical accuracy</caption>
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">GPS atomic clock</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">&plusmn;50nSec</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">KPPS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">&plusmn;1uSec</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PPS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">&plusmn;5uSec</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">USB 1.1 poll interval</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">&plusmn;1mSec</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">USB 2.0 poll interval</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">&plusmn;100&mu;Sec (100000 nSec)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Network NTP time</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">~&plusmn;30mSec <sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnotedef_1" title="View footnote.">1</a>]</sup></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Observed variations from the typical figure increase towards the bottom
+of the table.  Notably, a heavily loaded host system can reduce PPS
+accuracy further, though not KPPS accuracy except in the most extreme
+cases.  The USB poll interval tends to be very stable (relative to its
+1mSec or 100&mu;Sec base).</p>
+</div>
+<div class="paragraph">
+<p>Network NTP time accuracy can be degraded below RFC5905&#8217;s "a few tens
+of milliseconds" by a number of factors. Almost all have more to do
+with the quality of your Internet connection to your servers than with
+the time accuracy of the servers themselves.  Some negatives:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Having a cable modem.  That is, as opposed to DSL or optical fiber, which
+tend to have less variable latencies.</p>
+</li>
+<li>
+<p>Path delay asymmetries due to peering policy.  These can confuse
+NTP&#8217;s reconciliation algorithms.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>With these factors in play, worst-case error can reach up to
+&plusmn;100mSec.  Fortunately, errors of over &plusmn;100mSec are
+unusual and should occur only if all your network routes to servers
+have serious problems.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_software_prerequisites"><a class="link" href="#_software_prerequisites">Software Prerequisites</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If your kernel provides the RFC 2783 KPPS (kernel PPS) API, gpsd will
+use that for extra accuracy. Many Linux distributions have a package
+called "pps-tools" that will install KPPS support and the timepps.h
+header file.  We recommend you do that.  If your kernel is built in
+the normal modular way, this package installation will suffice.</p>
+</div>
+<div class="sect2">
+<h3 id="_building_gpsd"><a class="link" href="#_building_gpsd">Building gpsd</a></h3>
+<div class="paragraph">
+<p>A normal gpsd build includes support for interpreting 1PPS pulses that
+is mostly autoconfiguring and requires no special setup.  If the
+current system, and GNSS receiver, supports pps.</p>
+</div>
+<div class="paragraph">
+<p>You can build a version stripped to the minimum configuration required
+for time service.  This reduces the size of the binary and may be
+helpful on embedded systems or for SBCs like the Raspberry Pi, Odroid,
+or BeagleBone.  Only do this if you have serious size constraints, much
+functionality will be lost.</p>
+</div>
+<div class="paragraph">
+<p>When gpsd is built with timeservice=yes:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>The -n (nowait) option is forced: gpsd opens its command-line devices
+immediately on startup.  Assuming you do not start gpsd with systemd.
+If you are using systemd ensure it is starting gpsd, not just the gpsd
+service, on startup.</p>
+</li>
+<li>
+<p>Forces the building of ntpshmmon and cgps.  Those programs would
+be built by default anyway, unless gpsdclients=no.</p>
+</li>
+<li>
+<p>The configure will fail if pps is not available.</p>
+</li>
+<li>
+<p>Most drivers will not be built. You must specify the ones you need
+when configuring. The NMEA 0183 driver is always built, no matter what.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>To configure the minimal timeservice build:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ scons -c
+$ scons timeservice=yes</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You may add GNSS reciver protocol (e.g. "ublox=yes" or "sirf=yes").
+Besides the daemon, this also builds cgps and ntpshmmon.</p>
+</div>
+<div class="paragraph">
+<p>If you do not use timeservice=yes, then make sure the build is with
+pps=yes and ntpshm=yes (the defaults).  Like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ scons -c
+$ scons pps=yes ntpshm=yes</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>More complete, and distro specific, build instructions can be found in
+the files INSTALL.adoc and build.adoc in the source distribution.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_kernel_support"><a class="link" href="#_kernel_support">Kernel support</a></h3>
+<div class="paragraph">
+<p>If you are scratch-building a Linux kernel, the configuration
+must include either these two lines, or the same with "y" replaced
+by "m" to enable the drivers as modules:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>CONFIG_PPS=y
+CONFIG_PPS_CLIENT_LDISC=y</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Some embedded systems, like the Raspberry Pi, detect PPS on a GPIO
+line instead of on a serial port line.  For those systems you will
+also need these two lines:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>CONFIG_PPS_CLIENT_GPIO=y
+CONFIG_GPIO_SYSFS=y</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Your Linux distribution may ship a file /boot/config-XXX (where XXX is
+the name of a kernel) or one called /proc/config.gz (for the running
+kernel).  This will have a list of the configuration options that were
+used to build the kernel.  You can check if the above options are
+set. Usually they will be set to "m", which is sufficient.</p>
+</div>
+<div class="paragraph">
+<p>NetBSD has included the RFC2783 Pulse Per Second API for real serial
+ports by default since 1998, and it works with ntpd.  NetBSD 7
+(forthcoming) includes RFC2783 support for USB-serial devices, and
+this works (with ntpd) with the GR-601W/GR-701W/GR-801W.  However,
+gpsd&#8217;s code interacts badly with the NetBSD implementation, and gpsd&#8217;s
+support for RFC2783 PPS does not yet work on NetBSD (for serial or
+USB).</p>
+</div>
+<div class="paragraph">
+<p>Other OSes have different ways to enable KPPS in their kernels.
+When we learn what those are, we&#8217;ll document them or point
+at references.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_time_service_daemon"><a class="link" href="#_time_service_daemon">Time service daemon</a></h3>
+<div class="paragraph">
+<p>You will need to have either ntpd or chrony installed. If you are
+running a Unix variant with a package system, the packages will
+probably be named 'ntp' (or 'ntpsec') and either 'chrony' or 'chronyd'.</p>
+</div>
+<div class="paragraph">
+<p>Between ntpd and chrony, ntpd is the older and more popular choice&#8201;&#8212;&#8201;thus, the one with the best-established peer community if you need
+help in unusual situations.  On the other hand, chrony has a
+reputation for being easier to set up and configure, and is better in
+situations where your machine has to be disconnected from the Internet
+for long enough periods of time for the clock to drift significantly.</p>
+</div>
+<div class="paragraph">
+<p>ntpd and chrony have differing philosophies, with ntpd more interested
+in deriving consensus time from multiple sources while chrony tries to
+identify a single best source and track it closely.</p>
+</div>
+<div class="paragraph">
+<p>A feature comparison, part of the chrony documentation, is at
+<a href="#CHRONY-COMPARE">[CHRONY-COMPARE]</a>. An informative email thread about the differences
+is <a href="#CHRONYDEFAULT">[CHRONYDEFAULT]</a>. If you don&#8217;t already know enough about time
+service to have a preference, the functional differences between them
+are unlikely to be significant to you; flip a coin.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_ntpsec"><a class="link" href="#_ntpsec">NTPSec</a></h3>
+<div class="paragraph">
+<p>If you choose the ntpd option, it&#8217;s best to go with the NTPsec version
+rather than legacy ntpd.  NTPsec shares some maintainers with GPSD,
+and has some significant improvements in security and performance.</p>
+</div>
+<div class="paragraph">
+<p>As of June 2020 2019, NTPsec is available as a package in:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Alpine</p>
+</li>
+<li>
+<p>archlinux</p>
+</li>
+<li>
+<p>Debian (and variants like Ubuntu and Raspbian)</p>
+</li>
+<li>
+<p>Gentoo</p>
+</li>
+<li>
+<p>OpenSUSE</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>If it is not available as a package, you can build it from source,
+<a href="#GITLAB-SOURCE">[GITLAB-SOURCE]</a>, it is not especially difficult.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_choice_of_hardware"><a class="link" href="#_choice_of_hardware">Choice of Hardware</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To get 1PPS to your NTP daemon, you first need to get it from a
+PPS-capable GPS receiver. As of early 2015 this means either the
+previously mentioned GR devices or a serial GPS receiver with 1PPS.</p>
+</div>
+<div class="paragraph">
+<p>You can find 1PPS-capable devices supported by GPSD at <a href="#HARDWARE">[HARDWARE]</a>.
+Note that the most popular consumer-grade GPS receivers do not usually
+deliver 1PPS through USB or even RS232.  The usual run of cheap GPS
+mice won&#8217;t do.  In general, you can&#8217;t use a USB device for time
+service unless you know it has the Macx-1 mod.</p>
+</div>
+<div class="paragraph">
+<p>In the past, the RS232 variant of the Garmin GPS-18 has been very
+commonly used for time service (see <a href="#LVC">[LVC]</a> for a typical setup very
+well described).  While it is still a respectable choice, newer
+devices have better sensitivity and signal discrimination. This makes
+them superior for indoor use as time sources.</p>
+</div>
+<div class="paragraph">
+<p>In general, use a GPS receiver with an RS232 interface for time
+service if you can.  The GR-601W was designed (by one of the authors,
+as it happens) for deployment with commodity TCP/IP routers that only
+have USB ports.  RS232 is more fiddly to set up (with older devices
+like the GPS-18 you may even have to make your own cables) but it can
+deliver three orders of magnitude better accuracy and repeatability&#8201;&#8212;&#8201;enough to meet prevailing standards for a public Stratum 1 server.</p>
+</div>
+<div class="paragraph">
+<p>Among newer receiver designs the authors found the u-blox line of
+receivers used in the GR-[678]01W to be particularly good.  Very
+detailed information on its timing performance can be found at
+<a href="#UBLOX-TIMING">[UBLOX-TIMING]</a>. One of us (Raymond) has recent experience with an
+eval kit, the EVK 6H-0-001, that would make an excellent Stratum 0
+device.</p>
+</div>
+<div class="paragraph">
+<p>Both the EVK 6H and GR-601W are built around the LEA-6H module, which
+is a relatively inexpensive but high-quality navigation GPS
+receiver. We make a note of this because u-blox also has a specialized
+timing variant, the LEA 6T, which would probably be overkill for an
+NTP server. (The 6T does have the virtue that you could probably get a
+good fix from one satellite in view once it knows its location, but
+the part is expensive and difficult to find.)</p>
+</div>
+<div class="paragraph">
+<p>Unfortunately as of early 2015 the LEA-6H is still hard to find in a
+packaged RS232 version, as opposed to a bare OEM module exporting TTL
+levels or an eval kit like the EVK 6H-0-001 costing upwards of
+US$300. Search the web; you may find a here-today-gone-tomorrow offer
+on alibaba.com or somewhere similar.</p>
+</div>
+<div class="paragraph">
+<p>The LEA-6T, and some other higher-end GPS receivers (but not the
+LEA-6H) have a stationary mode which, after you initialize it with the
+device&#8217;s location, can deliver time service with only one good
+satellite lock (as opposed to the three required for a fix in its
+normal mode). For most reliable service we recommend using stationary
+mode if your device has it. GPSD tools don&#8217;t yet directly support
+this, but that capability may be added in a future release.</p>
+</div>
+<div class="paragraph">
+<p>The design of your host system can also affect time quality.  The
+&plusmn;5uSec error bound quoted above is for a dual-core or better
+system with clock in the 2GHz range on which the OS can schedule the
+long-running PPS thread in GPSD on an otherwise mostly unused
+processor (the Linux scheduler, in particular, will do this). On a
+single-core system, contention with other processes can pile
+on several additional microseconds of error.</p>
+</div>
+<div class="paragraph">
+<p>If you are super-serious about your time-nuttery, you may want to look
+into the newest generation of dedicated Stratum 1 microservers being
+built out of open-source SBCs like the Raspberry Pi and Beaglebone, or
+sometimes with fully custom designs. A representative build is well
+described at <a href="#RPI">[RPI]</a>.</p>
+</div>
+<div class="paragraph">
+<p>These microserver designs avoid load-induced jitter by being fully
+dedicated to NTP service.  They are small, low-powered devices and
+often surprisingly inexpensive, as in costing less than US$100.  They
+tend to favor the LEA-6H, and many of them use preinstalled GPSD on
+board.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enabling_pps"><a class="link" href="#_enabling_pps">Enabling PPS</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You can determine whether your GPS receiver emits 1PPS, and gpsd is
+detecting it, by running the gpsmon utility (giving it the GPS
+receiver&#8217;s serial-device path as argument).  Watch for lines of dashes
+marked 'PPS' in the packet-logging window; for most GPS receiver types
+there will also be a "PPS offset:" field in the data panels above
+showing the delta between PPS and your local clock.</p>
+</div>
+<div class="paragraph">
+<p>If you don&#8217;t have gpsmon available, or you don&#8217;t see PPS lines in it,
+you can run ppscheck.  As a last resort you can gpsd at -D 5 and watch
+for PPS state change messages in the logfile.</p>
+</div>
+<div class="paragraph">
+<p>If you don&#8217;t see evidence of incoming PPS, here are some trouble
+sources to check:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>The skyview of your GPS receiver may be poor.  Suspect this if,
+when you watch it with cgps, it wanders in and out of having a
+good 3D fix. Unfortunately, the only fix for this is to re-site
+your GPS where it can see more sky; fortunately, this is not as
+common a problem as it used to be, because modern receivers are
+often capable of getting a solid fix indoors.</p>
+</li>
+<li>
+<p>If you are using an RS232 cable, examine it suspiciously, ideally
+with an RS232 breakout box. Cheap DB9 to DB9 cables such as those
+issued with UPSs often carry TXD/RXD/SG only, omitting handshake
+lines such as DCD, RI, and DSR that are used to carry 1PPS.
+Suspect this especially if the cable jacket looks too skinny to
+hold more than three leads!</p>
+</li>
+<li>
+<p>Verify that your gpsd and kernel were both built with PPS support,
+as previously described in the section on software prerequisites.</p>
+</li>
+<li>
+<p>Verify that the USB or RS232 device driver is accepting the ioctl
+that tells it to wait on a PPS state change from the device.  The
+messages you hope <strong>not</strong> to see look like "KPPS cannot set PPS line
+discipline" and "PPS ioctl(TIOCMIWAIT) failed".  The former
+can probably be corrected by running as root; the latter (which
+should never happen with an RS232 device) probably means your USB
+device driver lacks this wait capability entirely and cannot be
+used for time service.</p>
+</li>
+<li>
+<p>If you have a solid 3D fix, a known-good cable, your software is
+properly configured, the wait ioctl succeeded, but you still get no
+PPS, then you might have a GPS receiver that fails to deliver PPS
+off the chip to the RS232 or USB interface.  You get to become
+intimate with datasheets and pinouts, and might need to acquire a
+different GPS receiver.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_running_gpsd"><a class="link" href="#_running_gpsd">Running GPSD</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If you&#8217;re going to use gpsd for time service, you must run in -n mode
+so the clock will be updated even when no clients are active.  This option
+is forced if you built GPSD with timeservice=yes as an option.</p>
+</div>
+<div class="paragraph">
+<p>Note that gpsd assumes that after each fix the GPS receiver will
+assert 1PPS first and ship sentences reporting time of fix
+second (and the sentence burst will end before the next 1PPS). Every
+GPS we know of does things in this order.  (However, on some very old
+GPSes that defaulted to 4800 baud, long sentence bursts&#8201;&#8212;&#8201;notably
+those containing a skyview&#8201;&#8212;&#8201;could slop over into the next second.)</p>
+</div>
+<div class="paragraph">
+<p>If you ever encounter an exception, it should manifest as reported
+times that look like they&#8217;re from the future and require a negative
+fudge. If this ever happens, please report the device make and model
+to the GPSD maintainers, so we can flag it in our GPS hardware
+database.</p>
+</div>
+<div class="paragraph">
+<p>There is another possible cause of small negative offsets which
+shows up on the GR-601W: implementation bugs in your USB driver,
+combining with quantization by the USB poll interval.  This
+doesn&#8217;t mean the u-blox 6 inside it is actually emitting PPS
+after the GPS timestamp is shipped.</p>
+</div>
+<div class="paragraph">
+<p>In order to present the smallest possible attack surface to
+privilege-escalation attempts, gpsd, if run as root, drops its root
+privileges very soon after startup - just after it has opened any
+serial device paths passed on the command line.</p>
+</div>
+<div class="paragraph">
+<p>Thus, KPPS can only be used with devices passed that way, not with
+GPSes that are later presented to gpsd by the hotplug system.  Those
+hotplug devices may, however, be able to use plain, non-kernel
+PPS. gpsd tries to automatically fall back to this when absence of
+root permissions makes KPPS unavailable.</p>
+</div>
+<div class="paragraph">
+<p>In general, if you start gpsd as other than root, the following things
+will happen that degrade the accuracy of reported time:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Devices passed on the command line will be unable to use KPPS and
+will fall back to the same plain PPS that all hotplug devices must
+use, increasing the associated error from ~1 uSec to about ~5 uSec.</p>
+</li>
+<li>
+<p>gpsd will be unable to renice itself to a higher priority.  This
+action helps protect it against jitter induced by variable system
+load. It&#8217;s particularly important if your NTP server is a general-use
+computer that&#8217;s also handling mail or web service or development.</p>
+</li>
+<li>
+<p>The way you have to configure ntpd and chrony will change away
+from what we show you here; ntpd will need to be told different
+shared-memory segment numbers, and chronyd will need a different
+socket location.</p>
+</li>
+<li>
+<p>gpsd will be unable to change to user nobody.  This means gpsd will
+paradoxically run with higher privileges than if it was started as root.
+This increases the attack surface and decreases your security.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You may also find gpsd can&#8217;t open serial devices at all if your
+OS distribution has done "secure" things with the permissions.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_feeding_ntpd_from_gpsd"><a class="link" href="#_feeding_ntpd_from_gpsd">Feeding NTPD from GPSD</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Most Unix systems get their time service through ntpd, a very old and
+stable open-source software suite which is the reference
+implementation of NTP.  The project home page is <a href="#NTP.ORG">[NTP.ORG]</a>. We
+recommend using NTPsec, a recent fork that is improved and
+security-hardened <a href="#NTPSEC.ORG">[NTPSEC.ORG]</a>.</p>
+</div>
+<div class="paragraph">
+<p>When gpsd receives a sentence with a timestamp, it packages the
+received timestamp with current local time and sends it to a
+shared-memory segment with an ID known to ntpd, the network time
+synchronization daemon.  If ntpd has been properly configured to
+receive this message, it will be used to correct the system clock.</p>
+</div>
+<div class="paragraph">
+<p>When in doubt, the preferred method to start your timekeeping is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ su -
+# killall -9 gpsd ntpd
+# gpsd -n /dev/ttyXX
+# sleep 2
+# ntpd -gN
+# sleep 2
+# cgps</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>where /dev/ttyXX is whatever 1PPS-capable device you have.  In a
+binary-package-based Linux distribution it is probable that ntpd
+will already have been launched at boot time.</p>
+</div>
+<div class="paragraph">
+<p>It&#8217;s best to have gpsd start first.  That way when ntpd restarts it has
+a good local time handy.  If ntpd starts first, it will set the local
+clock using a remote, probably pool, server.  Then ntpd has to spend a
+whole day slowly resyncing the clock.</p>
+</div>
+<div class="paragraph">
+<p>If you&#8217;re using dhcp3-client to configure your system, make sure
+you disable /etc/dhcp3/dhclient-exit-hooks.d/ntp, as dhclient would
+restart ntpd with an automatically created ntp.conf otherwise&#8201;&#8212;&#8201;and
+gpsd would not be able to talk with ntpd anymore.</p>
+</div>
+<div class="paragraph">
+<p>While gpsd may be runnable as non-root, you will get significantly
+better accuracy of time reporting in root mode; the difference, while
+almost certainly insignificant for feeding Stratum 1 time to clients
+over the Internet, may matter for PTP service over a LAN.  Typically
+only root can access kernel PPS, whereas in non-root mode you&#8217;re limited to
+plain PPS (if that feature is available).  As noted in the previous
+section on 1PPS quality issues, this difference has performance
+implications.</p>
+</div>
+<div class="paragraph">
+<p>The rest of these setup instructions will assume that you are starting
+gpsd as root, with occasional glances at the non-root case.</p>
+</div>
+<div class="paragraph">
+<p>Now check to see if gpsd has correctly attached the shared-memory
+segments in needs to communicate with ntpd.  ntpd&#8217;s rules for the
+creation of these segments are:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Segments 0 and 1</dt>
+<dd>
+<p>Permissions are 0600&#8201;&#8212;&#8201;other programs can only read and
+write this segment when running as root.</p>
+</dd>
+<dt class="hdlist1">Segments 2, 3 and above</dt>
+<dd>
+<p>Permissions are 0666&#8201;&#8212;&#8201;other programs can read
+ and write as any user. If ntpd has been
+ configured to use these segments, any
+ unprivileged user is allowed to provide data
+ for synchronization.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Because gpsd can be started either as root or non-root, it checks and
+attaches the more privileged segment pair it can&#8201;&#8212;&#8201;either 0 and 1 or 2
+and 3.</p>
+</div>
+<div class="paragraph">
+<p>For each GPS receiver that gpsd controls, it will use the attached ntpshm
+segments in pairs (for coarse clock and pps source, respectively)
+starting from the first found segments.</p>
+</div>
+<div class="paragraph">
+<p>To debug, try looking at the live segments this way:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># ipcs -m</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If gpsd was started as root, the results  should look like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre> ------ Shared Memory Segments --------
+  key        shmid      owner      perms      bytes      nattch     status
+  0x4e545030 0          root       700        96         2
+  0x4e545031 32769      root       700        96         2
+  0x4e545032 163842     root       666        96         1
+  0x4e545033 196611     root       666        96         1</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For a bit more data try this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>cat /proc/sysvipc/shm</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If gpsd cannot open the segments, check that you are not running SELinux
+or apparmor. Either may require you to configure a security exception.</p>
+</div>
+<div class="paragraph">
+<p>If you see the shared segments (keys 1314148400&#8201;&#8212;&#8201;1314148403), and
+no gpsd or ntpd is running then try removing them like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># ipcrm -M 0x4e545030
+# ipcrm -M 0x4e545031
+# ipcrm -M 0x4e545032
+# ipcrm -M 0x4e545033</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Here is a minimal sample ntp.conf configuration to work with GPSD run
+as root, telling ntpd how to read the GPS notifications</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>pool us.pool.ntp.org iburst
+
+driftfile /var/lib/ntp/ntp.drift
+logfile /var/log/ntp.log
+
+restrict default kod nomodify notrap nopeer noquery
+restrict -6 default kod nomodify notrap nopeer noquery
+restrict 127.0.0.1 mask 255.255.255.0
+restrict -6 ::1
+
+# GPS Serial data reference (NTP0)
+server 127.127.28.0
+fudge 127.127.28.0 time1 0.9999 refid GPS
+
+# GPS PPS reference (NTP1)
+server 127.127.28.1 prefer
+fudge 127.127.28.1 refid PPS</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The number "0.9999" is a placeholder, to be explained shortly.  It
+is <strong>not a number to be used in production</strong> - it&#8217;s too large. If you
+can&#8217;t replace it with a real value, it would be best to leave out the
+clause entirely so the entry looks like:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>fudge 127.127.28.0 refid GPS</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is equivalent to declaring a time1 of 0.</p>
+</div>
+<div class="paragraph">
+<p>The pool statement adds a variable number of servers (often 10) as
+additional time references needed by ntpd for redundancy and to give you
+a reference to see how well your local GPS receiver is performing.  If
+you are outside of the USA replace the pool servers with one in your
+local area. See <a href="#USE-POOL">[USE-POOL]</a> for further information.</p>
+</div>
+<div class="paragraph">
+<p>The pool statement, and the driftfile and logfile declarations after it,
+will not be strictly necessary if the default ntp.conf that your
+distribution supplies gives you a working setup. The two pairs of
+server and fudge declarations are the key.</p>
+</div>
+<div class="paragraph">
+<p>ntpd can be used in Denial of Service (DoS) attacks.  To prevent that,
+but still allow clients to request the local time, be sure the 'restrict'
+statements are in your ntpd config file.  For more information see
+<a href="#CVE-2009-3563">[CVE-2009-3563]</a>.</p>
+</div>
+<div class="paragraph">
+<p>Users of ntpd versions older than revision ntp-4.2.5p138 should instead use
+this ntp.conf, when gpsd is started as root:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>pool us.pool.ntp.org iburst
+
+driftfile /var/lib/ntp/ntp.drift
+logfile /var/log/ntp.log
+
+restrict default kod nomodify notrap nopeer noquery
+restrict -6 default kod nomodify notrap nopeer noquery
+restrict 127.0.0.1 mask 255.255.255.0
+restrict -6 ::1
+
+# GPS Serial data reference (NTP0)
+server 127.127.28.0 minpoll 4 maxpoll 4
+fudge 127.127.28.0 time1 0.9999 refid GPS
+
+# GPS PPS reference (NTP1)
+server 127.127.28.1 minpoll 4 maxpoll 4 prefer
+fudge 127.127.28.1 refid PPS</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Users of ntpd versions prior to ntp-4.2.5 do not have the "pool" option.
+Alternative configurations exist, but it is recommended that you upgrade
+ntpd, if feasible.</p>
+</div>
+<div class="paragraph">
+<p>The magic pseudo-IP address 127.127.28.0 identifies unit 0 of the ntpd
+shared-memory driver (NTP0); 127.127.28.1 identifies unit 1 (NTP1).
+Unit 0 is used for in-band message timestamps and unit 1 for the (more
+accurate, when available) time derived from combining in-band message
+timestamps with the out-of-band PPS synchronization pulse.  Splitting
+these notifications allows ntpd to use its normal heuristics to weight
+them.</p>
+</div>
+<div class="paragraph">
+<p>Different units&#8201;&#8212;&#8201;2 (NTP2) and 3 (NTP3), respectively&#8201;&#8212;&#8201;must be used
+when gpsd is not started as root.  Some GPS HATs put PPS time on a GPIO
+pin and will also use unit 2 (NTP2) for the PPS time correction.</p>
+</div>
+<div class="paragraph">
+<p>With this configuration, ntpd will read the timestamp posted by gpsd
+every 64 seconds (16 if non-root) and send it to unit 0.</p>
+</div>
+<div class="paragraph">
+<p>The number after the parameter time1 (0.9999 in the example above) is a
+"fudge", offset in seconds.  It&#8217;s an estimate of the latency between
+the time source and the 'real' time. You can use it to compensate out
+some of the fixed delays in the system. An 0.9999 fudge would be
+ridiculously large.</p>
+</div>
+<div class="paragraph">
+<p>You may be able to find a value for the fudge by looking at the entry
+for your GPS receiver type on <a href="#HARDWARE">[HARDWARE]</a>.  Later in this document
+we&#8217;ll explain methods for estimating a fudge factor on unknown
+hardware.</p>
+</div>
+<div class="paragraph">
+<p>There is nothing magic about the refid fields; they are just labels
+used for generating reports.  You can name them anything you like.</p>
+</div>
+<div class="paragraph">
+<p>When you start gpsd, it will wait for a few good fixes before attempting
+to process PPS.  You should run cgps to verify your GPS receiver has a
+3D lock before worrying about timekeeping.</p>
+</div>
+<div class="paragraph">
+<p>After starting (as root) ntpd, then gpsd, a listing similar to the one
+below should appear as the output of the command "ntpq -p" (after
+allowing the GPS receiver to acquire a 3D fix).  This may take up to
+30 minutes if your GPS receiver has to cold-start or has a poor
+skyview.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>     remote           refid      st t when poll reach   delay   offset  jitter
+==============================================================================
+xtime-a.timefreq .ACTS.           1 u   40   64  377   59.228   -8.503   0.516
+-bonehed.lcs.mit 18.26.4.106      2 u   44   64  377   84.259    4.194   0.503
++clock.sjc.he.ne .CDMA.           1 u   41   64  377   23.634   -0.518   0.465
++SHM(0)          .GPS.            0 l   50   64  377    0.000    6.631   5.331</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The line with refid ".GPS." represents the in-band time reports from
+your GPS receiver.  When you are getting PPS then it may look like
+this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>     remote           refid      st t when poll reach   delay   offset  jitter
+==============================================================================
+xtime-a.timefreq .ACTS.           1 u   40   64  377   59.228   -8.503   0.516
+-bonehed.lcs.mit 18.26.4.106      2 u   44   64  377   84.259    4.194   0.503
++clock.sjc.he.ne .CDMA.           1 u   41   64  377   23.634   -0.518   0.465
++SHM(0)          .GPS.            0 l   50   64  377    0.000    6.631   5.331
+*SHM(1)          .PPS.            0 l   49   64  377    0.000    0.222   0.310</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note the additional ".PPS." line.</p>
+</div>
+<div class="paragraph">
+<p>If the value under "reach" for the SHM lines remains zero, check that
+gpsd is running; cgps reports a 3D fix; and the '-n' option was used.
+Some GNSS receivers specialized for time service can report time with signal
+lock on only one satellite, but with most devices a 3D fix is
+required.</p>
+</div>
+<div class="paragraph">
+<p>When the SHM(0) line does not appear at all, check your ntp.conf and
+the system logs for error messages from ntpd.</p>
+</div>
+<div class="paragraph">
+<p>Notice the 1st and 3rd servers, stratum 1 servers, disagree by more than
+8 mSec.  The 1st and 2nd servers disagree by over 12 mSec.  Our local
+PPS reference agrees to the clock.sjc.he.net server within the expected
+jitter of the GR-601W in use.</p>
+</div>
+<div class="paragraph">
+<p>When no other servers or local reference clocks appear in the NTP
+configuration, the system clock will lock onto the GPS clock, but this
+is a fragile setup&#8201;&#8212;&#8201;you can lose your only time reference if the GPS
+receiver is temporarily unable to get satellite lock.</p>
+</div>
+<div class="paragraph">
+<p>You should always have at least two (preferably four) fallback servers
+in your ntpd.conf for proper ntpd operation, in case your GPS receiver
+fails to report time.  The 'pool' command makes this happen.  And
+you&#8217;ll need to adjust the offsets (fudges) in your ntp.conf so the
+SHM(0) time is consistent with your other servers (and other local
+reference clocks, if you have any). We&#8217;ll describe how to diagnose and
+tune your server configuration in a later section.</p>
+</div>
+<div class="paragraph">
+<p>NTP is a cluster protocol.  It sorts time sources into clusters, picks
+the best cluster, then the best source in that cluster, for its time
+source.  By default, NTPsec requires 3 "sane" time sources before
+serving time.  This is set with the <strong>minsane</strong> option.  Not at all
+recommended, but you can force <strong>ntpd</strong> to rely sole on your PPS source by
+adjusting <strong>minsane</strong> like this in your ntp.conf:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>tos minclock 1 minsane 1</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Also note that after cold-starting ntpd it may calibrate for up to 15
+minutes before it starts adjusting the clock. Because the frequency
+error estimate ("drift") that NTP uses isn&#8217;t right when you first
+start NTP, there will be a phase error that persists while the
+frequency is estimated.  So if your clock is a little slow, then it
+will keep getting behind, and the positive offset will cause NTP to
+adjust the phase forward and also increase the frequency offset error.
+After a day or so or maybe less the frequency estimate will be very
+close and there won&#8217;t be a persistent offset.</p>
+</div>
+<div class="paragraph">
+<p>The GPSD developers would like to receive information about the
+offsets (fudges) observed by users for each type of receiver. If your
+GPS receiver is not present in <a href="#HARDWARE">[HARDWARE]</a>, or doesn&#8217;t have a
+recommended fudge, or you see a fudge value very different from what&#8217;s
+there, send us the output of the "ntpq -p" command and the make and
+type of receiver.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_feeding_chrony_from_gpsd"><a class="link" href="#_feeding_chrony_from_gpsd">Feeding chrony from GPSD</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>chrony is an alternative open-source implementation of NTP service,
+originally designed for systems with low-bandwidth or intermittent
+TCP/IP service.  It interoperates with ntpd using the same NTP
+protocols.  Unlike ntpd which is designed to always be connected to
+multiple internet time sources, chrony is designed for long periods
+of offline use.  Like ntpd, it can either operate purely as a client
+or provide time service. The chrony project has a home page at
+<a href="#CHRONY">[CHRONY]</a>. Its documentation includes an instructive feature comparison
+with ntpd at <a href="#CHRONY-COMPARE">[CHRONY-COMPARE]</a>.</p>
+</div>
+<div class="paragraph">
+<p>gpsd, when run as root, may feed time information to chronyd using
+sockets.  The sockets are named /run/chrony.XXXX.sock.  Where XXXX is
+replaced by the basenames of the device names gpsd is using.  If your
+receiver outputs serial data on /dev/ttyS0, then the corresponding
+socket is /run/chrony.ttyS0.sock.  If your PPS is on /dev/pps0, then the
+corresponding socket is /run/chrony.pps0.sock.</p>
+</div>
+<div class="paragraph">
+<p>Older systems may use the /var/run directory instead of /run.  If gpsd
+can not open the sockets there, it falls back to try /tmp.</p>
+</div>
+<div class="paragraph">
+<p>No gpsd configuration is required to talk to chronyd. chronyd is
+configured using the file /etc/chrony.conf or /etc/chrony/chrony.conf.
+Check your distributions documentation for the correct location.</p>
+</div>
+<div class="paragraph">
+<p>To get chronyd to connect to gpsd using the socket method add the
+following lines your chrony.conf file.  Except, replace XXXX with
+the basename of your device&#8217;s serial port, often ttyS0, ttyACM0, or
+ttyAMA0. Replace YYYY with the basename of your PPS device, usually
+pps0.</p>
+</div>
+<div class="paragraph">
+<p>When running as root:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>server 0.us.pool.ntp.org
+server 1.us.pool.ntp.org
+server 2.us.pool.ntp.org
+server 3.us.pool.ntp.org
+
+driftfile /var/lib/chrony/drift
+
+allow
+
+# set larger delay to allow the NMEA source to overlap with
+# the other sources and avoid the falseticker status
+refclock SOCK /run/chrony.XXXX.sock refid GPS precision 1e-1 offset 0.9999
+refclock SOCK /run/chrony.YYYY.sock refid PPS precision 1e-7</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Older systems may use the /var/run directory for the socket file instead
+of /run.  /run is compliant with FHS 3.0.  If that file can not be opened
+then gpsd falls back to trying in /tmp:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>refclock SOCK /tmp/chrony.XXXX.sock refid GPS precision 1e-1 offset 0.9999
+refclock SOCK /tmp/chrony.YYYY.sock refid PPS precision 1e-7</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can also get gpsd to connect to chronyd using the basic ntpd
+compatible SHM method.  To use that instead of sockets, add these lines
+to the basic chrony.conf file:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>server 0.us.pool.ntp.org
+server 1.us.pool.ntp.org
+server 2.us.pool.ntp.org
+server 3.us.pool.ntp.org
+
+driftfile /var/lib/chrony/drift
+
+allow
+
+# set larger delay to allow the NMEA source to overlap with
+# the other sources and avoid the falseticker status
+refclock SHM 0 refid GPS precision 1e-1 offset 0.9999 delay 0.2
+refclock SHM 1 refid PPS precision 1e-7</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You need to add the "precision 1e-7" on the SHM 1 line as chronyd fails
+to read the precision from the SHM structure.  Without knowing the high
+precision of the PPS on SHM 1 it may not place enough importance on its
+data.</p>
+</div>
+<div class="paragraph">
+<p>If you are outside of the USA replace the pool servers with one in your
+local area. See <a href="#USE-POOL">[USE-POOL]</a> for further information.</p>
+</div>
+<div class="paragraph">
+<p>The offset option is functionally like ntpd&#8217;s time1 option, used to
+correct known and constant latency.</p>
+</div>
+<div class="paragraph">
+<p>The 'allow' option allows anyone on the internet to query your server&#8217;s
+time.</p>
+</div>
+<div class="paragraph">
+<p>See the chrony man page for more detail on the configuration options
+<a href="#CHRONY-MAN">[CHRONY-MAN]</a>.</p>
+</div>
+<div class="paragraph">
+<p>Finally note that chronyd needs to be started before gpsd so the
+sockets are ready before gpsd starts up.</p>
+</div>
+<div class="paragraph">
+<p>If running as root, the preferred starting procedure is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ su -
+# killall -9 gpsd chronyd
+# chronyd -f /etc/chrony/chrony.conf
+# sleep 2
+# gpsd -n /dev/ttyXX
+# sleep 2
+# cgps</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>After you have verified with cgps that your GPS receiver has a good 3D
+lock you can check that gpsd is outputting good time by running ntpshmmon.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># ntpshmmon
+ntpshmmon version 1
+#      Name   Seen@                Clock                Real               L Prec
+sample NTP0 1461537438.593729271 1461537438.593633306 1461537438.703999996 0 -1
+sample NTP1 1461537439.000421494 1461537439.000007374 1461537439.000000000 0 -20
+sample NTP0 1461537439.093844900 1461537438.593633306 1461537438.703999996 0 -1
+sample NTP0 1461537439.621309382 1461537439.620958240 1461537439.703999996 0 -1
+sample NTP1 1461537440.000615395 1461537439.999994105 1461537440.000000000 0 -20
+sample NTP0 1461537440.122079148 1461537439.620958240 1461537439.703999996 0 -1
+^C</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you see only "NTP2", instead, you forgot to go root before starting gpsd.</p>
+</div>
+<div class="paragraph">
+<p>Once ntpshmmon shows good time data you can see how chrony is doing by
+running 'chronyc sources'.  Your output will look like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># chronyc sources
+
+210 Number of sources = 7
+MS Name/IP address         Stratum Poll Reach LastRx Last sample
+===============================================================================
+#- GPS                           0   4   377    12  +3580us[+3580us] +/- 101ms
+#* PPS                           0   4   377    10    -86ns[ -157ns] +/- 181ns
+^? vimo.dorui.net                3   6   377    23   -123ms[ -125ms] +/- 71ms
+^? time.gac.edu                  2   6   377    24   -127ms[ -128ms] +/- 55ms
+^? 2001:470:1:24f::2:3           2   6   377    24   -122ms[ -124ms] +/- 44ms
+^? 142.54.181.202                2   6   377    22   -126ms[ -128ms] +/- 73ms</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The stratum is as in ntpq.  The Poll is how many seconds elapse between samples.
+The Reach is as in ntpq. LastRx is the time since the last successful
+sample.  Last sample is the offset and jitter of the source.</p>
+</div>
+<div class="paragraph">
+<p>To keep chronyd from preferring NMEA time over PPS time, you can add an
+overlarge fudge to the NMEA time.  Or add the suffix 'noselect' so it
+is never used, just monitored.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_performance_tuning"><a class="link" href="#_performance_tuning">Performance Tuning</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section is general and can be used with either ntpd or chronyd.
+We&#8217;ll have more to say about tuning techniques for the specific
+implementations in later sections.</p>
+</div>
+<div class="paragraph">
+<p>The clock crystals used in consumer electronics have two properties we
+are interested in: accuracy and stability.  <strong>Accuracy</strong> is how well the
+measured frequency matches the number printed on the can.  <strong>Stability</strong>
+is how well the frequency stays the same even if it isn&#8217;t accurate.
+(Long term aging is a third property that is interesting, but ntpd and
+chrony both a use a drift history that is relatively short; thus,
+this is not a significant cause of error.)</p>
+</div>
+<div class="paragraph">
+<p>Typical specs for oscillator packages are 20, 50, 100 ppm.  That includes
+everything; initial accuracy, temperature, supply voltage, aging, etc.</p>
+</div>
+<div class="paragraph">
+<p>With a bit of software, you can correct for the inaccuracy.  ntpd and
+chrony both call it <strong>drift</strong>.  It just takes some extra low order bits
+on the arithmetic doing the time calculations.  In the simplest case,
+if you thought you had a 100 MHz crystal, you need to change that to
+something like 100.000324. The use of a PPS signal from gpsd
+contributes directly to this measurement.</p>
+</div>
+<div class="paragraph">
+<p>Note that a low drift contributes to stability, not necessarily accuracy.</p>
+</div>
+<div class="paragraph">
+<p>The major source of instability is temperature.  Ballpark is the drift
+changes by 1 PPM per degree C.  This means that the drift does not stay
+constant, it may vary with a daily and yearly pattern.  This is why the
+value of drift the ntpd uses is calculated over a (relatively) short time.</p>
+</div>
+<div class="paragraph">
+<p>So how do we calculate the drift?  The general idea is simple.
+Measure the time offset every N seconds over a longer window of time
+T, plot the graph, and fit a straight line.  The slope of that line is
+the drift.  The units cancel out.  Parts-per-million is a handy scale.</p>
+</div>
+<div class="paragraph">
+<p>How do you turn that hand waving description into code?  One easy way
+is to set N=2 and pick the right T, then run the answer through a
+low pass filter.  In that context, there are two competing sources of
+error.  If T is too small, the errors on each individual measurement
+of the offset time will dominate.  If T is too big, the actual drift
+will change while you are measuring it.  In the middle is a sweet
+spot.  (For an example, see <a href="#ADEV-PLOT">[ADEV-PLOT]</a>.)</p>
+</div>
+<div class="paragraph">
+<p>Both ntpd and chrony use this technique; ntpd also uses a more
+esoteric form of estimation called a "PLL/FLL hybrid loop". How T and N are
+chosen is beyond the scope of this HOWTO and varies by implementation
+and tuning parameters.</p>
+</div>
+<div class="paragraph">
+<p>If you turn on the right logging level ("statistics loopstats peerstats"
+for ntpd, "log measurements tracking" for chronyd), that will record
+both offset, drift, and the polling interval. The ntpd stats are easy to
+feed to gnuplot, see the example script in the GPSD contrib directory.
+The most important value is the offset reported in the 3rd field in
+loopstats and the last field in tracking.log. With gnuplot you can
+compare them (after concatenating the rotated logs):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>plot "tracking.log" using 7 with lines, "loopstats" using 3 with lines</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>While your NTP daemon (ntpd or chrony) is adjusting the polling
+interval, it is assuming that the drift is not changing.  It gets
+confused if your drift changes abruptly, say because you started some
+big chunk of work on a machine that&#8217;s usually idle and that raises the
+temperature.</p>
+</div>
+<div class="paragraph">
+<p>Your NTP daemon writes out the drift every hour or so.  (Less often if
+it hasn&#8217;t changed much to reduce the workload on flash file systems.)
+On startup, it reloads the old value.</p>
+</div>
+<div class="paragraph">
+<p>If you restart the daemon, it should start with a close old drift
+value and quickly converge to the newer slightly different value.  If
+you reboot, expect it to converge to a new/different drift value and
+that may take a while depending on how different the basic calibration
+factors are.</p>
+</div>
+<div class="sect2">
+<h3 id="_arp_is_the_sound_of_your_server_choking"><a class="link" href="#_arp_is_the_sound_of_your_server_choking">ARP is the sound of your server choking</a></h3>
+<div class="paragraph">
+<p>By default, ntpd and chronyd poll remote servers every 64 seconds.  This
+is an unfortunate choice.  Linux by default only keeps an ARP table
+entry for 60 seconds, anytime thereafter it may be flushed.</p>
+</div>
+<div class="paragraph">
+<p>If the ARP table has flushed the entry for a remote peer or server then
+when the NTP server sends a request to the remote server an entire ARP
+cycle will be added to the NTP packet round trip time (RTT).  This will
+throw off the time measurements to servers on the local lan.</p>
+</div>
+<div class="paragraph">
+<p>On a Raspberry Pi ARP has been shown to impact the remote offset by up to
+600 uSec in some rare cases.</p>
+</div>
+<div class="paragraph">
+<p>The solution is the same for both ntpd and chronyd, add the "maxpoll 5"
+command to any 'server" or "peer directive.  This will cause the maximum
+polling period to be 32 seconds, well under the 60 second ARP timeout.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_watch_your_temperatures"><a class="link" href="#_watch_your_temperatures">Watch your temperatures</a></h3>
+<div class="paragraph">
+<p>The stability of the system clock is very temperature dependent.  A one
+degree change in room temperature can create 0.1 ppm of clock frequency
+change.  One simple way to see the effect is to place your running
+NTP server inside bubble wrap.  The time will take a quick and noticeable
+jump.</p>
+</div>
+<div class="paragraph">
+<p>If you leave your NTP server in the bubble wrap you will notice some
+improved local and remote offsets.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_power_saving_is_not_your_friend"><a class="link" href="#_power_saving_is_not_your_friend">Power saving is not your friend</a></h3>
+<div class="paragraph">
+<p>Normally enabling power saving features is a good thing: it saves you power.
+But when your CPU changes power saving modes (cstates for Intel CPUs) the
+impact on PPS timing is noticeable.  For some reason the NO_HZ kernel
+mode has a similar bad effect on timekeeping.</p>
+</div>
+<div class="paragraph">
+<p>To improve your timekeeping, turn off both features on Intel CPUs by
+adding this to your boot command line:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>nohz=off intel_idle.max_cstate=0</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For ARM, be sure NO_HZ is off:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>nohz=off</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You will also need to select the 'performance' CPU governor to keep your
+CPU set to the maximum speed for continuous usage.  How you see and set
+your governor will be distribution specific.  The easiest way it to
+recompile your kernel to only provide the performance governor.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_ntp_tuning_and_performance_details"><a class="link" href="#_ntp_tuning_and_performance_details">NTP tuning and performance details</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section deals specifically with ntpd.  It discusses algorithms
+used by the ntpd suite to measure and correct the system time.  It is not
+directly applicable to chronyd, although some design considerations
+may be similar.</p>
+</div>
+<div class="paragraph">
+<p>You can&#8217;t optimize what you can&#8217;t visualize.  The easiest way to
+visualize ntpd performance is with ntpviz from <a href="#NTPSEC.ORG">[NTPSEC.ORG]</a>.  Once you
+are regularly graphing your server performance it is much easier to see
+the results of changes.</p>
+</div>
+<div class="sect2">
+<h3 id="_ntp_performance_tuning"><a class="link" href="#_ntp_performance_tuning">NTP performance tuning</a></h3>
+<div class="paragraph">
+<p>For good time stability, you should always have at least four other
+servers in your ntpd or chrony configuration besides your GPS receiver&#8201;&#8212;&#8201;in case, for example, your GPS receiver is temporarily unable to achieve
+satellite lock, or has an attack of temporary insanity. You can find
+public NTP servers to add to your configuration at <a href="#USE-POOL">[USE-POOL]</a>.</p>
+</div>
+<div class="paragraph">
+<p>To minimize latency variations, use the national and regional
+pool domains for your country and/or nearby ones.  Your ntp.conf
+configuration line should probably look like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>pool us.pool.ntp.org iburst</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Where "us" may be replaced by one of the zone/country codes the Pool
+project supports (list behind the "Global" link at <a href="#ZONES">[ZONES]</a>). The
+"pool" tag expands to four randomly chosen servers by default.  "iburst"
+implements a fast start algorithm that also weeds out bad servers.</p>
+</div>
+<div class="paragraph">
+<p>Note that a server can be a poor performer (what the NTP documentation
+colorfully calls a "falseticker") for any of three reasons. It may be
+shipping bad time, or the best routes between you and it has large
+latency variations (jitter), or it may have a time-asymmetric route,
+to you (that is, B-to-A time is on average very different from A-to-B
+time).  Asymmetric routing is the most common cause of serious
+problems.</p>
+</div>
+<div class="paragraph">
+<p>The standard tool for tuning ntpd is "ntpq" ("NTP query program"). To
+show a list of all servers declared in ntp.conf and their statistics,
+invoke it with the "-p" option. On a sample system configured with 7
+servers from the NTP pool project and one PPS GPS receiver attached
+via RS232, this is the output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ ntpq -p
+ remote          refid         st t when poll reach delay offset jitter
+========================================================================
+-arthur.testserv 162.23.41.56   2 u 62     64 377  5.835 -1.129   8.921
+-ntppublic.uzh.c 130.60.159.7   3 u 62     64 377  6.121 -4.102   6.336
+-smtp.irtech.ch  162.23.41.56   2 u 35     64 377 15.521 -1.677   8.678
++time2.ethz.ch   .PPS.          1 u 27     64 377  5.938 -1.713  16.404
+-callisto.mysnip 192.53.103.104 2 u 53     64 377 49.357 -0.274   5.125
+-shore.naturalne 122.135.113.81 3 u 22     64 377 14.676 -0.528   2.601
+-ntp.univ-angers 195.220.94.163 2 u 41     64 377 40.678 -1.847  13.391
++SHM(0)          .GPS.          0 l  4     64 377  0.000 34.682   7.952
+*SHM(1)          .PPS.          0 l  3     64 377  0.000 -2.664   0.457</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The interesting columns are "remote", "st", "reach" and "offset".</p>
+</div>
+<div class="paragraph">
+<p>"remote" is the name of the remote NTP server. The character in its
+first column shows its current state: "-" or "x" for out-of-tolerance
+servers, "+" for good servers ("truechimers"), and "*" for the one good
+server currently used as the primary reference. The calculations used to
+determine a server&#8217;s state are outside the scope of this document;
+details are available in NTPv4 RFC 5905.</p>
+</div>
+<div class="paragraph">
+<p>"st" shows the remote server&#8217;s stratum.</p>
+</div>
+<div class="paragraph">
+<p>"reach" is the octal representation of the remote server&#8217;s reachability.
+A bit is set if the corresponding poll of the server was successful,
+i.e. the server returned a reply. New poll results are shifted in from
+the least significant bit; results older than 8 polls are discarded. In
+the absence of network problems, this should show "377".</p>
+</div>
+<div class="paragraph">
+<p>"offset" shows the mean offset in the times reported between this local
+host and the remote server in milliseconds. This is the value that can
+be fudged with the "time1" parameter of the GPS server line in ntp.conf.
+If the offset is positive, reduce the time1 value and vice versa.</p>
+</div>
+<div class="paragraph">
+<p>The asterisk in this example indicates that ntpd has correctly
+preferred '.PPS.'  over '.GPS.', as it should.  If for some reason it
+locks on to GPS time as a preferred source, you can add an overlarge
+fudge to the NMEA time to discourage it.  Or add the suffix 'noselect'
+so GPS time is never used, just monitored.</p>
+</div>
+<div class="paragraph">
+<p>A more detailed description of the output is available at
+<a href="#NTPQ-OUTPUT">[NTPQ-OUTPUT]</a>.</p>
+</div>
+<div class="paragraph">
+<p>In order to determine the correct GPS offset, do one of the following:</p>
+</div>
+<div class="sect3">
+<h4 id="_peerstats_based_procedure"><a class="link" href="#_peerstats_based_procedure">Peerstats-based procedure</a></h4>
+<div class="olist arabic">
+<ol class="arabic" start="1">
+<li>
+<p>Add these lines to ntp.conf:</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>statsdir /var/log/ntpstats/
+statistics peerstats
+filegen peerstats file peerstats type day enable</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This enables logging of the peer server statistics.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic" start="2">
+<li>
+<p>Make sure the directory exists properly.  For ntpd as root do:</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>   # mkdir -p /var/log/ntpstats
+   # chown ntp:ntp /var/log/ntpstats</pre>
+</div>
+</div>
+<div class="olist arabic">
+<ol class="arabic" start="3">
+<li>
+<p>Start ntpd and let it run for at least four hours.
+Periodically check progress with "ntpq -p" and wait
+until change has settled out.</p>
+</li>
+<li>
+<p>Calculate the average GPS offset using this script (a copy is
+included as contrib/ntpoffset in the GPSD distribution):</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>awk '
+     /127\.127\.28\.0/ { sum += $5 * 1000; cnt++; }
+     END { print sum / cnt; }
+' &lt;/var/log/ntpstats/peerstats</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This prints the average offset.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Adjust the "time1" value for unit 0 of your ntp.conf (the non-PPS
+channel) by subtracting the average offset from step 4.</p>
+</li>
+<li>
+<p>Restart ntpd.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_loopstats_based_procedure"><a class="link" href="#_loopstats_based_procedure">Loopstats-based procedure</a></h4>
+<div class="paragraph">
+<p>Recall that magic pseudo-IP address 127.127.28.0 identifies unit 0 of
+the ntpd shared-memory driver (NTP0); 127.127.28.1 identifies unit
+1 (NTP1).  Unit 0 is used for in-band message timestamps (IMT) and unit
+1 for the (more accurate, when available) time derived from combining
+IMT with the out-of-band PPS synchronization pulse.  Splitting these
+notifications allows ntpd to use its normal heuristics to weight them.</p>
+</div>
+<div class="paragraph">
+<p>We assume that the 1PPS signal, being just one bit long, and directly
+triggering an interrupt, is always on time (sic).  Correcting for latency
+in the 1PPS signal is beyond the scope of this document.  The IMT,
+however, may be delayed, due to it being emitted, copied to shared
+memory, etc.</p>
+</div>
+<div class="paragraph">
+<p>Based on advice and script fragments on the GPSD list, the following
+may help to calculate the 'time1' factor.  You may need to modify
+these scripts for your particular setup.</p>
+</div>
+<div class="paragraph">
+<p>These scripts are for the combination of GPSD and ntpd.  If you use
+chronyd, you <strong>will</strong> need to modify these, at the least.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_ntpviz_procedure"><a class="link" href="#_ntpviz_procedure">ntpviz procedure</a></h4>
+<div class="paragraph">
+<p>If all this calculating and graphing looks painful, then grab a copy
+of ntpviz from <a href="#NTPSEC.ORG">[NTPSEC.ORG]</a>. ntpviz generates lots of pretty graphs
+and html pages.  It even calculates the correct IMT offset, and other
+performance metrics for you.</p>
+</div>
+<div class="sect4">
+<h5 id="_format_of_the_loopstats_and_peerstats_files"><a class="link" href="#_format_of_the_loopstats_and_peerstats_files">Format of the loopstats and peerstats files</a></h5>
+<div class="paragraph">
+<p>The following is incorporated from the ntpd website, see <a href="#NTP-MONOPT">[NTP-MONOPT]</a></p>
+</div>
+<div class="paragraph">
+<div class="title">loopstats</div>
+<p>Record clock discipline loop statistics. Each system clock update
+appends one line to the loopstats file set:</p>
+</div>
+<div class="paragraph">
+<p>Example:    50935 75440.031 0.000006019 13.778 0.000351733 0.013380 6</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Item</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Units</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">50935</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MJD</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">date</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">75440.031</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">s</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">time past midnight (UTC)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.000006019</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">s</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">clock offset</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">13.778</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PPM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">frequency offset</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.000351733</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">s</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RMS jitter</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.013380</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PPM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RMS frequency jitter (aka wander)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">6</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">log2 s</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">clock discipline loop time constant</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<div class="title">peerstats</div>
+<p>Record peer statistics. Each NTP packet or reference clock update
+received appends one line to the peerstats file set:</p>
+</div>
+<div class="paragraph">
+<p>Example:    48773 10847.650 127.127.4.1 9714 -0.001605376 0.000000000 0.001424877 0.000958674</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Item</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Units</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Description</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">48773</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MJD</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">date</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10847.650</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">s</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">time past midnight (UTC)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">127.127.4.1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">IP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">source address</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">9714</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hex</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">status word</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-0.001605376</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">s</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">clock offset</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.000000000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">s</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">roundtrip delay</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.001424877</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">s</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">dispersion</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.000958674</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">s</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RMS jitter</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect4">
+<h5 id="_measurement_of_delay"><a class="link" href="#_measurement_of_delay">Measurement of delay</a></h5>
+<div class="paragraph">
+<p>There are three parts to measuring and correcting for the delay in
+processing the 1PPS signal.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Running ntpd without using the IMT (but using the 1PPS time).</p>
+</li>
+<li>
+<p>Measuring the delay between the two messages.</p>
+</li>
+<li>
+<p>Applying the correction factor.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>We assume that you have successfully integrated GPSD with ntpd already.
+You should also have a decent set of NTP servers you are syncing to.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic" start="1">
+<li>
+<p>Running ntpd without IMT</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Locate the line in your ntp.conf that refers to the SHM0 segment and
+append 'noselect' to it.  As an example, the first two lines in the sample
+above will become:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>server 127.127.28.0 minpoll 4 maxpoll 4 noselect
+fudge 127.127.28.0 time1 0.420 refid GPS</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>ntpd will now continue to monitor the IMT from GPSD, but not use it
+for its clock selection algorithm.  It will still write out statistics to
+the peerstats file.  Once ntpd is stable (a few hours or so), we can
+process the peerstats file.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic" start="2">
+<li>
+<p>Measuring the delay between the two messages.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>From the 'peerstats' file, extract the lines corresponding to
+127.127.28.0</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>grep 127.127.28.0 peerstats &gt; peerstats.shm</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can now examine the offset and jitter of the IMT.  <a href="#ANDY-POST">[ANDY-POST]</a>
+suggests the following gnuplot fragment (you will need to set output
+options before plotting).</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>	set term gif
+	set output "fudge.gif"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If your gnuplot has X11 support, and you do not wish to save the plot,
+the above may not be required.  Use:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>	set term x11</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now plot the GPSD shared memory clock deviations from the system
+clock.  (You will get the GPSD shared memory clock fudge value
+estimate from this data when NTP has converged to your
+satisfaction.)</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>        gnuplot&gt; plot "peerstats.shm" using ($2):($5):($8) with yerrorbars
+        gnuplot&gt; replot "peerstats.shm" using ($2):($5) with lines</pre>
+</div>
+</div>
+<div class="olist arabic">
+<ol class="arabic" start="3">
+<li>
+<p>Applying the correction factor.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>By examining the plot generated above, you should be able to estimate
+the offset between the 1PPS time and the GPS time.</p>
+</div>
+<div class="paragraph">
+<p>If, for example, your estimate of the offset is -0.32s, your time1 fudge
+value will be '0.32'.  Note the change of sign.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_polling_interval"><a class="link" href="#_polling_interval">Polling Interval</a></h3>
+<div class="paragraph">
+<p>ntpd seems to better use a PPS refclock when the polling interval is
+as small as possible.  The ntpd default minpoll is 6, and can be set to
+as low as 4.  NTPsec versions 0.9.5 and above of ntpd allow you to
+set minpoll and maxpoll as low as 0.  Changing minpoll from 4 to 3, 2, 1
+or maybe even as low as 0, may reduce your PPS jitter by over a factor of 4.</p>
+</div>
+<div class="paragraph">
+<p>Any change will require several hours for ntpd to converge with the new
+settings.  Use ntpviz to find the best poll interval for your system.</p>
+</div>
+<div class="paragraph">
+<p>The value that yields the lowest jitter may not be the one that yields
+the best Local Clock Frequency Offset.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>server 127.127.28.1 minpoll 0 maxpoll 0 prefer</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_chrony_performance_tuning"><a class="link" href="#_chrony_performance_tuning">Chrony performance tuning</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The easiest way to determine the offset with chronyd is probably to
+configure the source whose offset should be measured with the noselect
+option and a long poll, let chronyd run for at least 4 hours and
+observe the offset reported in the chronyc sourcestats output.  If the
+offset is unstable, wait longer.  For example:</p>
+</div>
+<div class="paragraph">
+<p>SHM 0 configured as:
+refclock SHM 0 poll 8 filter 1000 noselect</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># chronyc sourcestats
+210 Number of sources = 6
+Name/IP Address            NP  NR  Span  Frequency  Freq Skew  Offset  Std Dev
+==============================================================================
+SHM0                       21   9   85m      4.278      4.713   +495ms  8896us
+SHM1                       20   8   307      0.000      0.002     +0ns   202ns
+mort.cihar.com             21   8   72m      0.148      0.798   +668us   490us
+vps2.martinpoljak.net       6   4   17m    -53.200    141.596    -24ms    15ms
+ntp1.kajot.cz              25  16   91m     -0.774      1.494    -11ms  1859us
+ntp1.karneval.cz           17  10   89m      0.127      0.539  -4131us   574us</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this case (Garmin 18x) the offset specified in the config for the
+SHM 0 source should be around 0.495.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_providing_local_ntp_service_using_ptp"><a class="link" href="#_providing_local_ntp_service_using_ptp">Providing local NTP service using PTP</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By now if you have a good serial PPS signal your local clock should
+have jitter on the order of 1 uSec.  You do not want the hassle of
+placing a GPS receiver on each of your local computers.  So you
+install chrony or ntp on your other hosts and configure them to use
+your NTP PPS server as their local server.</p>
+</div>
+<div class="paragraph">
+<p>With your best setup on a lightly loaded GigE network you find that your
+NTP clients have jitter on the order of 150 uSec, or 150 times worse
+than your master.  Bummer, you want to do much better, so you look to
+the Precision Time Protocol <a href="#PTP">[PTP]</a> for help.  PTP is also known as IEEE
+1588.</p>
+</div>
+<div class="paragraph">
+<p>With PTP you can easily synchronize NTP hosts to 5 uSec with some
+generic NIC hardware and newer Linux kernels.  Some of the Ethernet
+drivers have been modified to time stamp network packets when sending and
+receiving.  This is done with the new SO_TIMESTAMPING socket option.  No
+hardware support is required.</p>
+</div>
+<div class="paragraph">
+<p>A more recent addition is PTP Hardware Clock (PHC) support.  This requires
+hardware support in the NIC.</p>
+</div>
+<div class="paragraph">
+<p>Software timestamping is more mature, available on more NICs, and almost
+as accurate as hardware timestamping.  Try it first.  This HOWTO will
+build on those results.</p>
+</div>
+<div class="paragraph">
+<p>One final wrinkle before proceeding with PTP.  Ethernet ports have
+something called <a href="#EEE">[EEE]</a> (IEEE 802.3az).  Percentage wise EEE can save
+50% of the Ethernet energy needs.  Sadly this is 50% of an already small
+energy usage.  Only important in large data centers.  EEE can be very
+disruptive to timekeeping.  Up to almost 1 Sec of errors in offset,
+wander and jitter.  To see if you have EEE enabled, and then turn it
+off:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># ethtool --show-eee eth0
+EEE Settings for eth0:
+	EEE status: enabled - inactive
+	Tx LPI: 0 (us)
+	Supported EEE link modes:  100baseT/Full
+	                           1000baseT/Full
+	Advertised EEE link modes:  100baseT/Full
+	                            1000baseT/Full
+	Link partner advertised EEE link modes:  Not reported
+# ethtool --set-eee eth0 eee off
+# ethtool --show-eee eth0
+EEE Settings for eth0:
+	EEE status: disabled
+	Tx LPI: 0 (us)
+	Supported EEE link modes:  100baseT/Full
+	                           1000baseT/Full
+	Advertised EEE link modes:  100baseT/Full
+	                            100baseT/Full
+	Link partner advertised EEE link modes:  Not reported</pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_ptp_with_software_timestamping"><a class="link" href="#_ptp_with_software_timestamping">PTP with software timestamping</a></h3>
+<div class="paragraph">
+<p>To start you need to verify that your running Linux kernel configuration
+includes these two lines, or the same with "y" replaced by "m" to enable
+the drivers as modules:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>CONFIG_NETWORK_PHY_TIMESTAMPING=y
+PTP_1588_CLOCK=y</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then you need to verify that your Ethernet driver supports PTP
+by running this command as root:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># ethtool -T eth0 | fgrep SOFTWARE
+	software-transmit     (SOF_TIMESTAMPING_TX_SOFTWARE)
+	software-receive      (SOF_TIMESTAMPING_RX_SOFTWARE)
+	software-system-clock (SOF_TIMESTAMPING_SOFTWARE)</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the result includes those three lines then you have support for
+software PTP timestamping.  We will leave hardware timestamping
+for later.</p>
+</div>
+<div class="paragraph">
+<p>Next you will need the <a href="#LINUX-PTP">[LINUX-PTP]</a> package, just follow the simple
+instructions on their web page to download, compile and install on your
+NTP server and its slaves.  Be sure to also follow their instructions on
+how to configure your Linux kernel.</p>
+</div>
+<div class="paragraph">
+<p>In this setup we will just use the ptp4l program.  This program measures
+the delay and offset between a master and slaves and shares that information
+with chronyd or ntpd using an SHM.  Since gpsd also uses SHM be very careful
+not to have the two SHM servers stepping on the same shmid.</p>
+</div>
+<div class="paragraph">
+<p>If you are using ntpd, then add the last three lines below to your
+master ntp.conf file to configure the SHM.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># GPS Serial data reference (NTP0)
+server 127.127.28.0
+fudge 127.127.28.0 time1 0.9999 refid GPS
+
+# GPS PPS reference (NTP1)
+server 127.127.28.1 prefer
+fudge 127.127.28.1 refid PPS
+
+# local PTP reference (NTP2)
+server 127.127.28.2
+fudge 127.127.28.2 refid PTP</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you are using chronyd, then add the last one line below to your
+master chronyd.conf file to configure the SHM.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>refclock SHM 0 refid GPS precision 1e-1 offset 0.9999 delay 0.2
+refclock SHM 1 refid PPS precision 1e-7
+refclock SHM 2 refid PTP precision 1e-7</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To configure the master ptp4l, create a new file
+/usr/local/etc/ptp4l.conf with these contents:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>[global]
+# only syslog every 1024 seconds
+summary_interval 10
+
+# send to chronyd/ntpd using SHM 2
+clock_servo ntpshm
+ntpshm_segment 2
+
+# set our priority high since we have PPS
+priority1 10
+priority2 10
+
+[eth0]</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now as root on the master, start the ptp4l daemon:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># ethtool --set-eee eth0 eee off
+# ptp4l -S -f /usr/local/etc/ptp4l.conf &amp;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Configuration of the master server is now complete.  Now to configure
+the slaves.  If the slaves also have PPS then configure them as masters.
+Otherwise you will stomp on your SHMs.</p>
+</div>
+<div class="paragraph">
+<p>If you are using ntpd, then add the last three lines below to your
+master ntp.conf file to configure your one and only SHM.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># local PTP reference (NTP0)
+server 127.127.28.0
+fudge 127.127.28.0 refid PTP</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you are using chronyd, then add the one line below to your master
+chronyd.conf file to configure your one and only SHM.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>refclock SHM 0 refid PTP precision 1e-7</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To configure the slave ptp4l, create a new file
+/usr/local/etc/ptp4l.conf with these contents:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>[global]
+# only syslog every 1024 seconds
+summary_interval 10
+
+# send to chronyd/ntpd using SHM 0
+clock_servo ntpshm
+ntpshm_segment 0
+
+[eth0]</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now as root on the slave, as with the master, turn off EEE and start the
+ptp4l daemon:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># ethtool --set-eee eth0 eee off
+# ptp4l -S -f /usr/local/etc/ptp4l.conf &amp;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Configuration of the slave server is now complete.  Follow the earlier
+procedures for checking the jitter on the SHM on the slaves.  Give it
+a few hours to settle and your hosts will now be synced to around 5 uSec.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_ptp_with_hardware_timestamping"><a class="link" href="#_ptp_with_hardware_timestamping">PTP with hardware timestamping</a></h3>
+<div class="paragraph">
+<p>Some NICs requires two additional kernel options.  Just in case, verify
+that your running Linux kernel configuration includes these lines, or
+the same with "y" replaced by "m" to enable the drivers as modules:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>CONFIG_DP83640_PHY=y
+CONFIG_PTP_1588_CLOCK_PCH=y</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then you need to verify that your Ethernet driver supports PTP
+by running ethtool  as root and verify at least the following lines are
+present in the output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># ethtool -T eth0
+	hardware-transmit     (SOF_TIMESTAMPING_TX_HARDWARE)
+	hardware-receive      (SOF_TIMESTAMPING_RX_HARDWARE)
+	all                   (HWTSTAMP_FILTER_ALL)</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Your NIC may have more features, and your driver may support them for
+better results.</p>
+</div>
+<div class="paragraph">
+<p>In the software timestamping above the ptp4l program took care of all steps to
+determine the slave offset from the master and feeding that to a SHM for
+ntpd or chronyd to use.</p>
+</div>
+<div class="paragraph">
+<p>In hardware timestamping mode ptp4l will continue to perform most of
+the work.  An additional program, phc2sys, will take over the duties of
+reading the hardware timestamps from the NIC, computing the offset, and
+feeding that to the SHM.</p>
+</div>
+<div class="paragraph">
+<p>phc2sys will use the SHM exactly as ptp4l did previously so no
+change is required to your ntpd or chronyd configuration.</p>
+</div>
+<div class="paragraph">
+<p>To keep things simple, for now, we will not touch the already configured
+and working software timestamping master server.  We will proceed to
+configure a slave.</p>
+</div>
+<div class="paragraph">
+<p>To configure the slave ptp4l, edit your /usr/local/etc/ptp4l.conf
+to remove the ntpshm options:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>[global]
+# only syslog every 1024 seconds
+summary_interval 10
+
+clock_servo linreg
+
+[eth0]</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now as root on the slave, as with the master, turn off EEE and start the
+ptp4l daemon:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># ethtool --set-eee eth0 eee off
+# ptp4l -H -f /usr/local/etc/ptp4l.conf &amp;
+# sleep 3
+# phc2sys -a -r -E ntpshm -m -M 0 &amp;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Configuration of the slave server is now complete.  Follow the earlier
+procedures for checking the jitter on the SHM on the slaves.</p>
+</div>
+<div class="paragraph">
+<p>Sadly, theory and practice diverge here.  I have never succeeded in
+making hardware timestamping work.  I have successfully trashed my
+host system clock.  Tread carefully.  If you make progress please
+pass on some clue.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_providing_public_ntp_service"><a class="link" href="#_providing_public_ntp_service">Providing public NTP service</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="#NTP-FAQ">[NTP-FAQ]</a> has good advice on things to be sure you have done&#8201;&#8212;&#8201;and
+are ready to do&#8201;&#8212;&#8201;before becoming a public server. One detail it
+doesn&#8217;t mention is that you&#8217;ll need to un-firewall UDP port 123.  The
+NTP protocol does not use TCP, so no need to unblock TCP port 123.</p>
+</div>
+<div class="paragraph">
+<p>If and when you are ready to go public, see <a href="#JOIN-POOL">[JOIN-POOL]</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_acknowledgments"><a class="link" href="#_acknowledgments">Acknowledgments</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Beat Bolli &lt;<a href="mailto:bbolli@ewanet.ch">bbolli@ewanet.ch</a>&gt; wrote much of the section on NTP
+performance tuning. Hal Murray &lt;<a href="mailto:hmurray@megapathdsl.net">hmurray@megapathdsl.net</a>&gt; wrote
+much of the section on NTP working and performance details.
+Sanjeev Gupta &lt;<a href="mailto:ghane0@gmail.com">ghane0@gmail.com</a>&gt; assisted with editing.
+Shawn Kohlsmith &lt;<a href="mailto:skohlsmith@gmail.com">skohlsmith@gmail.com</a>&gt; tweaked the Bibliography.
+Jaap Winius &lt;<a href="mailto:jwinius@rjsystems.nl">jwinius@rjsystems.nl</a>&gt; cleaned up some terminology.</p>
+</div>
+<div class="paragraph">
+<p>The loopstats-based tuning procedure for ntpd was drafted by Sanjeev
+Gupta &lt;<a href="mailto:ghane0@gmail.com">ghane0@gmail.com</a>&gt;, based on discussions on the GPSD list
+<a href="#GPSD-LIST">[GPSD-LIST]</a> in Oct and Nov 2013.  Code examples are based on work by
+Andy Walls &lt;<a href="mailto:andy@silverblocksystems.net">andy@silverblocksystems.net</a>&gt;.  A copy of the original
+email can be found at <a href="#ANDY-POST">[ANDY-POST]</a>. A thorough review was contributed
+by Jaap Winius &lt;<a href="mailto:jwinius@rjsystems.nl">jwinius@rjsystems.nl</a>&gt;.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_references"><a class="link" href="#_references">References</a></h2>
+<div class="sectionbody">
+<div class="ulist bibliography">
+<ul class="bibliography">
+<li>
+<p><a id="TIME-INTRO"></a>[TIME-INTRO] <a href="time-service-intro.html">Introduction to Time Service</a></p>
+</li>
+<li>
+<p><a id="WIKI-NTP"></a>[WIKI-NTP] <a href="https://en.wikipedia.org/wiki/Network_Time_Protocol">Network Time Protocol</a></p>
+</li>
+<li>
+<p><a id="NTP-FAQ"></a>[NTP-FAQ] <a href="http://www.ntp.org/ntpfaq/">NTP FAQ</a></p>
+</li>
+<li>
+<p><a id="RFC-2783"></a>[RFC-2783] <a href="https://tools.ietf.org/html/rfc2783">RFC 2783</a></p>
+</li>
+<li>
+<p><a id="RFC-5905"></a>[RFC-5905] <a href="https://tools.ietf.org/html/rfc5905">RFC 5905</a></p>
+</li>
+<li>
+<p><a id="MACX-1"></a>[MACX-1] <a href="https://www.etsy.com/listing/280336400/navisys-gr-601w-u-blox-6-macx-1-usb-gnss">Navisys GR-601W u-blox-6 "Macx-1" USB GPS receiver</a></p>
+</li>
+<li>
+<p><a id="CHRONY-COMPARE"></a>[CHRONY-COMPARE] <a href="https://chrony.tuxfamily.org/manual.html#Comparison-with-ntpd">ntpd (comparison with chrony)</a></p>
+</li>
+<li>
+<p><a id="CHRONYDEFAULT"></a>[CHRONYDEFAULT] <a href="https://lists.fedoraproject.org/pipermail/devel/2010-May/135679.html" class="bare">https://lists.fedoraproject.org/pipermail/devel/2010-May/135679.html</a></p>
+</li>
+<li>
+<p><a id="HARDWARE"></a>[HARDWARE] <a href="https://gpsd.gitlab.io/gpsd/hardware.html">Compatible Hardware</a></p>
+</li>
+<li>
+<p><a id="UBLOX-TIMING"></a>[UBLOX-TIMING] <a href="https://www.u-blox.com/sites/default/files/products/documents/Timing_AppNote_(GPS.G6-X-11007).pdf">GPS-based timing considerations with u-blox 6 receivers</a></p>
+</li>
+<li>
+<p><a id="RPI"></a>[RPI] <a href="https://www.satsignal.eu/ntp/Raspberry-Pi-NTP.html">The Raspberry Pi as a Stratum-1 NTP Server</a></p>
+</li>
+<li>
+<p><a id="NTP.ORG"></a>[NTP.ORG] <a href="http://www.ntp.org/">Home of the Network Time Protocol project</a></p>
+</li>
+<li>
+<p><a id="NTPSEC.ORG"></a>[NTPSEC.ORG] <a href="https://www.ntpsec.org/">Wecome to NTPsec</a></p>
+</li>
+<li>
+<p><a id="USE-POOL"></a>[USE-POOL] <a href="https://www.pool.ntp.org/en/use.html">How do I use pool.ntp.org?</a></p>
+</li>
+<li>
+<p><a id="CVE-2009-3563"></a>[CVE-2009-3563] <a href="https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3563" class="bare">https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2009-3563</a></p>
+</li>
+<li>
+<p><a id="CHRONY"></a>[CHRONY] <a href="https://chrony.tuxfamily.org/">Chrony Home</a></p>
+</li>
+<li>
+<p><a id="CHRONY-MAN"></a>[CHRONY-MAN] <a href="https://chrony.tuxfamily.org/manual.html" class="bare">https://chrony.tuxfamily.org/manual.html</a></p>
+</li>
+<li>
+<p><a id="ADEV-PLOT"></a>[ADEV-PLOT] <a href="http://www.leapsecond.com/pages/adev-avg/">Allan deviation and Averaging</a></p>
+</li>
+<li>
+<p><a id="ZONES"></a>[ZONES] <a href="https://www.pool.ntp.org/zone" class="bare">https://www.pool.ntp.org/zone</a></p>
+</li>
+<li>
+<p><a id="NTPQ-OUTPUT"></a>[NTPQ-OUTPUT] <a href="https://nlug.ml1.co.uk/2012/01/ntpq-p-output/831">ntpq output description</a></p>
+</li>
+<li>
+<p><a id="JOIN-POOL"></a>[JOIN-POOL] <a href="https://www.pool.ntp.org/en/join.html">How do I join pool.ntp.org?</a></p>
+</li>
+<li>
+<p><a id="ANDY-POST"></a>[ANDY-POST] <a href="https://lists.gnu.org/archive/html/gpsd-dev/2013-10/msg00152.html">Clarifications needed for the time-service HOWTO</a></p>
+</li>
+<li>
+<p><a id="NTP-MONOPT"></a>[NTP-MONOPT] <a href="https://www.eecis.udel.edu/~mills/ntp/html/monopt.html">NTP Monitoring</a></p>
+</li>
+<li>
+<p><a id="GPSD-LIST"></a>[GPSD-LIST]<a href="https://lists.gnu.org/archive/html/gpsd-dev/">gpsd-dev Archives</a></p>
+</li>
+<li>
+<p><a id="PTP"></a>[PTP] <a href="https://www.nist.gov/el/isd/ieee/ieee1588">PTP</a></p>
+</li>
+<li>
+<p><a id="LINUX-PTP"></a>[LINUX-PTP] <a href="http://linuxptp.sourceforge.net/">Linux PTP</a></p>
+</li>
+<li>
+<p><a id="EEE"></a>[EEE] <a href="https://en.wikipedia.org/wiki/Energy-Efficient_Ethernet">Energy-Efficient Ethernet</a></p>
+</li>
+<li>
+<p><a id="LVC"></a>[LVC] <a href="https://www.rjsystems.nl/en/2100-ntpd-garmin-gps-18-lvc-gpsd.php" class="bare">https://www.rjsystems.nl/en/2100-ntpd-garmin-gps-18-lvc-gpsd.php</a></p>
+</li>
+<li>
+<p><a id="GITLAB-SOURCE"></a>[GITLAB-SOURCE] <a href="https://gitlab.com/NTPsec/ntpsec">NTPSec source on Gitlab</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_changelog"><a class="link" href="#_changelog">Changelog</a></h2>
+<div class="sectionbody">
+<div class="dlist">
+<dl>
+<dt class="hdlist1">1.1, Nov 2013</dt>
+<dd>
+<p>Initial release.</p>
+</dd>
+<dt class="hdlist1">1.2, Aug 2014</dt>
+<dd>
+<p>Note that NetBSD now has PPS support.</p>
+</dd>
+<dt class="hdlist1">1.3, Aug 2014</dt>
+<dd>
+<p>Add a note about the GR-601W.</p>
+</dd>
+<dt class="hdlist1">1.4, Dec 2014</dt>
+<dd>
+<p>Cleaned up Bibliography</p>
+</dd>
+<dt class="hdlist1">2.0, Feb 2015</dt>
+<dd>
+<p>More about troubleshooting PPS delivery.  Folded in Sanjeev
+Gupta&#8217;s Calibration Howto describing the loopstats-based
+procedure.  Added preliminary information on PTP.</p>
+</dd>
+<dt class="hdlist1">2.1 Mar 2015</dt>
+<dd>
+<p>More on PTP. Added link to Jaap Winius&#8217;s page on GPS-18 setup.</p>
+</dd>
+<dt class="hdlist1">2.2 Mar 2015</dt>
+<dd>
+<p>Detailed explanation of NTP has moved to a new page,
+<a href="time-service-intro.html">Introduction to Time Service</a>.</p>
+</dd>
+<dt class="hdlist1">2.3 Mar 2015</dt>
+<dd>
+<p>Use the NTP accuracy estimate from RFC 5905.</p>
+</dd>
+<dt class="hdlist1">2.4 Mar 2015</dt>
+<dd>
+<p>Removed some typos, corrected formatting, and minor changes.
+A bit more specificity about root vs. non-root.</p>
+</dd>
+<dt class="hdlist1">2.5 Apr 2016</dt>
+<dd>
+<p>Note the existence of the GR-701W.</p>
+</dd>
+<dt class="hdlist1">2.6 May 2016</dt>
+<dd>
+<p>New section on GPS time.  Note the existence of the GR-801W.
+Describe the special timeserver build of GPSD. Recommend NTPsec.
+Add Macx-1 link.
+Add sections on ARP and temperature problems</p>
+</dd>
+<dt class="hdlist1">2.7 June 2016</dt>
+<dd>
+<p>Add section on avoiding power saving.</p>
+</dd>
+<dt class="hdlist1">2.8 July 2016</dt>
+<dd>
+<p>Mention required version of gpsd
+Fix Typos.</p>
+</dd>
+<dt class="hdlist1">2.9 August 2016</dt>
+<dd>
+<p>Fix typos.</p>
+</dd>
+<dt class="hdlist1">2.10 September 2016</dt>
+<dd>
+<p>Mention ntpviz
+Recommend minpoll=maxpoll=0 for PPS refclocks
+Recommend NTPsec.</p>
+</dd>
+<dt class="hdlist1">2.11 June 2019</dt>
+<dd>
+<p>Check all links, and update to https where possible</p>
+</dd>
+<dt class="hdlist1">2.12 January 2021</dt>
+<dd>
+<p>Add Table of Contents.  Markup cleanup.</p>
+</dd>
+<dt class="hdlist1">November 2021</dt>
+<dd>
+<p>Minor cleanup around timeservice=yes.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_copying"><a class="link" href="#_copying">COPYING</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This file is Copyright 2013 by the GPSD project<br>
+SPDX-License-Identifier: BSD-2-clause</p>
+</div>
+</div>
+</div>
+</div>
+<div id="footnotes">
+<hr>
+<div class="footnote" id="_footnotedef_1">
+<a href="#_footnoteref_1">1</a>. RFC5905 says "a few tens of milliseconds", but asymmetric routing can produce 100mSec offset
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2023-01-10 17:38:26 -0500
+</div>
+</div>
+</body>
+</html>

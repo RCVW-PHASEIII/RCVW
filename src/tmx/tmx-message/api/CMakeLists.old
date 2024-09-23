@@ -1,0 +1,27 @@
+CMAKE_MINIMUM_REQUIRED (VERSION 3.18)
+
+PROJECT ( api C CXX )
+
+FILE (GLOB_RECURSE SOURCES "src/*.c*")
+
+IF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "QCC")
+	MESSAGE(STATUS "Using QCC with flags: ${CMAKE_CXX_FLAGS}")
+ENDIF()
+ADD_LIBRARY (tmxapi SHARED ${SOURCES})
+#ADD_DEPENDENCIES (tmxapi tmxasntype)
+TARGET_LINK_LIBRARIES (tmxapi PUBLIC ${Boost_LIBRARIES})
+TARGET_INCLUDE_DIRECTORIES (tmxapi PUBLIC 
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> 
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/tmx/common/types/support/thirdparty>
+	${Boost_INCLUDE_DIRS})
+TARGET_COMPILE_FEATURES (tmxapi PRIVATE cxx_std_17)
+
+FILE (GLOB_RECURSE TEST_SOURCES "test/*.c*")
+ADD_EXECUTABLE (test-tmxapi ${TEST_SOURCES})
+TARGET_INCLUDE_DIRECTORIES (test-tmxapi PUBLIC 
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/tmx/common/types/support/thirdparty>)
+TARGET_LINK_LIBRARIES (test-tmxapi tmxapi Boost::unit_test_framework dl pthread)
+TARGET_COMPILE_FEATURES (test-tmxapi PRIVATE cxx_std_17)
+
+ADD_TEST (NAME test-tmxapi COMMAND test-tmxapi)

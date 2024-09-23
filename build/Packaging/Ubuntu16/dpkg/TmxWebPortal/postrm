@@ -1,0 +1,24 @@
+#!/bin/sh -e
+
+systemctl stop websockify.service
+systemctl disable websockify.service
+sleep 1
+
+rm -f /etc/apache2/sites-enabled/default-site 2>/dev/null
+systemctl stop apache2.service
+systemctl disable apache2.service
+
+rm -f /var/www/index.php 2>/dev/null
+
+# Clean up only for a real remove
+if [ "$1" != "remove" -a "$1" != "purge" ]; then
+  exit 0
+fi
+
+if [ "$1" = "purge" -a -e /usr/share/debconf/confmodule ]; then
+    # Source debconf library.
+    . /usr/share/debconf/confmodule
+    
+    # Remove my changes to the db.
+    db_purge
+fi

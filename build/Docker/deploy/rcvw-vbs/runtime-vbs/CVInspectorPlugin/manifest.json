@@ -1,0 +1,32 @@
+{
+    "name":"${TMX_COMPONENT}-${RCVW_COMPONENT}-CVI",
+    "description":"Plugin used to forward decoded J2735 message to a tablet running an old version of CV Inspector. This is meant as a stop gap solution until CV inspector can be updated to directly use TMX messages from Kafka or AMQP.",
+    "version":"${RCVW_VERSION}",
+    "exe": "bin/${CVI_PLUGIN}",
+    "channels":[
+        {
+            "comment": "TMX core connection. Must use unique IDs for Kafka.",
+            "context": "kafka://localhost:${KAFKA_PORT}",
+            "config": {
+                "auto-publish": false,
+                "read-only": true,
+                "topics": "^(Decoded|J2735|tmx)/",
+                "thread-count": 3,
+                "thread-assignment": "ShortestQueue",
+                "global": {
+                    "auto.offset.reset": "end"
+                }
+            }
+        },
+        {
+            "id": "tablet",
+            "context": "udp://${RCVW_CV_INSPECTOR_IP}:${4387}",
+            "config": {
+                "auto-subscribe": false,
+                "write-only": true,
+                "topics": "Decoded/J2735/(SPAT|MAP|BSM|TIM)$"
+            }
+        }
+    ],
+    "repair-file": "usr/local/share/tmx/${TMX_COMPONENT}/treerepair.xml"
+}

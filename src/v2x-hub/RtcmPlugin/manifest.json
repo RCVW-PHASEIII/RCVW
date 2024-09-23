@@ -1,0 +1,57 @@
+{
+	"name":"@TMX_PLUGIN_NAME@",
+	"description":"Plugin to listen for RTCM messages from an NTRIP caster and route those messages over DSRC",
+	"version":"@PROJECT_VERSION@",
+	"channels": [
+		{
+			"id": "tmx-core",
+			"context": "kafka://localhost:29092",
+			"config": {
+				"thread-count": 2,
+				"topics": "J2735/RTCM"
+			}
+		},
+		{
+			"id": "local-basestation",
+			"context": "gpsd://10.30.100.29",
+			"config": {
+				"auto-publish": false,
+				"topics": "gpsd/RTCM3",
+				"thread-count": 2,
+				"thread-assignment": "RoundRobin"
+			}
+		}
+	],
+	"newchannels": [
+		{
+			"id": "ODOT-Reference-Network",
+			"context": "ntrip://battelle8:B&commat;ttelle01!@localhost:10000/ODOT_VRS_RTCM3",
+			"config": {
+				"auto-subscribe": false,
+				"auto-publish": false,
+				"thread-count": 1
+			}
+		},
+		{
+			"id": "NMEA-source",
+			"context": "nmea://localhost:2947",
+			"config": {
+				"auto-publish": false,
+				"topics": "nmea/GGA",
+				"thread-count": 1
+			}
+		},
+		{
+			"id": "local-basestation",
+			"context": "gpsd://10.30.100.17",
+			"config": {
+				"auto-publish": false,
+				"topics": "gpsd/RTCM3",
+				"thread-count": 2,
+				"thread-assignment": "RoundRobin"
+			}
+		}
+	],
+	"latitude": 39.98912,
+	"longitude": -83.02073
+}

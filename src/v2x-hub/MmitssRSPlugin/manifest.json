@@ -1,0 +1,76 @@
+{
+    "name":"@TMX_PLUGIN_NAME@",
+    "description":"Listens for SRM and BSM messages and generates traffic controller requests",
+    "version":"@PROJECT_VERSION@",
+    "exeLocation":"/bin/@PROJECT_NAME@",
+    "coreIpAddr":"127.0.0.1",
+    "corePort":24601,
+    "configuration":[
+        {
+            "key":"SleepMS",
+            "default":"100",
+            "description":"The length of milliseconds to sleep between processing watchdog request."
+        },
+	{
+	    "key":"SignalGroupPolicy",
+	    "default":"{\"SignalGroups\":[{\"SignalGroupId\":2,\"CallPhase\":2,\"ExtendPhase\":2,\"MaxExtendTimeMS\":10000}]}",
+	    "description":"JSON data defining a list of SignalGroups their call/extend policies."
+	},
+	{
+	    "key":"PreemptionPolicy",
+	    "default":"{\"MapLanes\":[{\"MapLaneId\":22,\"PreemptionAmbulance\":2,\"PreemptionFire\":2,\"PreemptionPolice\":2}]}",
+	    "description":"JSON data defining a list of map lanes their preemption policy."
+	},
+        {
+            "key":"NTCIPAddress",
+            "default":"10.30.100.106",
+            "description":"The IP address of the traffic signal controller."
+        },
+        {
+            "key":"NTCIPPort",
+            "default":"501",
+            "description":"The NTCIP port of the trafficsignalcontroller."
+        },
+        {
+            "key":"BSMTimeoutMS",
+            "default":"5000",
+            "description":"The timeout in milliseconds to determine if vericle is sending BSMs."
+        },
+        {
+            "key":"SRMTimeoutMS",
+            "default":"5000",
+            "description":"The timeout in milliseconds to determine if vericle is sending SRMs."
+        },
+        {
+            "key":"PhaseControlGroupCount",
+            "default":"2",
+            "description":"The number of phase control groups in the phase control table"
+        },
+        {
+            "key":"PhaseCallDurationMS",
+            "default":"3000",
+            "description":"The number of milliseconds to hold a phase call"
+        },
+        {
+            "key":"PreemptCount",
+            "default":"10",
+            "description":"The number of preempts available on this TSC."
+        },
+        {
+            "key":"ClearPreemptsOnStartup",
+            "default":"true",
+            "description":"Clears all active ntcip 1202 preempts, set this to true only if this plugin controls all ntcip 1202 preempts"
+        },
+	{
+            "key":"MessageManagerThreads",
+            "default":"1",
+            "description":"Max number of threads for message manager."
+        },
+        {
+            "key":"LogLevel",
+            "default":"ERROR",
+            "description":"The log level for this plugin"
+        }
+    ]
+}
+
