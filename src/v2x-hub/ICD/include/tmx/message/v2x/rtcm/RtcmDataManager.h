@@ -10,8 +10,8 @@
 #ifndef INCLUDE_RTCM_RTCMDATAMANAGER_H_
 #define INCLUDE_RTCM_RTCMDATAMANAGER_H_
 
-#include <rtcm/RtcmVersion.h>
-#include <rtcm/RtcmTypes.h>
+#include "RtcmVersion.hpp"
+#include "RtcmTypes.h"
 
 #include <tmx/common/types/Array.hpp>
 

@@ -33,12 +33,12 @@ ENDIF ()
 
 MACRO (SETUP_TMX_PROJECT)
     # Global values
-    SET (TMX_APPNAME ${PROJECT_NAME} PARENT_SCOPE)
-    SET (TMX_VERSION ${PROJECT_VERSION} PARENT_SCOPE)
-    SET (TMX_VERSION_MAJOR ${PROJECT_VERSION_MAJOR} PARENT_SCOPE)
-    SET (TMX_VERSION_MINOR ${PROJECT_VERSION_MINOR} PARENT_SCOPE)
-    SET (TMX_VERSION_PATCH ${PROJECT_VERSION_PATCH} PARENT_SCOPE)
-    SET (TMX_VERSION_TWEAK ${PROJECT_VERSION_TWEAK} PARENT_SCOPE)
+    SET (TMX_APPNAME ${PROJECT_NAME} CACHE STRING "TMX Application")
+    SET (TMX_VERSION ${PROJECT_VERSION} CACHE STRING "TMX Version")
+    SET (TMX_VERSION_MAJOR ${PROJECT_VERSION_MAJOR} CACHE STRING "TMX Major Version")
+    SET (TMX_VERSION_MINOR ${PROJECT_VERSION_MINOR} CACHE STRING "TMX Minor Version")
+    SET (TMX_VERSION_PATCH ${PROJECT_VERSION_PATCH} CACHE STRING "TMX Patch Version")
+    SET (TMX_VERSION_TWEAK ${PROJECT_VERSION_TWEAK} CACHE STRING "TMX Tweak Version")
 
     MESSAGE (STATUS "Building ${TMX_APPNAME} release ${TMX_VERSION} from ${CMAKE_CURRENT_SOURCE_DIR} to ${CMAKE_CURRENT_BINARY_DIR}")
 ENDMACRO()
@@ -68,33 +68,45 @@ IF (Docker)
     FOREACH (TMX_DEPLOYMENT ${TMX_CONTAINERS})
         GET_FILENAME_COMPONENT(TMX_DEPLOYMENT_DIR ${TMX_DEPLOYMENT} DIRECTORY)
 
+        # Grab the list of profiles
+        EXECUTE_PROCESS(COMMAND $ENV{SHELL} -c "${Docker} compose --project-directory \"${TMX_DEPLOYMENT_DIR}\" config --profiles"
+                        OUTPUT_VARIABLE TMX_PROFILES_OUT)
+        STRING (REPLACE "\n" ";" TMX_PROFILES "${TMX_PROFILES_OUT}")
+        FOREACH (TMX_PROFILE_NAME ${TMX_PROFILES})
+            SET (TMX_PROFILE_OPT "${TMX_PROFILE_OPT} --profile ${TMX_PROFILE_NAME}")
+        ENDFOREACH ()
+
         # Create a list of the services
-        EXECUTE_PROCESS(COMMAND ${Docker} compose --project-directory "${TMX_DEPLOYMENT_DIR}" config --services
+        EXECUTE_PROCESS(COMMAND $ENV{SHELL} -c "${Docker} compose --project-directory ${TMX_DEPLOYMENT_DIR} ${TMX_PROFILE_OPT} config --services"
                         OUTPUT_VARIABLE TMX_SERVICES_OUT)
         STRING (REPLACE "\n" ";" TMX_SERVICES "${TMX_SERVICES_OUT}")
 
         # Loop through each service
         FOREACH (TMX_SERVICE_NAME ${TMX_SERVICES})
-            ADD_CUSTOM_TARGET (docker-image-${TMX_SERVICE_NAME}
-                                ${Docker} compose --project-directory "${TMX_DEPLOYMENT_DIR}" build
-                                    --build-arg TMX_ARCH="${TMX_ARCH}"
-                                    --build-arg TMX_CONFIG="${TMX_CONFIG}"
-                                    --build-arg TMX_VERSION="${TMX_VERSION}"
-                                    ${TMX_SERVICE_NAME}
-                                COMMENT "Creating ${TMX_SERVICE_NAME} Docker environment")
+            IF (NOT TARGET docker-image-${TMX_SERVICE_NAME})
+                ADD_CUSTOM_TARGET (docker-image-${TMX_SERVICE_NAME}
+                                    ${Docker} compose --project-directory "${TMX_DEPLOYMENT_DIR}" build
+                                        --build-arg TMX_ARCH="${TMX_ARCH}"
+                                        --build-arg TMX_CONFIG="${TMX_CONFIG}"
+                                        --build-arg TMX_VERSION="${TMX_VERSION}"
+                                        ${TMX_SERVICE_NAME}
+                                    COMMENT "Creating ${TMX_SERVICE_NAME} Docker environment")
 
-            FILE (GLOB TMX_DEPENDS_FILES "${TMX_DEPLOYMENT_DIR}/${TMX_SERVICE_NAME}.depends.*")
-            FOREACH (TMX_DEPENDS_FILE ${TMX_DEPENDS_FILES})
-                GET_FILENAME_COMPONENT (DEPENDS "${TMX_DEPENDS_FILE}" LAST_EXT)
-                STRING (SUBSTRING ${DEPENDS} 1 -1 DEPENDS)
-                ADD_DEPENDENCIES (docker-image-${TMX_SERVICE_NAME} ${DEPENDS})
-                MESSAGE(STATUS "Added dependency ${DEPENDS} to docker-image-${TMX_SERVICE_NAME}")
-            ENDFOREACH (TMX_DEPENDS_FILE ${TMX_DEPENDS_FILES})
+                FILE (GLOB TMX_DEPENDS_FILES "${TMX_DEPLOYMENT_DIR}/${TMX_SERVICE_NAME}.depends.*")
+                FOREACH (TMX_DEPENDS_FILE ${TMX_DEPENDS_FILES})
+                    GET_FILENAME_COMPONENT (DEPENDS "${TMX_DEPENDS_FILE}" LAST_EXT)
+                    STRING (SUBSTRING ${DEPENDS} 1 -1 DEPENDS)
+                    ADD_DEPENDENCIES (docker-image-${TMX_SERVICE_NAME} ${DEPENDS})
+                    MESSAGE(STATUS "Added dependency ${DEPENDS} to docker-image-${TMX_SERVICE_NAME}")
+                ENDFOREACH (TMX_DEPENDS_FILE ${TMX_DEPENDS_FILES})
+            ENDIF ()
 
-            ADD_CUSTOM_TARGET (deploy-${TMX_SERVICE_NAME}
-                                ${Docker} compose --project-directory "${TMX_DEPLOYMENT_DIR}" up -d ${TMX_SERVICE_NAME}
-                                DEPENDS docker-image-${TMX_SERVICE_NAME}
-                                COMMENT "Launching ${TMX_SERVICE_NAME} Docker environment")
+            IF (NOT TARGET docker-deploy-${TMX_SERVICE_NAME})
+                ADD_CUSTOM_TARGET (docker-deploy-${TMX_SERVICE_NAME}
+                                    ${Docker} compose --project-directory "${TMX_DEPLOYMENT_DIR}" up -d ${TMX_SERVICE_NAME}
+                                    DEPENDS docker-image-${TMX_SERVICE_NAME}
+                                    COMMENT "Launching ${TMX_SERVICE_NAME} Docker environment")
+            ENDIF ()
         ENDFOREACH (TMX_SERVICE_NAME ${TMX_SERVICES})
     ENDFOREACH (TMX_DEPLOYMENT ${TMX_CONTAINERS})
 

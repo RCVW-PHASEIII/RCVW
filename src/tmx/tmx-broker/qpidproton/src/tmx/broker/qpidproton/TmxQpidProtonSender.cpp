@@ -16,11 +16,9 @@
 #include <tmx/common/TmxTypeRegistry.hpp>
 #include <tmx/message/TmxMessage.hpp>
 
-#include <proton/connection.hpp>
 #include <proton/container.hpp>
-#include <proton/duration.hpp>
+#include <proton/connection_options.hpp>
 #include <proton/message.hpp>
-#include <proton/message_id.hpp>
 #include <proton/sender.hpp>
 #include <proton/sender_options.hpp>
 #include <proton/target.hpp>
@@ -37,112 +35,102 @@ namespace tmx {
 namespace broker {
 namespace qpidproton {
 
+class TmxQpidProtonSender: public TmxQpidProtonClient, public proton::messaging_handler {
+public:
+    TmxQpidProtonSender(TmxBrokerContext &ctx, TmxMessage msg): context(ctx), message(msg) { }
+
+    void on_sendable(proton::sender &) override;
+    void on_sender_open(proton::sender &) override;
+    void on_sender_close(proton::sender &) override;
+    void on_sender_detach(proton::sender &) override;
+    void on_sender_error(proton::sender &) override;
+    void on_tracker_settle(proton::tracker &) override;
+
+    TmxBrokerContext &context;
+    TmxMessage message;
+    proton::work_queue *_queue = nullptr;
+};
+
+static std::list<TmxQpidProtonSender> _senders;
+static std::mutex _sender_lock;
+
 void TmxQpidProtonClient::publish(TmxBrokerContext &ctx, TmxMessage const &msg) noexcept {
-    // Make a copy of the message
-    std::shared_ptr<TmxMessage> message;
-    try {
-        message = std::make_shared<TmxMessage>(msg);
-    } catch (std::exception &ex) {
-        this->on_published(ctx, { ex }, msg);
+    std::shared_ptr<TmxQpidProtonConnection> conn;
+
+    if (ctx.count("connection"))
+        conn = std::const_pointer_cast<TmxQpidProtonConnection>(types::as<TmxQpidProtonConnection>(ctx.at("connection")));
+
+    if (!conn) {
+        this->on_connected(ctx, { EINVAL, "Context " + ctx.get_id() + " was not initialized properly"});
         return;
     }
 
-    if (!this->is_connected(ctx)) {
-        std::string err{ "No connection established to " };
-        err.append(ctx.to_string());
-        err.append(". Current state is ");
-        err.append(enums::enum_name(ctx.get_state()));
-        err.append(".");
+    // AMPQ topic names have a dot separator instead of slash
+    std::string topic { msg.get_topic().c_str() };
+    std::replace(topic.begin(), topic.end(), std::filesystem::path::preferred_separator, '.');
 
-        this->on_published(ctx, { ENOTCONN, err }, *message);
-        return;
+    std::lock_guard<std::mutex> lock(_sender_lock);
+    _senders.emplace_back(ctx, msg);
+
+    proton::sender_options sendOpts = conn->container().sender_options();
+    sendOpts.handler(_senders.back());
+
+    // Handle quality of service
+    if (msg.get_QoS()) {
+        // TODO: Other settings?
+
+        // Ensure the tracker waits until accepted
+        sendOpts.delivery_mode(proton::delivery_mode::AT_LEAST_ONCE);
     }
 
-    this->get_container(ctx).schedule(proton::duration(), [this, &ctx, message]() -> void {
-         auto &connection = this->get_connection(ctx);
-
-        // Create a new sender for this topic and attach the message
-        connection.work_queue().add([&connection, message]() {
-            // AMPQ topic names have a dot separator instead of slash
-            std::string topic { message->get_topic().c_str() };
-            std::replace(topic.begin(), topic.end(), std::filesystem::path::preferred_separator, '.');
-
-            connection.open_sender(topic, connection.container().sender_options()).user_data(
-                    new decltype(message)(message));
-        });
-    });
+    // Create a new sender for this topic and attach the message
+    conn->container().open_sender(conn->url() + "/" + topic,
+        sendOpts, conn->container().client_connection_options());
 
     // Results will be determined asynchronously
     std::this_thread::yield();
 }
 
-void TmxQpidProtonClient::on_published(TmxBrokerContext &ctx, common::TmxError const &err,
-                                       message::TmxMessage const &msg) noexcept {
-    TmxBrokerClient::on_published(ctx, err, msg);
+void TmxQpidProtonSender::on_sender_open(proton::sender &sender) {
+    TLOG(DEBUG3) << "Enter " << TMX_PRETTY_FUNCTION << " for " << sender.container().id();
 
-    // See if the message failed due to a timeout waiting for a connection
-    // Try again if the quality of service is greater than 0
-    if (msg.get_QoS() && err.get_code() == ENOTCONN) {
-        const TmxData params { ctx.get_parameters() };
-
-        // Try again up to a certain number of times
-        int max = 5;
-        if (params["reconnect-max-attempts"])
-            max = params["reconnect-max-attempts"];
-
-        TLOG(INFO) << "Metadata: " << msg.get_metadata();
-
-        if (msg.get_attempt() > max) {
-            std::string err { "Dropping message to topic " };
-            err.append(msg.get_topic());
-            err.append(" with connection ");
-            err.append(ctx.get_id());
-            err.append(" after ");
-            err.append(std::to_string(max));
-            err.append(" attempts.");
-
-            TmxBrokerClient::on_published(ctx, { ETIME, err }, msg);
-            std::this_thread::yield();
-        } else {
-            TmxMessage tmp { msg };
-            tmp.set_attempt(msg.get_attempt() + 1);
-            this->publish(ctx, tmp);
-        }
-    }
+    // Remember this sender to clean up later
+    this->_queue = &(sender.work_queue());
+    sender.user_data(&this->message);
 }
 
-void TmxQpidProtonClient::on_sender_open(proton::sender &s) {
-    TLOG(DEBUG3) << "Enter " << TMX_PRETTY_FUNCTION << " for " << s.container().id();
+void TmxQpidProtonSender::on_sender_close(proton::sender &sender) {
+    TLOG(DEBUG3) << "Enter " << TMX_PRETTY_FUNCTION << " for " << sender.container().id();
+
+    auto queue = &(sender.work_queue());
+
+    // Remove the sender from the list
+    std::lock_guard<std::mutex> lock(_sender_lock);
+    _senders.remove_if([queue](auto const &other) ->bool {
+       return queue != nullptr && queue == other._queue;
+    });
+
+    sender.connection().close();
 }
 
-void TmxQpidProtonClient::on_sender_close(proton::sender &s) {
-    TLOG(DEBUG3) << "Enter " << TMX_PRETTY_FUNCTION << " for " << s.container().id();
+void TmxQpidProtonSender::on_sender_detach(proton::sender &sender) {
+    TLOG(DEBUG3) << "Enter " << TMX_PRETTY_FUNCTION << " for " << sender.container().id();
 }
 
-void TmxQpidProtonClient::on_sender_detach(proton::sender &s) {
-    TLOG(DEBUG3) << "Enter " << TMX_PRETTY_FUNCTION << " for " << s.container().id();
+void TmxQpidProtonSender::on_sender_error(proton::sender &sender) {
+    TLOG(DEBUG3) << "Enter " << TMX_PRETTY_FUNCTION << " for " << sender.container().id();
+
+    this->on_published(this->context, to_error(sender.error()), this->message);
 }
 
-void TmxQpidProtonClient::on_sender_error(proton::sender &s) {
-    TLOG(DEBUG3) << "Enter " << TMX_PRETTY_FUNCTION << " for " << s.container().id();
-
-    // We at least know the topic
-    TmxMessage tmp;
-    tmp.set_topic(TmxTypeRegistry(s.target().address()).get_namespace().data());
-
-    this->on_published(this->get_context(s.container().id()), this->to_error(s.error()), tmp);
-}
-
-void TmxQpidProtonClient::on_sendable(proton::sender &s) {
+void TmxQpidProtonSender::on_sendable(proton::sender &s) {
     TLOG(DEBUG3) << "Enter " << TMX_PRETTY_FUNCTION << " for " << s.container().id();
 
     // See if there is a message to send
-    auto msg = (std::shared_ptr<TmxMessage> *)s.user_data();
+    const auto msg = static_cast<TmxMessage *>(s.user_data());
     s.user_data(nullptr);
 
-    if (msg && msg->get()) {
-        auto const &message = *(msg->get());
-
+    if (msg) {
         if (!s.credit()) {
             std::string err{ "Dropping message with no credits for sender " };
             err.append(s.name());
@@ -151,7 +139,7 @@ void TmxQpidProtonClient::on_sendable(proton::sender &s) {
             err.append(" with connection ");
             err.append(s.container().id());
 
-            this->on_published(this->get_context(s.container()), { EBUSY, err }, message);
+            this->on_published(this->context, { EBUSY, err }, message);
             return;
         }
 
@@ -166,9 +154,9 @@ void TmxQpidProtonClient::on_sendable(proton::sender &s) {
         m.content_encoding(message.get_encoding());
         m.body(message.get_payload_string());
 
-        proton::timestamp ts{
-                std::chrono::duration_cast<std::chrono::milliseconds>(
-                        message.get_timepoint().time_since_epoch()).count()
+        proton::timestamp ts {
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                    message.get_timepoint().time_since_epoch()).count()
         };
         m.creation_time(ts);
 
@@ -184,37 +172,29 @@ void TmxQpidProtonClient::on_sendable(proton::sender &s) {
         m.delivery_count(message.get_attempt());
 
         // Always assign the TMX message to the tracker
-        s.send(m).user_data(new std::shared_ptr<TmxMessage>(*msg));
-    }
+        auto tracker = s.send(m);
 
-    delete msg;
+        // If no quality of service, just sending is enough
+        if (!message.get_QoS())
+            this->on_tracker_settle(tracker);
+    }
 }
 
-void TmxQpidProtonClient::on_tracker_settle(proton::tracker &t) {
-    TLOG(DEBUG3) << "Enter " << TMX_PRETTY_FUNCTION << " with " << t.container().id();
-
-    auto ptr = (std::shared_ptr<TmxMessage> *)t.user_data();
-
-    // We at least know the topic
-    TmxMessage tmp;
-    tmp.set_topic(TmxTypeRegistry(t.sender().target().address()).get_namespace().data());
-
-    if (ptr) {
-        tmp = *(ptr->get());
-        delete ptr;
-    }
+void TmxQpidProtonSender::on_tracker_settle(proton::tracker &tracker) {
+    TLOG(DEBUG3) << "Enter " << TMX_PRETTY_FUNCTION << " with " << tracker.container().id();
 
     std::string msg { "Message from sender "};
-    msg.append(t.sender().name());
+    msg.append(tracker.sender().name());
     msg.append(" ");
-    msg.append(enums::enum_name(t.state()).data());
+    msg.append(enums::enum_name(tracker.state()).data());
     msg.append(" on topic ");
-    msg.append(t.sender().target().address());
+    msg.append(tracker.sender().target().address());
     msg.append(" with connection ");
-    msg.append(t.sender().container().id());
+    msg.append(tracker.sender().container().id());
 
-    this->on_published(this->get_context(t.container().id()), { t.state() == proton::transfer::ACCEPTED ? 0 : (int)t.state(), msg }, tmp);
-    t.sender().close();
+    this->on_published(this->context,
+        { tracker.state() == proton::transfer::ACCEPTED ? 0 : (int)tracker.state(), msg }, this->message);
+    tracker.sender().close();
 }
 
 } /* End namespace qpidproton */

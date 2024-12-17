@@ -61,7 +61,7 @@ size_t splitWord(std::vector<Word> &words, T value, size_t pos) {
 }
 
 template <typename RtcmTraits, char N>
-tmx::byte_t get_Bit(const typename RtcmTraits::data_type &word) {
+tmx::common::byte_t get_Bit(const typename RtcmTraits::data_type &word) {
 	static_assert(N <= RtcmTraits::size, "There are not that many bits in the RTCM word.");
 	static constexpr char bit = RtcmTraits::size - N;
 	return (word >> bit) & 0x01;
@@ -70,7 +70,7 @@ tmx::byte_t get_Bit(const typename RtcmTraits::data_type &word) {
 template <char Bit, char... OtherBits>
 struct bit_manipulator {
 	template <typename RtcmTraits>
-	static tmx::byte_t xor_bits(const typename RtcmTraits::data_type &word) {
+	static tmx::common::byte_t xor_bits(const typename RtcmTraits::data_type &word) {
 		return get_Bit<RtcmTraits, Bit>(word) ^
 				bit_manipulator<OtherBits...>::template xor_bits<RtcmTraits>(word);
 	}
@@ -79,7 +79,7 @@ struct bit_manipulator {
 template <char Bit>
 struct bit_manipulator<Bit> {
 	template <typename RtcmTraits>
-	static tmx::byte_t xor_bits(const typename RtcmTraits::data_type &word) {
+	static tmx::common::byte_t xor_bits(const typename RtcmTraits::data_type &word) {
 		return get_Bit<RtcmTraits, Bit>(word);
 	}
 };

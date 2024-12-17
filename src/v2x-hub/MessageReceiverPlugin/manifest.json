@@ -3,24 +3,34 @@
 	"description":"Plugin to receive messages from an external C-V2X radio or other source",
 	"version":"@PROJECT_VERSION@",
 	"exe": "bin/@PROJECT_NAME@",
-	"channels":[
+	"channels": [
 		{
+			"comment": "TMX core connection. Must use unique IDs for Kafka.",
 			"context": "kafka://localhost:29092",
 			"config": {
-				"topics": "gpsd/"
+				"auto-subscribe": false,
+				"write-only": true,
+				"topics": "^(J2735|tmx|gpsd)/",
+				"thread-count": 4,
+				"thread-assignment": "RoundRobin",
+				"global": {
+					"auto.offset.reset": "end"
+				}
 			}
 		},
 		{
+			"comment": "Listener for C-V2X Radio and/or V2X Hub Simulator messages",
 			"id": "listener",
-			"context": "udp-d://0.0.0.0:24601",
+			"context": "udp-d://0.0.0.0:26789",
 			"config": {
 				"auto-publish": false,
 				"read-only": true,
-				"topics": "^UNKNOWN$",
-				"thread-count": 2,
+				"topics": "^UNKNOWN",
+				"thread-count": 6,
 				"thread-assignment": "ShortestQueue"
 			}
 		}
 	],
-	"status-Hz": 60
+	"status-Hz": 1,
+	"loglevel": "DEBUG"
 }

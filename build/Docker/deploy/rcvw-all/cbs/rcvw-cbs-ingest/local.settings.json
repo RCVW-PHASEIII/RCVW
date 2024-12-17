@@ -1,0 +1,10 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "AZURE_SQL_CONNECTIONSTRING": "DRIVER={ODBC Driver 18 for SQL Server};SERVER=tcp:rcvw-db-server.database.windows.net;PORT=1433;DATABASE=rcvw-db;UID=rcvwAdmin;PWD={qaWAN+8R8Hd?B98Te55gJ4};Encrypt=Yes;Connection Timeout=30",
+    "AzureWebJobsFeatureFlags": "EnableWorkerIndexing",
+    "AzureWebJobsStorage": "",
+    "rcvwcbssb_CBSReceiver_SERVICEBUS": "Endpoint=sb://rcvwcbssb.servicebus.windows.net/;SharedAccessKeyName=CBSReceiver;SharedAccessKey=hdJ+udbmcmgoM9BZvGm/0P0yHpXKt/NZt+ASbAxAnwg="
+  }
+}

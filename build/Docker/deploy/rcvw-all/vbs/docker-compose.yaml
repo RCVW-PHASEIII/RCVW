@@ -1,0 +1,402 @@
+services:
+  vbs-plugin:
+    depends_on:
+      kafka:
+        condition: service_healthy
+        required: true
+    image: ${RCVW_VBS_IMAGE:-rcvw-vbs}:${RCVW_VBS_VERSION:-4.0.0}
+    entrypoint: /bin/bash
+    hostname: "rcvw-vbs-${RCVW_VBS_VEHICLE:-0}"
+    network_mode: "host"
+    dns:
+      - 10.65.255.17
+      - 10.65.255.18
+      - 8.8.8.8
+    logging:
+      driver: journald
+    restart: no
+    user: "plugin"
+    stop_signal: SIGTERM
+    working_dir: /var/tmp
+    volumes:
+      - ${RCVW_GPS:-/dev/ttyGPS}:/dev/gps
+      - /etc/services:/etc/services
+    profiles:
+      - vbs
+    environment:
+      TMX_APP: ${TMX_APP:-RCVW}                         # Name for this TMX application
+      RCVW_COMPONENT: ${TMX_COMPONENT:-VBS}             # Name for this TMX application sub-component
+
+  vbs-dgps:
+    extends:
+      service: vbs-plugin
+    restart: always
+    entrypoint:
+      - /usr/local/bin/tmxctl
+      - --start
+      - ${TMX_APP:-RCVW}-${TMX_COMPONENT:-VBS}-DGPS
+    privileged: true
+    user: "root"
+    configs:
+      - source: rcvw-dgps-config
+        target: /var/lib/plugin/DifferentialGPS/manifest.json
+        uid: "999"
+        gid: "999"
+
+  vbs-recv:
+    extends:
+      service: vbs-plugin
+    restart: always
+    entrypoint:
+      - /usr/local/bin/tmxctl
+      - --start
+      - ${TMX_APP:-RCVW}-${TMX_COMPONENT:-VBS}-RECV
+    configs:
+      - source: rcvw-recv-config
+        target: /var/lib/plugin/MessageReceiver/manifest.json
+        uid: "999"
+        gid: "999"
+
+  vbs-cvi:
+    extends:
+      service: vbs-plugin
+    profiles:
+      - cvinspector
+    entrypoint:
+      - /usr/local/bin/tmxctl
+      - --start
+      - ${TMX_APP:-RCVW}-${TMX_COMPONENT:-VBS}-CVI
+    configs:
+      - source: rcvw-cvi-config
+        target: /var/lib/plugin/CVI/manifest.json
+        uid: "999"
+        gid: "999"
+
+  vbs-rcvw:
+    extends:
+      service: vbs-plugin
+    entrypoint:
+      - /usr/local/bin/tmxctl
+      - --start
+      - ${TMX_APP:-RCVW}-${TMX_COMPONENT:-VBS}-RCVW
+    restart: always
+    configs:
+      - source: rcvw-rcvw-config
+        target: /var/lib/plugin/RCVW/manifest.json
+        uid: "999"
+        gid: "999"
+
+  vbs-kafka2ws:
+    image: stefanat/kafka2websocket
+    restart: always
+    entrypoint: ./kafka_ws
+    network_mode: host
+    profiles:
+      - vbs
+    environment:
+      WS_PORT: 24603
+      WS_HOST: 0.0.0.0
+      KAFKA_HOST_PORT: 29092
+      KAFKA_TOPIC: V2X.Application
+    depends_on:
+      - vbs-rcvw
+
+  vbs-hmi:
+    image: httpd:2.4
+    restart: always
+    hostname: "rcvw-vbs-${RCVW_VBS_VEHICLE:-0}"
+    network_mode: host
+    entrypoint:
+      - httpd-foreground
+      - -C
+      - "Include conf/${TMX_APP:-RCVW}-${TMX_COMPONENT:-VBS}-httpd.conf"
+      - -c
+      - "ServerName rcvw-vbs-${RCVW_VBS_VEHICLE:-0}"
+    profiles:
+      - vbs
+    volumes_from:
+      - vbs-rcvw
+    depends_on:
+      - vbs-rcvw
+    configs:
+      - source: httpd-config
+        target: /usr/local/apache2/conf/${TMX_APP:-RCVW}-${TMX_COMPONENT:-VBS}-httpd.conf
+
+  vbs-autogps:
+    extends:
+      service: vbs-plugin
+    restart: no
+    entrypoint:
+      - /usr/local/bin/configure-ubx.sh
+    environment:
+      GPS_INPUT: /dev/gps
+      # Begin GPS configuration
+      CFG_RATE_MEAS: 100
+      CFG_NAVSPG_DYNMODEL: 4
+      CFG_NMEA_PROTVER: 41
+      CFG_NMEA_HIGHPREC: 1
+      CFG_RATE_TIMEREF: 1
+      CFG_UART1_BAUDRATE: 115200
+      CFG_UART1INPROT_UBX: 1
+      CFG_UART1INPROT_NMEA: 0
+      CFG_UART1INPROT_RTCM3X: 1
+      CFG_UART1OUTPROT_UBX: 1
+      CFG_UART1OUTPROT_NMEA: 1
+      CFG_UART1OUTPROT_RTCM3X: 0
+      CFG_USBINPROT_UBX: 1
+      CFG_USBINPROT_NMEA: 1
+      CFG_USBINPROT_RTCM3X: 1
+      CFG_USBOUTPROT_UBX: 1
+      CFG_USBOUTPROT_NMEA: 1
+      CFG_USBOUTPROT_RTCM3X: 0
+      CFG_MSGOUT_UBX_NAV_PVT_USB: 1
+      CFG_MSGOUT_UBX_NAV_SVIN_USB: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1005_UART1: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1074_UART1: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1084_UART1: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1094_UART1: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1124_UART1: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1230_UART1: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1005_USB: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1074_USB: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1084_USB: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1094_USB: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1124_USB: 0
+      CFG_MSGOUT_RTCM_3X_TYPE1230_USB: 0
+      CFG_TMODE_MODE: 0
+      CFG_TMODE_POS_TYPE: 1
+      CFG_TMODE_LAT: 0
+      CFG_TMODE_LON: 0
+      CFG_TMODE_HEIGHT: 0
+
+  vbs-gpsd:
+    image: boimar/gpsd
+    restart: always
+    privileged: true
+    user: root
+    entrypoint:
+      - /usr/sbin/gpsd
+      - -N
+      - -n
+      - -G
+      - -s
+      - "115200"
+      - ${RCVW_GPS:-/dev/ttyGPS}
+    ports:
+      - 2947:2947
+    volumes:
+      - ${RCVW_GPS:-/dev/ttyGPS}:${RCVW_GPS:-/dev/ttyGPS}
+    profiles:
+      - vbs
+
+  rcvw-vbs:
+    build:
+      context: ../../../..
+      dockerfile: Docker/deploy/rcvw-all/vbs/runtime-vbs/Dockerfile
+      args:
+        - TMX_ARCH=${TMX_ARCH:-amd64}
+        - TMX_CONFIG=${TMX_CONFIG:-Debug}
+        - TMX_VERSION=${TMX_VERSION:-4.0.0}
+    extends:
+      service: vbs-plugin
+    depends_on:
+      - vbs-autogps
+      - vbs-dgps
+      - vbs-recv
+      - vbs-rcvw
+      - vbs-kafka2ws
+
+configs:
+  rcvw-dgps-config:
+    content: |
+      {
+        "name":"${TMX_APP:-RCVW}-${TMX_COMPONENT:-VBS}-DGPS",
+        "description":"Applies Differential GPS corrections, namely RTCM, to the on-board GPS device.",
+        "version":"${RCVW_VBS_VERSION:-4.0.0}",
+        "exe": "bin/DifferentialGPSPlugin",
+        "channels": [
+          {
+            "comment": "TMX core connection. Must use unique IDs for Kafka.",
+            "context": "kafka://localhost:29092",
+            "config": {
+              "topics": "^(J2735|tmx)/(plugin|RTCM)",
+              "thread-count": 3,
+              "thread-assignment": "ShortestQueue",
+              "global": {
+                "auto.offset.reset": "end"
+              }
+            }
+          }
+        ],
+        "device": "/dev/gps",
+        "loglevel": "${RCVW_VBS_DGPS_DEBUG:-DEBUG}"
+      }
+
+  rcvw-recv-config:
+    content: |
+      {
+        "name": "${TMX_APP:-RCVW}-${TMX_COMPONENT:-VBS}-RECV",
+        "description": "Plugin to receive messages from an external DSRC radio or other source",
+        "version": "${RCVW_VBS_VERSION:-4.0.0}",
+        "exe": "bin/MessageReceiverPlugin",
+        "channels": [
+          {
+            "comment": "TMX core connection. Must use unique IDs for Kafka.",
+            "context": "kafka://localhost:29092",
+            "config": {
+              "auto-subscribe": false,
+              "write-only": true,
+              "topics": "^(J2735|tmx|gpsd)/",
+              "thread-count": 4,
+              "thread-assignment": "RoundRobin",
+              "global": {
+                "auto.offset.reset": "end"
+              }
+            }
+          },
+          {
+            "comment": "Listener for C-V2X Radio and/or V2X Hub Simulator messages",
+            "id": "listener",
+            "context": "udp-d://0.0.0.0:${RCVW_OBU_FWD_PORT:-26789}",
+            "config": {
+              "auto-publish": false,
+              "read-only": true,
+              "topics": "^UNKNOWN",
+              "thread-count": 6,
+              "thread-assignment": "ShortestQueue"
+            }
+          }
+        ],
+        "status-Hz": 1,
+        "loglevel": "${RCVW_VBS_RECV_DEBUG:-DEBUG}"
+      }
+
+  rcvw-cvi-config:
+    content: |
+      {
+        "name":"${TMX_APP:-RCVW}-${TMX_COMPONENT:-VBS}-CVI",
+        "description":"Plugin used to forward decoded J2735 message to a tablet running an old version of CV Inspector. This is meant as a stop gap solution until CV inspector can be updated to directly use TMX messages from Kafka or AMQP.",
+        "version":"${RCVW_VBS_VERSION:-4.0.0}",
+        "exe": "bin/CVInspectorPlugin",
+        "channels":[
+          {
+            "comment": "TMX core connection. Must use unique IDs for Kafka.",
+            "context": "kafka://localhost:29092",
+            "config": {
+              "auto-publish": false,
+              "read-only": true,
+              "topics": "^(Decoded|J2735|tmx)/",
+              "thread-count": 3,
+              "thread-assignment": "ShortestQueue",
+              "global": {
+                "auto.offset.reset": "end"
+              }
+            }
+          },
+          {
+            "id": "tablet",
+            "context": "udp://${RCVW_CV_INSPECTOR_IP:-tmx-cvi}:4387",
+            "config": {
+              "auto-subscribe": false,
+              "write-only": true,
+              "topics": "Decoded/J2735/(SPAT|MAP|BSM|TIM)$"
+            }
+          }
+        ],
+        "repair-file": "usr/local/share/tmx/${TMX_APP:-RCVW}/treerepair.xml"
+      }
+
+  rcvw-rcvw-config:
+    content: |
+      {
+        "name": "${TMX_APP:-RCVW}-${TMX_COMPONENT:-VBS}-RCVW",
+        "description": "Application that creates RCVW Alerts and Warnings",
+        "version": "${RCVW_VBS_VERSION:-4.0.0}",
+        "exe": "bin/RCVWPlugin",
+        "channels": [
+          {
+            "comment": "TMX core connection. Must use unique IDs for Kafka.",
+            "context": "kafka://localhost:29092",
+            "config": {
+              "topics": "^(J2735|V2X|tmx)/",
+              "thread-count": 5,
+              "thread-assignment": "ShortestQueue",
+              "global": {
+                "auto.offset.reset": "end"
+              }
+            }
+          },
+          {
+            "comment": "GPSd connection for location information",
+            "id": "GPSd",
+            "context": "gpsd://localhost",
+            "config": {
+              "auto-publish": false,
+              "read-only": true,
+              "topics": "^gpsd/",
+              "thread-count": 1,
+              "thread-assignment": "RoundRobin"
+            }
+          }
+        ],
+        "loglevel": "${RCVW_VBS_RCVW_DEBUG:-DEBUG}",
+        "Distance To HRI": 2000.0,
+        "Extended Intersection": 0.1,
+        "Friction": 0.8,
+        "HRI Locations": [
+          {
+            "Latitude": 39.9570244,
+            "Longitude": -83.2478429,
+            "HRIName": "Battelle West Jefferson"
+          }
+        ],
+        "HRI Warning Threshold Speed": 1.0,
+        "Message Expiration": 2000,
+        "Output Interface": 0,
+        "Reaction Time": 1.0,
+        "Safety Offset": 1.5,
+        "Use Calculated Deceleration": false,
+        "V2 Application Latency": 0.085,
+        "V2 Check Location Frequency": true,
+        "V2 Check RTK": true,
+        "V2 Communication Latency": 0.3,
+        "V2 Critical Message Expiration": 500,
+        "V2 Deceleration Car": 3.4,
+        "V2 Deceleration Heavy Truck": 2.322,
+        "V2 Deceleration Light Truck": 2.148,
+        "V2 GPS Error": 3.12,
+        "V2 Grade": 0,
+        "V2 Location Frequency Sample Size": 30,
+        "V2 Log SPAT": true,
+        "V2 Max Heading Change": 90.0,
+        "V2 Max Ignored Positions": 2,
+        "V2 Minimum Location Frequency": 4,
+        "V2 Reaction Time": 2.5,
+        "V2 Use Config Grade": false,
+        "V2 Use VBM Deceleration": false,
+        "V2 Antenna Placement X": "${RCVW_VBS_ANTENNA_X:?Missing antenna location measurement (X).}",
+        "V2 Antenna Placement Y": "${RCVW_VBS_ANTENNA_Y:?Missing antenna location measurement (Y).}",
+        "V2 Antenna Height": "${RCVW_VBS_ANTENNA_HEIGHT:?Missing antenna location measurement (Z).}",
+        "V2 Vehicle Type": "${RCVW_VBS_TYPE:-1}",
+        "V2 Vehicle Length": "${RCVW_VBS_LENGTH:-4.8}"
+      }
+
+  httpd-config:
+    content: |
+      <VirtualHost *:80>
+        ServerAdmin baumgardner@battelle.org  
+
+        DocumentRoot /var/www/html
+        <Directory />
+          Options FollowSymLinks
+          AllowOverride None
+          Allow from all
+          Require all granted
+        </Directory>
+        <Directory /var/www/html>
+          Options Indexes FollowSymLinks MultiViews
+          AllowOverride None
+          Allow from all
+          Require all granted
+        </Directory>
+      </VirtualHost>

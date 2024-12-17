@@ -321,9 +321,16 @@ void TmxNetSnmpBrokerClient::initialize(TmxBrokerContext &ctx) noexcept {
 void TmxNetSnmpBrokerClient::destroy(TmxBrokerContext &ctx) noexcept {
     shutdown_mib();
 
-    if (this->is_connected(ctx))
+    bool connected = false;
+    {
+        std::lock_guard<std::mutex> lock(ctx.get_thread_lock());
+        connected = this->is_connected(ctx);
+    }
+
+    if (connected)
         this->disconnect(ctx);
 
+    std::lock_guard<std::mutex> lock(ctx.get_thread_lock());
     if (ctx.count(_session)) {
         auto session = tmx::common::types::as<snmp_session>(ctx.at(_session));
         close_snmp(session.get());
@@ -334,6 +341,7 @@ void TmxNetSnmpBrokerClient::destroy(TmxBrokerContext &ctx) noexcept {
 }
 
 void TmxNetSnmpBrokerClient::disconnect(TmxBrokerContext &ctx) noexcept {
+    std::lock_guard<std::mutex> lock(ctx.get_thread_lock());
     ctx.erase(_handle);
     TmxBrokerClient::disconnect(ctx);
 }
@@ -393,6 +401,7 @@ void TmxNetSnmpBrokerClient::publish(TmxBrokerContext &ctx, message::TmxMessage 
         types::Any results;
         result = this->snmp_get(ctx, oids, results);
         this->on_published(ctx, result, msg);
+        this->disconnect(ctx);
 
         if (!result) {
             // Encode the message
@@ -456,10 +465,17 @@ void TmxNetSnmpBrokerClient::unsubscribe(TmxBrokerContext &ctx, const_string top
 TmxError TmxNetSnmpBrokerClient::snmp_get(TmxBrokerContext &ctx,
                                           types::Properties<types::Any> const &oids,
                                           common::types::Any &results) const noexcept {
+    std::shared_ptr<snmp_session> session;
+    {
+        std::lock_guard<std::mutex> lock(ctx.get_thread_lock());
+        if (ctx.count(_handle))
+            session = tmx::common::types::as<snmp_session>(ctx.at(_handle));
+    }
+
     if (!this->is_connected(ctx))
         return { 1, "Broker context " + ctx.to_string() + " is not connected."};
 
-    auto session = tmx::common::types::as<snmp_session>(ctx.at(_handle));
+    session = tmx::common::types::as<snmp_session>(ctx.at(_handle));
     if (!session)
         return { 2, "Broker context " + ctx.to_string() + " not connected properly." };
 
@@ -546,10 +562,12 @@ TmxError TmxNetSnmpBrokerClient::snmp_set(TmxBrokerContext &ctx,
                                           types::Properties<common::types::Any> const &oids) const noexcept {
     TLOG(DEBUG3) << "Enter " << TMX_PRETTY_FUNCTION;
 
-    if (!this->is_connected(ctx))
-        return { 1, "Broker context " + ctx.to_string() + " is not connected."};
-
-    auto session = tmx::common::types::as<snmp_session>(ctx.at(_handle));
+    std::shared_ptr<snmp_session> session;
+    {
+        std::lock_guard<std::mutex> lock(ctx.get_thread_lock());
+        if (ctx.count(_handle))
+            session = tmx::common::types::as<snmp_session>(ctx.at(_handle));
+    }
     if (!session)
         return { 2, "Broker context " + ctx.to_string() + " not connected properly." };
 

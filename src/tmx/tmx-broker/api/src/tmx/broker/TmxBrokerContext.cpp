@@ -128,8 +128,6 @@ TmxBrokerContext::TmxBrokerContext(TmxBrokerContext const &copy) noexcept:
 }
 
 TmxBrokerContext::~TmxBrokerContext() {
-    this->clear();
-
     this->get_receive_sem().notify_all();
     this->get_publish_sem().notify_all();
 }
@@ -178,11 +176,11 @@ std::condition_variable_any &TmxBrokerContext::get_receive_sem() noexcept {
 }
 
 Any &TmxBrokerContext::get_parameters() noexcept {
-    return this->at("parameters");
+    return (this->count("parameters") ? this->at("parameters") : no_data());
 }
 
 Any const &TmxBrokerContext::get_defaults() const noexcept {
-    return this->at("defaults");
+    return (this->count("defaults") ? this->at("defaults") : no_data());
 }
 
 TmxBrokerState TmxBrokerContext::get_state() const noexcept {
@@ -269,7 +267,7 @@ String_ TmxBrokerContext::to_string() const noexcept {
         //ss << "/" << this->get_path();
         ss << this -> get_path();
 
-    return ss.str();
+    return { ss.str().c_str() };
 }
 
 } /* End namespace broker */

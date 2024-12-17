@@ -157,6 +157,14 @@ tmx_dao_attribute(rtcm::RTCM3Word, CRC, 0);
 
     inline rtcm::msgtype_type get_message_type() const noexcept override { return this->get_MessageNumber(); }
 
+    inline common::const_string get_message_name() const noexcept override {
+        auto val = common::enums::enum_cast<message::v2x::rtcm::RTCM3_MESSAGE_TYPE>(this->get_MessageNumber());
+        if (val)
+            return common::enums::enum_name(val.value());
+        else
+            return TmxRtcmMessage::get_message_name();
+    }
+
     inline rtcm::RTCM3Word get_header() const noexcept {
         return common::types::pack(this->get_Preamble(), this->get_Reserved(), this->get_MessageLength());
     }
@@ -383,12 +391,6 @@ RtcmDecoder<v2x::rtcm::RTCM_VERSION::SC10403_3>::decode(common::byte_sequence co
     auto msgId = msg.get_MessageNumber();
     auto staId = msg.get_ReferenceStationID();
     common::types::unpack(word, msgId, staId);
-
-    if (!common::enums::enum_contains<v2x::rtcm::RTCM3_MESSAGE_TYPE>(*msgId)) {
-        err.append("Invalid RTCM3 message number: ");
-        err.append(std::to_string(*msgId));
-        return { EBADMSG, err };
-    }
 
     msg.set_MessageNumber(*msgId);
     msg.set_ReferenceStationID(*staId);

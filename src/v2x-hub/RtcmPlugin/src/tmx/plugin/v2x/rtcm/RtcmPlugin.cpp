@@ -112,25 +112,76 @@ void RtcmPlugin::on_gga_received(types::Any const &, message::TmxMessage const &
     this->_gga = msg.get_payload_string();
 }
 
-#ifndef IGNORE_RTCM3
-void RtcmPlugin::on_rtcmmsg_received(message::v2x::rtcm::RTCM3Message const &rtcm3Msg, message::TmxMessage const &msg) {
+void RtcmPlugin::on_rtcmmsg_received(std::string const &encoded, message::TmxMessage const &msg) {
     TLOG(DEBUG3) << "Enter " << TMX_PRETTY_FUNCTION << " with " << msg.to_string();
 
-    if (!rtcm3Msg.is_valid())
+    // Get the bytes
+    auto msgBytes = byte_string_decode(encoded.empty() ? msg.get_payload_string() : encoded);
+    if (msgBytes.empty()) {
+        this->broadcast<TmxError>({ EINVAL, "Invalid RTCM payload: " + encoded },
+            this->get_topic("error"), __FUNCTION__);
         return;
-
-    auto msgType = enums::enum_cast<message::v2x::rtcm::RTCM3_MESSAGE_TYPE>(rtcm3Msg.get_MessageNumber());
-
-    TLOG(DEBUG1) << "Received RTCM3 "
-                 << (msgType.has_value() ? enums::enum_name(msgType.value()) : std::to_string(rtcm3Msg.get_MessageNumber()))
-                 << " message of " << rtcm3Msg.get_MessageLength() << " bytes.";
-
-    // See if the topic is from the NTRIP context
-    std::shared_ptr<TmxChannel> ntrip;
-    {
-        std::lock_guard<std::mutex> lock(this->_lock);
-        ntrip = this->get_channel(this->_ntrip);
     }
+
+    message::v2x::rtcm::TmxRtcmMessage *rtcmDecoded = nullptr;
+
+    // By default, need to all revisions
+    RTCM_Revision revision = RTCM_Revision::RTCM_Revision_unknown;
+
+    // These should all be incoming to a V2X/RTCM topic
+    if (msg.get_topic() == "V2X/RTCM3")
+        revision = RTCM_Revision::RTCM_Revision_rtcmRev3;
+    else if (msg.get_topic() == "V2X/RTCM2")
+        revision = RTCM_Revision::RTCM_Revision_rtcmRev2;
+
+#ifndef IGNORE_RTCM3
+    message::v2x::rtcm::RTCM3Message rtcm3Msg;
+    rtcmDecoded = &rtcm3Msg;
+
+    auto decoder3 = message::codec::TmxDecoder::get_decoder(rtcmDecoded->get_version_name());
+    if (!decoder3) {
+        this->broadcast<TmxError>({ ENOTSUP, "Missing RTCM decoder " + rtcmDecoded->get_version_name() },
+            this->get_topic("error"), __FUNCTION__);
+        return;
+    }
+
+    auto err3 = decoder3->decode(rtcm3Msg, to_byte_sequence(msgBytes.data(), msgBytes.length()));
+    if (err3 && revision == RTCM_Revision::RTCM_Revision_rtcmRev3) {
+        this->broadcast<TmxError>(err3, this->get_topic("error"), __FUNCTION__);
+        return;
+    }
+#endif
+#ifndef IGNORE_RTCM2
+    message::v2x::rtcm::RTCM2Message rtcm2Msg;
+    rtcmDecoded = &rtcm2Msg;
+
+    auto decoder2 = message::codec::TmxDecoder::get_decoder(rtcmDecoded->get_version_name());
+    if (!decoder2) {
+        this->broadcast<TmxError>({ ENOTSUP, "Missing RTCM decoder " + rtcmDecoded->get_version_name() },
+            this->get_topic("error"), __FUNCTION__);
+        return;
+    }
+
+    auto err2 = decoder3->decode(rtcm2Msg, to_byte_sequence(msgBytes.data(), msgBytes.length()));
+    if (err2) {
+        this->broadcast<TmxError>(err2, this->get_topic("error"), __FUNCTION__);
+        return;
+    }
+#endif
+
+    // Check for a valid RTCM message incoming from another topic
+    // The default incoming V2X messages will not have a  auto-decoded
+    if (!rtcmDecoded || !rtcmDecoded->is_valid()) {
+        this->broadcast<TmxError>({ EBADMSG, "No valid RTCM message can be decoded from " + encoded },
+                this->get_topic("error"), __FUNCTION__);
+        return;
+    }
+
+    auto msgType = rtcmDecoded->get_message_name();
+
+    TLOG(DEBUG1) << "Received RTCM" << (int)rtcmDecoded->get_version() << " "
+                 << (msgType.empty() ? std::to_string(rtcmDecoded->get_message_type()) : msgType)
+                 << " message of " << msgBytes.length() << " bytes.";
 
     MessageFrame frame;
 
@@ -143,14 +194,13 @@ void RtcmPlugin::on_rtcmmsg_received(message::v2x::rtcm::RTCM3Message const &rtc
     rtcm.regional = nullptr;
     rtcm.rtcmHeader = nullptr;
 
-    if (this->_count > 127)
+    if (this->_count > 127) {
         this->_count = 0;
+        this->_increment++;
+    }
 
     rtcm.msgCnt = this->_count++;
-    rtcm.rev = RTCM_Revision_rtcmRev3;
-
-    // Get the bytes
-    auto msgBytes = byte_string_decode(msg.get_payload_string());
+    rtcm.rev = revision;
 
     // TODO: Support JSON encoded RTCM message
     typename std::chrono::system_clock::duration td { msg.get_timestamp() };
@@ -195,10 +245,10 @@ void RtcmPlugin::on_rtcmmsg_received(message::v2x::rtcm::RTCM3Message const &rtc
         j2735Msg.set_payload(byte_string_encode(to_byte_sequence(buffer, result.encoded)));
         j2735Msg.set_encoding("asn.1-uper");
 
+        // Broadcast the J2735 encoded RTCM corrections message
         this->broadcast(j2735Msg);
     }
 }
-#endif
 
 void RtcmPlugin::on_rtcm_received(message::TmxData const &data, message::TmxMessage const &msg) {
     TLOG(DEBUG3) << "Enter " << TMX_PRETTY_FUNCTION << " with " << msg.to_string();
@@ -300,8 +350,13 @@ void RtcmPlugin::on_rtcm_received(message::TmxData const &data, message::TmxMess
 
     codec.get_message().set_timestamp(msg.get_timestamp());
     codec.get_message().set_topic("V2X/RTCM3");
+
+    // This is now a singular encoded RTCM message
+    // So, re-broadcast to the V2X topic reach other destinations
     this->broadcast(codec.get_message());
-    this->invoke_handlers(rtcm3Msg, codec.get_message());
+
+    // Also, convert to tge J2735 message
+    this->on_message_received(codec.get_message());
 #endif
 }
 
@@ -319,6 +374,9 @@ common::TmxError RtcmPlugin::main() noexcept {
             gga = this->_gga;
             ntrip = this->_ntrip;
         }
+
+        auto sent = this->_increment * 127 + this->_count;
+        this->set_status("RTCM messages sent", sent);
 
         // No need to do anything without an NTRIP channel
         auto channel = this->get_channel(ntrip);

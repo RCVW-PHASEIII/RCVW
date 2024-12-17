@@ -154,12 +154,12 @@ void TmxPlugin::on_message_received<TmxData const, std::true_type>(TmxData const
     // Only update those RSUs that are already detected
     TmxData const &RSUs = this->get_config("RSUs", &(plugin->_dataLock));
 
-//    for (auto rsu: RSUs.to_map()) {
-//        if (v2x::RSU::_updateThrottle.Monitor(rsu.first)) {
-//            v2x::RSU::next_request(v2x::RSU::handle_rsu_mib{ }, this);
-//            v2x::RSU::next_request(v2x::RSU::handle_msg_stats{ }, this);
-//        }
-//    }
+    for (auto rsu: RSUs.to_map()) {
+        if (v2x::RSU::_updateThrottle.Monitor(rsu.first)) {
+            v2x::RSU::next_request(v2x::RSU::handle_rsu_mib{ }, this);
+            v2x::RSU::next_request(v2x::RSU::handle_msg_stats{ }, this);
+        }
+    }
 }
 
 // The SNMP handlers
@@ -224,9 +224,6 @@ void TmxPlugin::on_message_received<TmxData const, v2x::RSU::handle_msg_stats>(T
 template <>
 void TmxPlugin::on_message_received<TmxData const, v2x::RSU::handle_ifm_mib>(TmxData const &data,
                                                                              TmxMessage const &msg) {
-    static std::mutex _singleExec;
-    std::lock_guard<std::mutex> lock(_singleExec);
-
     TLOG(DEBUG) << std::this_thread::get_id() << ": Enter " << TMX_PRETTY_FUNCTION << " with " << msg.to_string();
 
     auto plugin = dynamic_cast<v2x::RSU::RSUImmediateForwardPlugin *>(this);
@@ -336,8 +333,8 @@ void RSUImmediateForwardPlugin::init() noexcept {
     // Update the SNMP information at least every second
     _updateThrottle.set_Frequency(std::chrono::seconds(1));
 
-    // Update the IFM table at least every 30 seconds
-    _cfgThrottle.set_Frequency(_updateThrottle.get_Frequency() * 30);
+    // Update the IFM table once per minute
+    _cfgThrottle.set_Frequency(std::chrono::minutes(1));
 }
 
 } /* End namespace RSU */

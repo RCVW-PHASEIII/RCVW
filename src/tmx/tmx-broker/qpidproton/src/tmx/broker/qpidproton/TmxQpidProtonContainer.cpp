@@ -13,6 +13,7 @@
 
 #include <tmx/common/TmxLogger.hpp>
 #include <tmx/common/TmxTypeRegistrar.hpp>
+#include <tmx/message/codec/serializer/TmxDataSerializer.hpp>
 
 #include <proton/container.hpp>
 #include <proton/connection.hpp>
@@ -25,69 +26,109 @@
 #include <proton/target_options.hpp>
 #include <proton/terminus.hpp>
 
+#include <atomic>
 #include <thread>
 
 using namespace tmx::common;
 using namespace tmx::message;
+using namespace tmx::message::codec::serializer;
 
 namespace tmx {
 namespace broker {
 namespace qpidproton {
 
-// Register the broker client
-static TmxTypeRegistrar< TmxQpidProtonClient > _qpid_proton_registrar;
+static std::list<TmxQpidProtonConnection> _containers;
+static std::mutex _map_lock;
 
-static typename types::Properties<TmxBrokerContext *> _ctx_map;
+TmxQpidProtonConnection::TmxQpidProtonConnection(TmxBrokerContext &ctx): _context(ctx),
+    _container(new proton::container(*this, ctx.get_id())),
+    _thread(std::bind(&TmxQpidProtonConnection::event_loop, this)) {
 
-TmxBrokerContext &TmxQpidProtonClient::get_context(proton::container const &c) noexcept {
+    // Save this connection back to the context
+    static typename types::Properties_::key_t key("connection");
+    ctx[key].emplace<std::shared_ptr<TmxQpidProtonConnection> >(this, [](auto *) { });
+}
+
+TmxBrokerContext &TmxQpidProtonConnection::context() noexcept {
+    return this->_context;
+}
+
+proton::container &TmxQpidProtonConnection::container() noexcept {
+    return *(this->_container);
+}
+
+std::string const &TmxQpidProtonConnection::url() const noexcept {
+    return this->_url;
+}
+
+TmxBrokerContext &to_context(proton::container const &container) noexcept {
     static TmxBrokerContext _empty;
 
-    if (_ctx_map.count(c.id())) {
-        TmxBrokerContext *container = _ctx_map.at(c.id());
-        if (container)
-            return *container;
+    std::lock_guard<std::mutex> lock(_map_lock);
+    for (auto &c: _containers) {
+        if (c.container().id() == container.id())
+            return c.context();
     }
 
     return _empty;
 }
 
-proton::container &TmxQpidProtonClient::get_container(TmxBrokerContext &ctx) noexcept {
-    auto instance = _qpid_proton_registrar.instance();
-    static typename types::Properties_::key_t key { "container" };
+void TmxQpidProtonConnection::event_loop() noexcept {
+    // Set default options on the container based on the context parameters
+    const TmxData params{ this->context().get_parameters() };
 
-    if (!ctx.count(key)) {
-        auto ptr = new proton::container(static_cast<proton::messaging_handler &>(*this), ctx.get_id());
-        return *(ctx[key].emplace<std::shared_ptr<proton::container> >(ptr));
+    // Construct the URL for first connection
+    bool secure = true;
+
+    // Only an explicity unsecured AMQP scheme avoids SSL
+    if (std::strcmp("amqp", this->context().get_scheme().c_str()) == 0)
+        secure = false;
+
+    this->_url = (secure ? "amqps" : "amqp");
+    this->_url += "://" + this->context().get_host();
+    if (!this->context().get_port().empty())
+        this->_url += ":" + this->context().get_port();
+
+    // The topics and subscriptions may be specified in the URL path
+    if (!this->context().get_path().empty()) {
+        std::filesystem::path topic;
+        std::filesystem::path tmp;
+
+        for (const auto p: std::filesystem::path(this->context().get_path()) ) {
+            if (std::strncmp("Subscription", p.native().c_str(), 12) == 0 ||
+                    std::strncmp("subscription", p.native().c_str(), 12) == 0) {
+                topic = tmp.native();
+                tmp.clear();
+                continue;
+            }
+
+            tmp /= p.filename().native();
+        }
+
+        if (!topic.empty() && !tmp.empty())
+            TmxData(this->context().get_parameters())["subscription"] = std::string(tmp.native());
+
+        TmxData(this->context().get_parameters())["topics"] =
+            std::string(topic.empty() ? tmp.native() : topic.native());
+
+        TLOG(DEBUG2) << topic.native() << "/" << "Subscriptions/" << tmp.native();
     }
-
-    return *(types::as<proton::container>(ctx.at(key)));
-}
-
-static typename types::Properties_::key_t _thread { "thread" };
-
-void TmxQpidProtonClient::initialize(TmxBrokerContext &ctx) noexcept {
-    std::lock_guard<std::mutex> lock(ctx.get_thread_lock());
-    if (ctx.get_state() != TmxBrokerState::uninitialized)
-        return;
-
-    // Save the context for later
-    _ctx_map[ctx.get_id()] = &ctx;
-
-    // Create a container for this context
-    const TmxData params { ctx.get_parameters() };
 
     proton::connection_options connOpts;
     connOpts.handler(*this);
+    connOpts.container_id(this->context().get_id());
 
-    if (std::strcmp("amqps", ctx.get_scheme().c_str()) == 0) {
+    if (secure) {
         connOpts.sasl_enabled(true);
         connOpts.sasl_allow_insecure_mechs(true);
         connOpts.sasl_allowed_mechs("ANONYMOUS PLAIN");
     }
-    if (!ctx.get_user().empty())
-        connOpts.user(ctx.get_user());
-    if (!ctx.get_secret().empty())
-        connOpts.password(ctx.get_secret());
+
+    if (!this->context().get_user().empty())
+        connOpts.user(this->context().get_user());
+    if (!this->context().get_secret().empty())
+        connOpts.password(this->context().get_secret());
+
 
     if (params["failover-urls"]) {
         std::vector<std::string> v;
@@ -95,6 +136,7 @@ void TmxQpidProtonClient::initialize(TmxBrokerContext &ctx) noexcept {
             v.push_back(params["failover-urls"][i].to_string().c_str());
         connOpts.failover_urls(v);
     }
+
     if (params["timeout"])
         connOpts.idle_timeout(proton::duration(params["timeout"]));
     if (params["max-frame-size"])
@@ -107,10 +149,10 @@ void TmxQpidProtonClient::initialize(TmxBrokerContext &ctx) noexcept {
     if (params["reconnect-delay"])
         delay = params["reconnect-delay"];
     // This may be used later
-    TmxData(ctx.get_parameters())["reconnect-delay"] = delay;
+    TmxData(this->context().get_parameters())["reconnect-delay"] = delay;
     reconnect.delay(proton::duration(delay));
     if (params["reconnect-delay-multiplier"])
-        reconnect.delay_multiplier(params["reconnect-delay-multiplier"]);
+        reconnect.delay_multiplier(params["reconnect-delay-multiplier"].to_float<32>());
     if (params["reconnect-max-delay"])
         reconnect.max_delay(proton::duration(params["reconnect-max-delay"]));
     if (params["reconnect-max-attempts"])
@@ -138,101 +180,112 @@ void TmxQpidProtonClient::initialize(TmxBrokerContext &ctx) noexcept {
     sendOpts.source(srcOpts);
     sendOpts.target(tgtOpts);
     sendOpts.auto_settle(!params["no-auto-settle"]);
-    if (params["sender-delivery"]) {
-        auto mode = enums::enum_cast<proton::delivery_mode::modes>(params["receiver-delivery"].to_string());
-        if (mode) sendOpts.delivery_mode(mode.value());
-    }
+    sendOpts.delivery_mode(proton::delivery_mode::AT_MOST_ONCE);
 
     proton::receiver_options recvOpts;
     recvOpts.handler(*this);
     recvOpts.source(srcOpts);
     recvOpts.target(tgtOpts);
     recvOpts.auto_accept(!params["no-auto-accept"]);
-    if (params["receiver-delivery"]) {
-        auto mode = enums::enum_cast<proton::delivery_mode::modes>(params["receiver-delivery"].to_string());
-        if (mode) recvOpts.delivery_mode(mode.value());
-    }
+    recvOpts.delivery_mode(proton::delivery_mode::AT_MOST_ONCE);
     if (params["credit-window"])
         recvOpts.credit_window(params["credit-window"]);
 
-    auto &c = this->get_container(ctx);
-    c.client_connection_options(connOpts);
-    c.sender_options(sendOpts);
-    c.receiver_options(recvOpts);
+    container().client_connection_options(connOpts);
+    container().sender_options(sendOpts);
+    container().receiver_options(recvOpts);
 
     uint8_t threads = 1;
     if (params["container-threads"])
         threads = params["container-threads"];
 
-    // Start up the container in a separate thread
-    ctx[_thread].emplace<std::shared_ptr<std::thread> >(new std::thread([&c, threads]() {
-        try {
-            TLOG(DEBUG) << "Running the container for " << c.id();
-            c.run(threads);
-            TLOG(DEBUG) << "Container for " << c.id() << " has stopped.";
-        } catch (proton::error &ex) {
-            TLOG(ERR) << "Container for " << c.id() << " threw exception: " << ex.what();
-        }
-    }));
+    TLOG(DEBUG1) << this->get_broker_info(this->context());
 
-    // The asynchronous callback will determine the success of the initialization
-    std::this_thread::yield();
-
-    // However, in order to ensure the container is running for other operations,
-    // this call should be synchronized
-    ctx.get_receive_sem().wait(ctx.get_receive_lock());
-}
-
-void TmxQpidProtonClient::on_initialized(TmxBrokerContext &ctx, const common::TmxError &err) noexcept {
-    // Set the status
-    TmxBrokerClient::on_initialized(ctx, err);
-
-    if (err) {
-        // Error upon initialization, make sure the container is stopped
-        this->get_container(ctx).stop(this->to_error(err));
-
-        // Make sure the context is forgotten
-        _ctx_map.erase(ctx.get_id());
+    TmxError ret { EXIT_SUCCESS, "Container for " + container().id() +" has stopped" };
+    try {
+        TLOG(DEBUG) << "Running the container for " << container().id();
+        container().run(threads);
+        TLOG(DEBUG) << "Container for " << container().id() << " has stopped.";
+    } catch (std::exception &ex) {
+        TLOG(ERR) << "Container for " << container().id() << " threw exception: " << ex.what();
+        ret = TmxError(ex);
     }
 
-    // This call was synchronized
-    ctx.get_receive_sem().notify_all();
+    if (ret)
+        TmxBrokerClient::on_error(this->context(), ret);
+
+    std::lock_guard<std::mutex> lock(this->context().get_thread_lock());
+    this->on_destroyed(this->context(), ret);
 }
 
-void TmxQpidProtonClient::on_container_start(proton::container &c) {
-    TLOG(DEBUG3) << "Enter " << TMX_PRETTY_FUNCTION << " for " << c.id();
+void TmxQpidProtonClient::initialize(TmxBrokerContext &ctx) noexcept {
+    TmxBrokerState currentState;
+    {
+        std::lock_guard<std::mutex> lock(ctx.get_thread_lock());
+        currentState = ctx.get_state();
+    }
 
-    this->on_initialized(this->get_context(c), { 0, "Container for " + c.id() + " has started successfully." });
+    // Only initialize once
+    if (currentState == TmxBrokerState::uninitialized) {
+        // Add a new container object
+        std::lock_guard<std::mutex> lock(_map_lock);
+        _containers.emplace_back(ctx);
+    }
+
+    // The asynchronous callback will determine the success of the initialization
+    // However, in order to ensure the container is running for other operations,
+    // this call should be synchronized
+    while (currentState == TmxBrokerState::uninitialized) {
+        std::this_thread::yield();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        std::lock_guard<std::mutex> lock(ctx.get_thread_lock());
+        currentState = ctx.get_state();
+    }
 }
 
 void TmxQpidProtonClient::destroy(TmxBrokerContext &ctx) noexcept {
     if (this->is_connected(ctx))
         this->disconnect(ctx);
 
-    this->get_container(ctx).stop();
+    TmxBrokerState currentState;
+    {
+        std::lock_guard<std::mutex> lock(ctx.get_thread_lock());
+        currentState = ctx.get_state();
+    }
+
+    std::lock_guard<std::mutex> lock(_map_lock);
+    _containers.remove_if([id = ctx.get_id()](auto &other) -> bool {
+        if (id == other.container().id()) {
+           other.container().stop();
+           return true;
+        }
+
+        return false;
+    });
 
     // The asynchronous callback will determine the success of the destruction
-    std::this_thread::yield();
+    // However, in order to ensure the container stops properly, this call
+    // should be synchronized
+    while (currentState != TmxBrokerState::uninitialized) {
+        std::this_thread::yield();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    // Wait until the thread ends
-    if (ctx.count(_thread)) {
-        auto thread = types::as<std::thread>(ctx.at(_thread));
-        if (thread && thread->joinable())
-            thread->join();
+        std::lock_guard<std::mutex> lock(ctx.get_thread_lock());
+        currentState = ctx.get_state();
     }
 }
 
-void TmxQpidProtonClient::on_destroyed(TmxBrokerContext &ctx, const common::TmxError &err) noexcept {
-    // Make sure the context is forgotten
-    _ctx_map.erase(ctx.get_id());
+void TmxQpidProtonConnection::on_container_start(proton::container &container) {
+    TLOG(DEBUG3) << "Enter " << TMX_PRETTY_FUNCTION << " for " << container.id();
 
-    TmxBrokerClient::on_destroyed(ctx, err);
+    std::lock_guard<std::mutex> lock(this->context().get_thread_lock());
+    this->on_initialized(this->context(),
+        { EXIT_SUCCESS, "Container for " + container.id() + " has started successfully." });
 }
 
-void TmxQpidProtonClient::on_container_stop(proton::container &c) {
-    TLOG(DEBUG3) << "Enter " << TMX_PRETTY_FUNCTION << " for " << c.id();
-
-    this->on_destroyed(this->get_context(c), { 0, "Container for " + c.id() + " has been shutdown." });
+void TmxQpidProtonConnection::on_container_stop(proton::container &container) {
+    TLOG(DEBUG3) << "Enter " << TMX_PRETTY_FUNCTION << " for " << container.id();
 }
 
 } /* End namespace qpidproton */

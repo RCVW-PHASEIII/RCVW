@@ -41,8 +41,8 @@ using namespace tmx::plugin::utils;
 using namespace tmx::message::codec::serializer;
 
 // BSMs may be 10 times a second, so only send errors at most every 2 minutes
-#define ERROR_WAIT_MS 120
-#define STATUS_WAIT_MS 1
+#define ERROR_WAIT_SEC 120
+#define STATUS_WAIT_SEC 1
 
 namespace tmx {
 namespace plugin {
@@ -480,8 +480,8 @@ MessageReceiverPlugin::MessageReceiverPlugin() {
     this->register_handler<TmxPluginDataUpdate>(this->get_topic("config/status-Hz"), this,
                                                 &MessageReceiverPlugin::handle_config_update);
 
-	_errThrottle.set_Frequency(std::chrono::seconds(ERROR_WAIT_MS));
-	_statusThrottle.set_Frequency(std::chrono::seconds(STATUS_WAIT_MS));
+	_errThrottle.set_Frequency(std::chrono::seconds(ERROR_WAIT_SEC));
+	_statusThrottle.set_Frequency(std::chrono::seconds(STATUS_WAIT_SEC));
 }
 
 MessageReceiverPlugin::~MessageReceiverPlugin() = default;

@@ -7,6 +7,7 @@
 //============================================================================
 
 #include <HRIStatusConfiguration.hpp>
+#include <IEEE1570Support.hpp>
 
 #include <atomic>
 #include <thread>
@@ -569,6 +570,10 @@ void HRIStatusPlugin::SerialPortReader() {
                                     int label = (_serialBuffer[i + totalAddressLen + 15] * 256) +
                                                 _serialBuffer[i + totalAddressLen + 16];
                                     if (label == 4904) {
+                                        auto bytes = to_byte_sequence(&(_serialBuffer[i + totalAddressLen + 18]), messageLength);
+                                        // Decode the 4904 mssage
+                                        auto msg4909 = message::ieee::std1570::decode_4904(bytes);
+
                                         //get crc of 42 byte message
                                         uint32_t calculatedCrc = 0;
 //										memset(crctemp_table, 0, 256);
@@ -579,8 +584,9 @@ void HRIStatusPlugin::SerialPortReader() {
 //										for (int j = 0; j < messageLength + 4; j++)
 //											ss << hex << setfill('0') << setw(2) << (unsigned int)_serialBuffer[i + j] << " ";
 //										ss_string = ss.str();
-                                        TLOG(DEBUG) << "Got 4904 message, vital crc:" << messageCrc
-                                                    << ", calculated crc:" << calculatedCrc;
+                                        TLOG(DEBUG1) << "Got 4904 message: " << bytes << ", vital crc:" << messageCrc
+                                                    << ", calculated crc:" << calculatedCrc
+                                                    << ": " << msg4909;
 //										PLOG(logDEBUG) << ss_string;
                                         if (calculatedCrc == messageCrc) {
 //											for (int j = 0; j < 256; j++)
@@ -618,6 +624,7 @@ void HRIStatusPlugin::SerialPortReader() {
                                                 _lastSerialDataTime = Clock::GetMillisecondsSinceEpoch();
                                             }
                                             _sendSPAT = true;
+                                            this->set_status("IEEE1570-4909", msg4909.get_container());
                                         }
                                     }
                                     //increment index past message

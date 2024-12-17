@@ -1,0 +1,92 @@
+services:
+  mssql-express:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    ports:
+      - 1433:1433
+    profiles:
+      - cbs-local
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${RCVW_DB_PASS:?Missing DBS database password}"
+      MSSQL_PID: "Express"
+
+  cbs-db:
+    image: eucm/noop:latest
+    profiles:
+      - cbs
+
+  cbs-local-db:
+    extends:
+      service: cbs-db
+    depends_on:
+      - mssql-express
+    profiles:
+      - cbs-local
+
+  cbs-azure-target:
+    build:
+      context: ../../../..
+      dockerfile: Docker/deploy/rcvw-all/cbs/Dockerfile.azure
+    depends_on:
+      - cbs-sb
+      - cbs-db
+    profiles:
+      - cbs
+    environment:
+      TMX_APP: ${TMX_APP:-RCVW}                           # Name for this TMX application
+      TMX_COMPONENT: ${TMX_COMPONENT:-CBS}                # Name for this TMX application sub-component
+      AZURE_SQL_CONNECTIONSTRING: DRIVER={ODBC Driver 18 for SQL Server};SERVER=tcp:${RCVW_DB_HOST:-mssql-express};PORT=1433;DATABASE=${RCVW_DB_NAME:-rcvw-db};UID=${RCVW_DB_USER:?Missing CBS database user};PWD={${RCVW_DB_PASS:?Missing DBS database password}};Encrypt=Yes;Connection Timeout=60
+      rcvwcbssb_CBSReceiver_SERVICEBUS: Endpoint=sb://${RCVW_CBS_HOST:-rabbitmq}/;SharedAccessKeyName=${RCVW_CBS_USER:?Missing CBS message service user};SharedAccessKey=${RCVW_CBS_PASS:?Missing CBS messaging service key}
+
+  # Docker Compose service that exposes the CBS database over a RESTful API.
+  # Note that the configuration of the database connectivity is currently
+  # hardcoded into the dab-config.json file
+  cbs-api:
+    extends:
+      service: cbs-${RCVW_CBS_TARGET:-azure}-target
+    build:
+      target: rcvw-cbs-api-${RCVW_CBS_TARGET:-azure}
+    image: ${RCVW_CBS_API_IMAGE:-rcvw-cbs-api-${RCVW_CBS_TARGET:-azure}}:${RCVW_CBS_API_VERSION:-4.0.0}
+    network_mode: "host"
+
+  # Docker Compose service that consumes messages coming from the RBS systems
+  # on the CBS AMQP messaging service and appropriately stores them in the CBS
+  # database
+  cbs-ingest:
+    extends:
+      service: cbs-azure-target
+    build:
+      target: rcvw-cbs-ingest-${RCVW_CBS_TARGET:-azure}
+    image: ${RCVW_CBS_INGEST_IMAGE:-rcvw-cbs-ingest-${RCVW_CBS_TARGET:-azure}}:${RCVW_CBS_INGEST_VERSION:-4.0.0}
+    network_mode: "host"
+
+  # Docker Compose service that proxies a connection to an RTCM NTRIP caster within the
+  # CBS on behalf of an RBS system. Note that this currently only is configured to work
+  # with CORS in the following states in which Battelle has a login: FL, MI, MO, OH
+  cbs-rtcm:
+    extends:
+      service: cbs-${RCVW_CBS_TARGET:-azure}-target
+    build:
+      target: rcvw-cbs-rtcm-${RCVW_CBS_TARGET:-azure}
+    image: ${RCVW_CBS_RTCM_IMAGE:-rcvw-cbs-rtcm-${RCVW_CBS_TARGET:-azure}}:${RCVW_CBS_RTCM_VERSION:-4.0.0}
+    network_mode: "host"
+    environment:
+      RCVW_HRI: ${RCVW_HRI:?Missing HRI identifier.}
+      RCVW_CBS_API: ${RCVW_CBS_API:-cbs-api}
+
+  # Docker Compose service that monitors the CBS database and creates the associated
+  # HRI events.:q
+  cbs-event-mgr:
+    extends:
+      service: cbs-${RCVW_CBS_TARGET:-azure}-target
+    build:
+      target: rcvw-cbs-event-mgr-${RCVW_CBS_TARGET:-azure}
+    image: ${RCVW_CBS_EVENTMGR_IMAGE:-rcvw-cbs-event-mgr-${RCVW_CBS_TARGET:-azure}}:${RCVW_CBS_EVENTMGR_VERSION:-4.0.0}
+    network_mode: "host"
+    environment:
+      MINIMUM_SPAT_RATE: 8.00     # Required rate for incoming SPaT
+      MINIMUM_MAP_RATE: 1.00      # Required rate for incoming MAP
+      MINIMUM_MSG_RATE: 1.00      # Required rate for incoming diagnostic messages
+      HRI_STATUS_TOPIC: tmx.plugin.v2x.hristatusplugin.hristatusplugin.status
+      MAP_STATUS_TOPIC: tmx.plugin.v2x.map.mapplugin.status
+      RSUIFM_STATUS_TOPIC: tmx.plugin.v2x.rsu.rsuimmediateforwardplugin.status

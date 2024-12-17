@@ -5,14 +5,10 @@
 	"exe": "bin/@PROJECT_NAME@",
 	"channels":[
 		{
-			"context": "kafka://localhost:29092"
-		},
-		{
-			"comment": "TMX CBS cloud connection. Sending generated messages and status",
-			"id": "tmx-cbs",
-			"context": "amqps://CBSReceiver:hdJ+udbmcmgoM9BZvGm/0P0yHpXKt/NZt+ASbAxAnwg=@rcvwcbssb.servicebus.windows.net",
+			"comment": "TMX RBS core connection. Must use unique IDs for Kafka.",
+			"context": "kafka://localhost:29092",
 			"config": {
-				"auto-subscribe": false,
+				"auto-subscribe": true,
 				"write-only": true,
 				"topics": "^(J2735|tmx)/",
 				"thread-count": 2,
@@ -26,9 +22,10 @@
 		{ "tracked": true, "signalGroup": 1 },
 		{ "vehicle": true, "signalGroup": 2 }
 	],
-	"IntersectionID": 10785,
-	"IntersectionName": "Rail Crossing",
+	"IntersectionID": "No HRI identifier for intersection. Auto-detection from MAP not currently supported.",
+	"IntersectionName": "RCVW Intersection",
 	"AlwaysSend": true,
-	"PortName": "/dev/ttyS0",
-	"SerialDataTimeout": 1500
+	"PortName": "",
+	"SerialDataTimeout": 1500,
+	"loglevel": "DEBUG"
 }

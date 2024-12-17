@@ -401,6 +401,8 @@ void TmxKafkaBroker::subscribe(TmxBrokerContext &ctx, const_string topicName, co
         _put<std::thread>(new std::thread([this, &ctx]() {
             std::size_t cnt = 0;
 
+            sleep(2);
+
             while (this->is_connected(ctx)) {
                 auto consumer = _get<RdKafka::KafkaConsumer>(ctx);
                 if (consumer) {

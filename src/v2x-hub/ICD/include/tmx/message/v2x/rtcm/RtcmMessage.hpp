@@ -56,6 +56,7 @@ public:
     std::string get_version_name() const noexcept { return rtcm::RtcmVersionName(this->get_version()); }
 
     virtual inline rtcm::msgtype_type get_message_type() const noexcept { return 0; };
+    virtual inline common::const_string get_message_name() const noexcept { return { "" }; };
 
     virtual bool is_valid() const noexcept { return false; }
 

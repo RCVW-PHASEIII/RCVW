@@ -4,54 +4,44 @@
 	"version":"@PROJECT_VERSION@",
 	"channels": [
 		{
-			"id": "tmx-core",
+			"comment": "TMX RBS core connection. Must use unique IDs for Kafka.",
 			"context": "kafka://localhost:29092",
 			"config": {
+				"auto-subscribe": false,
+				"write-only": true,
+				"topics": "^(J2735|tmx)/",
 				"thread-count": 2,
-				"topics": "J2735/RTCM"
+				"thread-assignment": "ShortestQueue"
 			}
 		},
 		{
-			"id": "local-basestation",
-			"context": "gpsd://10.30.100.29",
+			"comment": "The RTCM source from a GPSd basestation.",
+			"id": "rtcm-gpsd",
+			"context": "gpsd://localhost",
 			"config": {
+				"auto-subscribe": true,
 				"auto-publish": false,
-				"topics": "gpsd/RTCM3",
+				"topics": "(gpsd/GGA)|(.*RTCM[23]*.*)",
 				"thread-count": 2,
-				"thread-assignment": "RoundRobin"
+				"thread-assignmet": "ShortestQueue"
 			}
-		}
-	],
-	"newchannels": [
+		},
 		{
-			"id": "ODOT-Reference-Network",
-			"context": "ntrip://battelle8:B&commat;ttelle01!@localhost:10000/ODOT_VRS_RTCM3",
+			"comment": "The RTCM source from an NTRIP castor.",
+			"id": "rtcm-ntrip",
+			"context": "ntrip://ntrip-server:2101/mountpoint",
 			"config": {
+				"comment": "NTRIP sources must wait to subscribe because they require a GGA string.",
 				"auto-subscribe": false,
 				"auto-publish": false,
-				"thread-count": 1
-			}
-		},
-		{
-			"id": "NMEA-source",
-			"context": "nmea://localhost:2947",
-			"config": {
-				"auto-publish": false,
-				"topics": "nmea/GGA",
-				"thread-count": 1
-			}
-		},
-		{
-			"id": "local-basestation",
-			"context": "gpsd://10.30.100.17",
-			"config": {
-				"auto-publish": false,
-				"topics": "gpsd/RTCM3",
+				"topics": ".*RTCM[23]*.*",
 				"thread-count": 2,
-				"thread-assignment": "RoundRobin"
+				"thread-assignmet": "ShortestQueue"
 			}
 		}
 	],
-	"latitude": 39.98912,
-	"longitude": -83.02073
+	"latitude": "0.0",
+	"longitude": "0.0",
+	"loglevel": "DEBUG"
 }
+

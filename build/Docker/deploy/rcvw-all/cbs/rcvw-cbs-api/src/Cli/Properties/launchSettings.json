@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Cli": {
+      "commandName": "Project",
+      "commandLineArgs": "start\n",
+      "workingDirectory": "C:\\Development\\data-api-builder\\src\\out\\Debug\\net6.0",
+      "httpPort": 5002
+    }
+  }
+}

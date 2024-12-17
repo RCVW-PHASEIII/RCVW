@@ -1,0 +1,398 @@
+services:
+  rbs-plugin:
+    depends_on:
+      kafka:
+        condition: service_healthy
+        required: true
+    image: ${RCVW_RBS_IMAGE:-rcvw-rbs}:${RCVW_RBS_VERSION:-4.0.0}
+    entrypoint: /bin/bash
+    hostname: "rcvw-rbs-${RCVW_HRI:-0}"
+    network_mode: "host"
+    dns:
+      - 10.65.255.17
+      - 10.65.255.18
+      - 8.8.8.8
+    logging:
+      driver: journald
+    restart: no
+    user: "plugin"
+    stop_signal: SIGTERM
+    working_dir: /var/tmp
+    profiles:
+      - rbs
+    environment:
+      TMX_APP: ${TMX_APP:-RCVW}                         # Name for this TMX application
+      RCVW_COMPONENT: ${TMX_COMPONENT:-RBS}             # Name for this TMX application sub-component
+
+  rbs-map:
+    extends:
+      service: rbs-plugin
+    entrypoint:
+      - /usr/local/bin/tmxctl
+      - --start
+      - ${TMX_APP:-RCVW}-${TMX_COMPONENT:-RBS}-MAP
+    restart: always
+    configs:
+      - source: rcvw-map-config
+        target: /var/lib/plugin/MAP/manifest.json
+        uid: "999"
+        gid: "999"
+
+  rbs-hri:
+    extends:
+      service: rbs-plugin
+    entrypoint:
+      - /usr/local/bin/tmxctl
+      - --start
+      - ${TMX_APP:-RCVW}-${TMX_COMPONENT:-RBS}-HRI
+    user: root
+    privileged: true
+    restart: always
+    volumes:
+      - ${RCVW_IEEE_INPUT:-/dev/null}:/dev/COM1
+      - ${RCVW_IEEE_INPUT:-/usr/local/lib/libwdt_dio.so}:${RCVW_IEEE_INPUT:-/usr/local/lib/libwdt_dio.so}
+    configs:
+      - source: rcvw-hri-config
+        target: /var/lib/plugin/HRIStatus/manifest.json
+        uid: "999"
+        gid: "999"
+
+  rbs-rsu:
+    extends:
+      service: rbs-plugin
+    entrypoint:
+      - /usr/local/bin/tmxctl
+      - --start
+      - ${TMX_APP:-RCVW}-${TMX_COMPONENT:-RBS}-RSUIFM
+    restart: always
+    volumes:
+      - /etc/services:/etc/services
+    configs:
+      - source: rcvw-rsu-config
+        target: /var/lib/plugin/RSUImmediateForward/manifest.json
+        uid: "999"
+        gid: "999"
+
+  rbs-rtcm:
+    extends:
+      service: rbs-plugin
+    entrypoint:
+      - /usr/local/bin/tmxctl
+      - --start
+      - ${TMX_APP:-RCVW}-${TMX_COMPONENT:-RBS}-RTCM
+    volumes:
+      - /etc/services:/etc/services
+    configs:
+      - source: rcvw-rtcm-config
+        target: /var/lib/plugin/RTCM/manifest.json
+        uid: "999"
+        gid: "999"
+
+  rbs-rtcm-basestation:
+    extends:
+      service: rbs-rtcm
+    profiles:
+      - rbs-basestation
+    depends_on:
+      - cfg-basestation
+
+  cfg-basestation:
+    extends:
+      service: rbs-plugin
+    restart: no
+    entrypoint:
+      - /usr/local/bin/configure-ubx.sh
+    profiles:
+      - rbs-basestation
+    volumes:
+      - ${RCVW_GPSD_SOURCE:-/dev/null}:/dev/gps
+    environment:
+      GPS_INPUT: ${RCVW_GPSD_SOURCE:-/dev/null}
+      # Basestation Configuration Options
+      CFG_TMODE_MODE: 2
+      CFG_TMODE_LAT: ${RCVW_HRI_LAT:-0}
+      CFG_TMODE_LON: ${RCVW_HRI_LON:-0}
+      CFG_TMODE_HEIGHT: ${RCVW_HRI_ALT:-0}
+      CFG_TMODE_POS_TYPE: 1
+      CFG_NMEA_PROTVER: 41
+      CFG_NMEA_HIGHPREC: 0
+      CFG_NAVSPG_DYNMODEL: 2
+      CFG_RATE_MEAS: 100
+      CFG_RATE_TIMEREF: 1
+      CFG_UART1_BAUDRATE: 460800
+      CFG_UART1INPROT_UBX: 0
+      CFG_UART1INPROT_NMEA: 0
+      CFG_UART1INPROT_RTCM3X: 0
+      CFG_UART1OUTPROT_UBX: 0
+      CFG_UART1OUTPROT_NMEA: 0
+      CFG_UART1OUTPROT_RTCM3X: 0
+      CFG_USBINPROT_UBX: 1
+      CFG_USBINPROT_NMEA: 1
+      CFG_USBINPROT_RTCM3X: 1
+      CFG_USBOUTPROT_UBX: 1
+      CFG_USBOUTPROT_NMEA: 0
+      CFG_USBOUTPROT_RTCM3X: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1005_UART1: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1005_USB: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1074_UART1: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1074_USBL: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1084_UART1: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1084_USB: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1094_UART1: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1094_USB: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1124_UART1: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1124_USB: 1
+      CFG_MSGOUT_RTCM_3X_TYPE1230_UART1: 5
+      CFG_MSGOUT_RTCM_3X_TYPE1230_USB: 5
+      CFG_MSGOUT_UBX_NAV_PVT_USB: 1
+      CFG_MSGOUT_UBX_NAV_SVIN_USB: 1
+
+  rcvw-rbs:
+    build:
+      context: ../../../..
+      dockerfile: Docker/deploy/rcvw-all/rbs/runtime-rbs/Dockerfile
+      args:
+        - TMX_ARCH=${TMX_ARCH:-amd64}
+        - TMX_CONFIG=${TMX_CONFIG:-Debug}
+        - TMX_VERSION=${TMX_VERSION:-4.0.0}
+    extends:
+      service: rbs-plugin
+    restart: no
+    environment:
+      TMX_SOURCE_NAME: ${RCVW_HRI:-${TMX_COMPONENT:-RCVW}}
+    depends_on:
+      - rbs-map
+      - rbs-hri
+      - rbs-rsu
+      - rbs-rtcm${RCVW_RBS_LAT:+-basestation}
+
+configs:
+  rcvw-map-config:
+    content: |
+      {
+        "name": "${TMX_APP:-RCVW}-${TMX_COMPONENT:-RBS}-MAP",
+        "description": "Plugin that reads intersection geometry from a configuration file and publishes a J2735 MAP message.",
+        "version": "4.0.0",
+        "exe": "bin/MapPlugin",
+        "channels": [
+          {
+            "comment": "TMX RBS core connection. Must use unique IDs for Kafka.",
+            "context": "kafka://localhost:29092",
+            "config": {
+              "auto-subscribe": false,
+              "write-only": true,
+              "topics": "^(J2735|tmx)/",
+              "thread-count": 2,
+              "thread-assignment": "ShortestQueue"
+            }
+          },
+          {
+            "comment": "TMX CBS cloud connection. Sending generated messages and status",
+            "id": "tmx-cbs",
+            "${RCVW_CBS:+con}text": "${RCVW_CBS:-}",
+            "config": {
+              "auto-subscribe": false,
+              "write-only": true,
+              "topics": "^(J2735|tmx)/",
+              "thread-count": 2,
+              "thread-assignment": "ShortestQueue"
+            }
+          }
+        ],
+        "Frequency": 1000,
+        "MapFiles": [
+          {
+            "Action": 0,
+            "Bytes": "${RCVW_MAP:?No MAP for this intersection was supplied}"
+          }
+        ],
+        "loglevel": "${RCVW_RBS_MAP_DEBUG:-DEBUG}"
+      }
+
+  rcvw-hri-config:
+    content: |
+      {
+        "name": "${TMX_APP:-RCVW}-${TMX_COMPONENT:-RBS}-HRI",
+        "description":"Sends HRI Status as SPAT Message",
+        "version":"4.0.0",
+        "exe": "bin/HRIStatusPlugin",
+        "channels":[
+          {
+            "comment": "TMX RBS core connection. Must use unique IDs for Kafka.",
+            "context": "kafka://localhost:29092",
+            "config": {
+              "auto-subscribe": true,
+              "write-only": true,
+              "topics": "^(J2735|tmx)/",
+              "thread-count": 2,
+              "thread-assignment": "ShortestQueue"
+            }
+          },
+          {
+            "comment": "TMX CBS cloud connection. Sending generated messages and status",
+            "id": "tmx-cbs",
+            "${RCVW_CBS:+con}text": "${RCVW_CBS:-}",
+            "config": {
+              "auto-subscribe": false,
+              "write-only": true,
+              "topics": "^(J2735|tmx)/",
+              "thread-count": 2,
+              "thread-assignment": "ShortestQueue"
+            }
+          }
+        ],
+        "Frequency": 100,
+        "RailPinNumber": ${RCVW_DIO_PIN:-0},
+        "LaneMap": [
+          { "tracked": true, "signalGroup": ${RCVW_HRI_TRACKED_LANE:-1} },
+          { "vehicle": true, "signalGroup": ${RCVW_HRI_VEHICLE_LANE:-2} }
+        ],
+        "IntersectionID": "${RCVW_HRI:?No HRI identifier for intersection. Auto-detection from MAP not currently supported.}",
+        "IntersectionName": "${RCVW_HRI_DESCRIPTION:-RCVW Intersection ${RCVW_HRI:-}}",
+        "AlwaysSend": true,
+        "PortName": "${RCVW_IEEE_INPUT:-}",
+        "SerialDataTimeout": 1500,
+        "loglevel": "${RCVW_RBS_HRI_DEBUG:-DEBUG}"
+      }
+
+  rcvw-rsu-config:
+    content: |
+      {
+        "name": "${TMX_APP:-RCVW}-${TMX_COMPONENT:-RBS}-RSUIFM",
+        "description": "Plugin that listens for TMX messages and forwards them to the C-V2X Radio (i.e. the RSU).",
+        "version":"4.0.0",
+        "exe": "bin/RSUImmediateForwardPlugin",
+        "channels":[
+          {
+            "comment": "TMX RBS core connection. Must use unique IDs for Kafka.",
+            "context": "kafka://localhost:29092",
+            "config": {
+              "topics": "^(J2735|tmx)/",
+              "thread-count": 2,
+              "thread-assignment": "RoundRobin",
+              "comment": "Subscription occurs during runtime. Only take from the most recent offset.",
+              "global": {
+                "auto.offset.reset": "end"
+              }
+            }
+          },
+          {
+            "comment": "TMX CBS cloud connection.",
+            "id": "tmx-cbs",
+            "${RCVW_CBS:+con}text": "${RCVW_CBS:-}",
+            "config": {
+              "auto-subscribe": false,
+              "topics": "^tmx/",
+              "thread-count": 2,
+              "thread-assignment": "ShortestQueue"
+            }
+          },
+          {
+            "comment": "RSU Immediate Forward connection.",
+            "id": "tmx-rsu-ifm",
+            "context": "udp://${RCVW_RSU:-local-rsu}:${RCVW_RSU_IFM_PORT:-1516}",
+            "config": {
+              "auto-subscribe": false,
+              "write-only": true,
+              "topics": "^RSU/IFM",
+              "thread-count": 2,
+              "thread-assignment": "RoundRobin"
+            }
+          },
+          {
+            "comment": "RSU NTCIP Management connection.",
+            "id": "tmx-rsu-ntcip",
+            "context": "ntcip://rsuRwUser@${RCVW_RSU:-local-rsu}",
+            "config": {
+              "topics": "^snmpget/",
+              "thread-count": 3,
+              "thread-assignment": "LeastUtilized",
+              "authentication-protocol": "${RCVW_RSU_AUTHPROTO:-SHA}",
+              "authentication-passphrase": "${RCVW_RSU_AUTHPASS:-}",
+              "privacy-protocol": "${RCVW_RSU_PRIVPROTO:-AES}",
+              "privacy-passphrase": "${RCVW_RSU_PRIVPASS:-}",
+              "mib-dirs": [
+                "/usr/local/share/mibs"
+              ],
+              "timeout": 1000
+            }
+          }
+        ],
+        "Signature": "False",
+        "loglevel": "${RCVW_RBS_RSUIFM_DEBUG:-DEBUG}"
+      }
+
+  rcvw-rtcm-config:
+    content: |
+      {
+        "name": "${TMX_APP:-RCVW}-${TMX_COMPONENT:-RBS}-RTCM",
+        "description": "Plugin to listen for RTCM messages from an NTRIP caster and route those messages over C-V2X",
+        "version":"4.0.0",
+        "exe": "bin/RtcmPlugin",
+        "channels": [
+          {
+            "comment": "TMX RBS core connection. Must use unique IDs for Kafka.",
+            "context": "kafka://localhost:29092",
+            "config": {
+              "auto-subscribe": false,
+              "write-only": true,
+              "topics": "^(J2735|tmx)/",
+              "thread-count": 2,
+              "thread-assignment": "ShortestQueue"
+            }
+          },
+          {
+            "comment": "TMX CBS cloud connection.",
+            "id": "tmx-cbs",
+            "${RCVW_CBS:+con}text": "${RCVW_CBS:-}",
+            "config": {
+              "auto-subscribe": false,
+              "write-only": true,
+              "topics": "^(J2735|tmx)/",
+              "thread-count": 2,
+              "thread-assignment": "RoundRobin"
+            }
+          },
+          {
+            "comment": "The RTCM source from a GPSd basestation.",
+            "id": "rtcm-gpsd",
+            "${RCVW_GPSD_SOURCE:+con}text": "gpsd://${RCVW_GPSD_SOURCE:-localhost}",
+            "config": {
+              "auto-subscribe": true,
+              "auto-publish": false,
+              "topics": ".*RTCM[23]*.*",
+              "thread-count": 2,
+              "thread-assignmet": "ShortestQueue"
+            }
+          },
+          {
+            "comment": "The RTCM source from an NTRIP castor.",
+            "id": "rtcm-ntrip",
+            "${RCVW_NTRIP_SOURCE:+con}text": "ntrip://${RCVW_NTRIP_SOURCE:-localhost}",
+            "config": {
+              "comment": "NTRIP sources must wait to subscribe because they require a GGA string.",
+              "auto-subscribe": false,
+              "auto-publish": false,
+              "topics": ".*RTCM[23]*.*",
+              "thread-count": 2,
+              "thread-assignmet": "ShortestQueue"
+            }
+          },
+          {
+            "comment": "Attempt to automatically subscribe to the RTCM proxy channel in the CBS for this HRI.",
+            "id": "rtcm-proxy",
+            "${RCVW_CBS:+con}text": "${RCVW_CBS:-}",
+            "config": {
+              "auto-subscribe": true,
+              "auto-publish": false,
+              "subscription": "rsu-${RCVW_HRI:-outgoing}",
+              "topics": "^V2X/RTCM[23]",
+              "thread-count": 2,
+              "thread-assignmet": "ShortestQueue"
+            }
+          }
+        ],
+        "latitude": "${RCVW_HRI_LAT:-0.0}",
+        "longitude": "${RCVW_HRI_LON:-0.0}",
+        "loglevel": "${RCVW_RBS_RTCM_DEBUG:-DEBUG}"
+      }

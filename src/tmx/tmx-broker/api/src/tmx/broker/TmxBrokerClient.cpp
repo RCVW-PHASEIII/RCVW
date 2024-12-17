@@ -200,7 +200,7 @@ void TmxBrokerClient::on_destroyed(TmxBrokerContext &ctx, TmxError const &result
     TLOG(DEBUG1) << ctx.get_id() << ": on_destroyed: (" << result.get_code() << "): " << result.get_message();
 
 //    this->callback(ctx.get_id(), get_message(ctx, __FUNCTION__, result));
-//    ctx.set_state(TmxBrokerState::uninitialized);
+    ctx.set_state(TmxBrokerState::uninitialized);
 }
 
 } /* End namespace broker */

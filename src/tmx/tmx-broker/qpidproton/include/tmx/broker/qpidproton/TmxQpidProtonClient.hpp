@@ -14,10 +14,11 @@
 
 #include <tmx/broker/TmxBrokerClient.hpp>
 #include <tmx/broker/TmxBrokerContext.hpp>
-#include <tmx/common/TmxFunctor.hpp>
-#include <tmx/common/TmxTypeRegistry.hpp>
 
 #include <proton/messaging_handler.hpp>
+#include <proton/container.hpp>
+
+#include <thread>
 
 namespace tmx {
 namespace broker {
@@ -37,8 +38,7 @@ namespace qpidproton {
  * appropriate the TMX callbacks, making this client a good example
  * for asynchronous implementations using the TMX Broker API.
  */
-class TmxQpidProtonClient : public TmxBrokerClient,
-                            private proton::messaging_handler {
+class TmxQpidProtonClient : public TmxBrokerClient {
 public:
     TmxQpidProtonClient() noexcept;
     common::TmxTypeDescriptor get_descriptor() const noexcept override;
@@ -51,56 +51,40 @@ public:
     void publish(TmxBrokerContext &ctx, message::TmxMessage const &) noexcept override;
     void subscribe(TmxBrokerContext &ctx, common::const_string, common::TmxTypeDescriptor const &) noexcept override;
     void unsubscribe(TmxBrokerContext &ctx, common::const_string, common::TmxTypeDescriptor const &) noexcept override;
+};
 
-    void on_initialized(TmxBrokerContext &ctx, common::TmxError const &) noexcept override;
-    void on_destroyed(TmxBrokerContext &ctx, common::TmxError const &) noexcept override;
-    void on_connected(TmxBrokerContext &ctx, common::TmxError const &) noexcept override;
-    void on_disconnected(TmxBrokerContext &ctx, common::TmxError const &) noexcept override;
-    void on_subscribed(TmxBrokerContext &ctx, common::TmxError const &,
-                       common::const_string, common::TmxTypeDescriptor const &) noexcept override;
-    void on_unsubscribed(TmxBrokerContext &ctx, common::TmxError const &,
-                         common::const_string, common::TmxTypeDescriptor const &) noexcept override;
-    void on_published(TmxBrokerContext &ctx, common::TmxError const &, message::TmxMessage const &) noexcept override;
+/*!
+ * A class for handling the Qpid Proton connection
+ */
+class TmxQpidProtonConnection: public TmxQpidProtonClient, public proton::messaging_handler {
+public:
+    TmxQpidProtonConnection(TmxBrokerContext &ctx);
 
-    // Some static functions for obtaining information from or for the context
-    static TmxBrokerContext &get_context(proton::container const &) noexcept;
-    static common::TmxError to_error(proton::error_condition const &) noexcept;
-    static proton::error_condition to_error(common::TmxError const &) noexcept;
+    TmxBrokerContext &context() noexcept;
+    proton::container &container() noexcept;
+    std::string const &url() const noexcept;
 private:
-    // Functions for obtaining key Qpid Proton C++ objects
-    proton::container &get_container(TmxBrokerContext &ctx) noexcept;
-    proton::connection &get_connection(TmxBrokerContext &ctx, proton::connection * = nullptr) noexcept;
-
-    // Initialization handlers
     void on_container_start(proton::container &) override;
     void on_container_stop(proton::container &) override;
-
-    // Connection handlers
-    void on_connection_open(proton::connection &) override;
-    void on_connection_close(proton::connection &) override;
-    void on_connection_error(proton::connection &) override;
     void on_transport_open(proton::transport &) override;
     void on_transport_close(proton::transport &) override;
     void on_transport_error(proton::transport &) override;
+    void on_connection_open(proton::connection &) override;
+    void on_connection_close(proton::connection &) override;
+    void on_connection_error(proton::connection &) override;
+    void on_connection_wake(proton::connection &) override;
+    void event_loop() noexcept;
 
-    // Subscription handlers
-    void on_receiver_open(proton::receiver &) override;
-    void on_receiver_detach(proton::receiver &) override;
-    void on_receiver_close(proton::receiver &) override;
-    void on_receiver_error(proton::receiver &) override;
-    void on_message(proton::delivery &, proton::message &) override;
-
-    // Publish handlers
-    void on_sender_open(proton::sender &) override;
-    void on_sender_close(proton::sender &) override;
-    void on_sender_detach(proton::sender &) override;
-    void on_sender_error(proton::sender &) override;
-    void on_tracker_settle(proton::tracker &) override;
-    void on_sendable(proton::sender &) override;
-
-    // Error handler
-    void on_error(const proton::error_condition &) override;
+    TmxBrokerContext &_context;
+    std::shared_ptr<proton::container> _container;
+    std::string _url;
+    std::thread _thread;
 };
+
+// Some functions for obtaining information from or for the context
+TmxBrokerContext &to_context(proton::container const &) noexcept;
+common::TmxError to_error(proton::error_condition const &) noexcept;
+proton::error_condition to_error(common::TmxError const &) noexcept;
 
 } /* End namesoace qpidproton */
 } /* End namespace broker */

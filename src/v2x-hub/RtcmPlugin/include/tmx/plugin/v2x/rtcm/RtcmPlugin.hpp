@@ -33,7 +33,6 @@ public:
 
     common::TmxTypeDescriptor get_descriptor() const noexcept override;
     common::TmxError main() noexcept override;
-
 protected:
     void init() noexcept override;
     common::types::Array<common::types::Any> get_config_description() const noexcept override;
@@ -41,12 +40,7 @@ protected:
     void on_gga_received(common::types::Any const &, message::TmxMessage const &);
 
     void on_rtcm_received(message::TmxData const &, message::TmxMessage const &);
-#ifndef IGNORE_RTCM2
-    void on_rtcmmsg_received(message::v2x::rtcm::RTCM2Message const &, message::TmxMessage const &);
-#endif
-#ifndef IGNORE_RTCM3
-    void on_rtcmmsg_received(message::v2x::rtcm::RTCM3Message const &, message::TmxMessage const &);
-#endif
+    void on_rtcmmsg_received(std::string const &, message::TmxMessage const &);
 
 private:
     std::mutex _lock;
@@ -54,6 +48,7 @@ private:
     std::string _ntrip;
 
     std::atomic<typename common::types::UIntmax::value_type> _count;
+    std::atomic<typename common::types::UIntmax::value_type> _increment;
 };
 
 } /* namespace rtcm */

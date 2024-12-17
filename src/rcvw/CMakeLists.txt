@@ -54,6 +54,23 @@ FOREACH (Plugin "HRIStatusPlugin" "RCVWPlugin" "DifferentialGPSPlugin" "CVInspec
     ENDIF ()
 ENDFOREACH ()
 
+# Package all Docker deployment files into a component
+SET (DEPLOY "${CMAKE_CURRENT_SOURCE_DIR}/../../build/Docker/deploy/rcvw-all")
+
+INSTALL (FILES ${DEPLOY}/docker-compose.yaml
+        DESTINATION ./share/${PROJECT_NAME}/deploy
+        COMPONENT ${PROJECT_NAME}-docker-dev)
+INSTALL (FILES ${DEPLOY}/cbs/docker-compose.yaml
+        DESTINATION ./share/${PROJECT_NAME}/deploy/cbs
+        COMPONENT ${PROJECT_NAME}-docker-dev)
+INSTALL (FILES ${DEPLOY}/rbs/docker-compose.yaml
+        DESTINATION ./share/${PROJECT_NAME}/deploy/rbs
+        COMPONENT ${PROJECT_NAME}-docker-dev)
+INSTALL (FILES ${DEPLOY}/vbs/docker-compose.yaml
+        DESTINATION ./share/${PROJECT_NAME}/deploy/vbs
+        COMPONENT ${PROJECT_NAME}-docker-dev)
+
+# Package HMI components
 INSTALL (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../tmx-invehicleportal/${PROJECT_NAME}/
          DESTINATION /var/www/html/${PROJECT_NAME}
          COMPONENT ${PROJECT_NAME}hmi)
