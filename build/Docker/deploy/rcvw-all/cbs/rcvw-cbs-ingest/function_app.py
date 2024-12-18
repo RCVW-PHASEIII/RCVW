@@ -158,7 +158,7 @@ def hristatus_status(azservicebus: func.ServiceBusMessage):
                 } ]
 
             for train in xing['trains']:
-                conn.cursor().execute("INSERT INTO RBS_IEEE1509_4909_MESSAGE " +
+                conn.cursor().execute("INSERT INTO RBS_IEEE1570_4909_MESSAGE " +
                                       "([Message_ID], [HRI_ID], [IEEE1570], [xingNumTracks], [xingNumTrains], "
                                       "[xingSequence], [xingOperational], [xingTrainDetected], "
                                       "[xingWarningActive], [xingPreemptionActive], " +
