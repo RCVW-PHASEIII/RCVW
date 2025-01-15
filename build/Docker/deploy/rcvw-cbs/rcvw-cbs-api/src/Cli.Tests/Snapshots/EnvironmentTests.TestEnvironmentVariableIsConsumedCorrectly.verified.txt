@@ -1,3 +1,0 @@
-﻿{
-  EnvValue: TEST
-}

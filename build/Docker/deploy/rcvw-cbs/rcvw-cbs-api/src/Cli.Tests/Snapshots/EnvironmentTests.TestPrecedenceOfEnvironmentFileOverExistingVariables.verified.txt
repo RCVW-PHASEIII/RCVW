@@ -1,4 +1,0 @@
-﻿{
-  EnvValue: DEVELOPMENT,
-  HostingEnvValue: PHOENIX_TEST
-}
