@@ -407,3 +407,128 @@ CREATE TABLE [rcvw-db].dbo.RSU_GPS_OUTPUT (
 	rsuGpsMaxDeviation int NULL,
 	CONSTRAINT FK_RSU_GPS_OUTPUT_HRI_ACTIVATION_STATUS FOREIGN KEY (HRI_ID) REFERENCES [rcvw-db].dbo.HRI_ACTIVATION_STATUS(HRI_ID)
 );
+
+-- dbo.HRI_CROSSINGS source
+
+CREATE VIEW [dbo].[HRI_CROSSINGS]
+AS
+SELECT        A.HRI_ID, A.HRIProtWarnDevicePresent, A.AgencyID, A.CountyCode, A.PublishedReportBaseID, A.StateCode, A.RailroadCode, A.Created, A.CreatedBy, A.LastUpdated, A.LastUpdateBy, B.AdvWarn, B.AwdIDate, B.AwhornChk, 
+                         B.AwhornlDate, B.Bells, B.Bkl_FlashPost, B.CFlashType, B.Channel, B.EnsSign, B.Exempt, B.FlashNov, B.FlashOth, B.FlashOthDes, B.FlashOv, B.FlashPai, B.FlashPostType, B.GateConf, B.GateConfType, B.GatePed, B.Gates, 
+                         B.HwtrfPsig, B.HwtrfPsiglndis, B.HwtrfPsigsdis, B.HwynrSig, B.HwyTrafSignl, B.Intrprmp, B.Led, B.Low_Grnd, B.Low_GrndSigns, B.MonitorDev, B.NoSigns, B.OthDes1, B.OthDes2, B.OthDes3, B.OthSgn, B.OthSgn1, B.OthSgn2, 
+                         B.OthSgn3, B.PaveMrkIDs, B.PrempType, B.PrvxSign, B.ReportBaseId, B.Sdl_FlashPost, B.SpecPro, B.StopStd, B.XBuck, B.YieldStd, B.WdCode, C.BlockNumb, C.CityCD, C.CntyCD, C.DevelTypID, C.Highway, C.HscoRrid, 
+                         C.HwyCont, C.Latitude, C.LLsource, C.Longitude, C.MultFrmsFiled, C.Nearest, C.OpenPub, C.PolCont, C.PosXing, C.Railroad, C.RrCont, C.RrID, C.RrMain, C.RrNarr, C.RrNarr1, C.RrNarr2, C.RrNarr3, C.RrNarr4, C.SameInd, 
+                         C.SameRr1, C.SameRr2, C.SameRr3, C.SameRr4, C.SepInd, C.SepRr1, C.SepRr2, C.SepRr3, C.SepRr4, C.SfxHscoRrid, C.StateCD, C.StNarr, C.StNarr1, C.StNarr2, C.StNarr3, C.StNarr4, C.Street, C.Ttstn, C.TtstnNam, 
+                         C.TypeTrnSrvcIDs, C.TypeXing, C.Whistban, C.WhistDate, C.XingAdj, C.XingOwnr, C.XngAdjNo, C.XPurpose, D.ComPower, D.Downst, D.HwynDist, D.HwyNear, D.HwyPved, D.Illumina, D.TraficLn, D.TraflnType, D.XAngle, 
+                         D.XSurfaceIDs, D.XSurfDate, D.XSurfLength, D.XSurfWidth, D.XSurOthr, E.Aadt, E.AadtYear, E.EmrgncySrvc, E.HwyClassCD, E.HwyClassrdtpID, E.HwySpeed, E.HwySpeedps, E.HwySys, E.LrsMilePost, E.LrsRouteid, E.PctTruk, 
+                         E.SchlBsCnt, E.SchlBusChk, E.StHwy1, C.StateName, C.CountyName, C.CityName, B.CrossingID, B.AdvW10_2, B.AdvW10_1, B.AdvW10_3, B.AdvW10_4, B.AdvW10_11, B.AdvW10_12, B.FlashPost, B.Wigwags, E.HazmtVeh, 
+                         E.crossingClosed, dbo.HRI_ACTIVATION_STATUS.FixLatitude, dbo.HRI_ACTIVATION_STATUS.FixLongitude, dbo.HRI_ACTIVATION_STATUS.RTCMProxy, dbo.HRI_ACTIVATION_STATUS.PreemptionStatus, dbo.HRI_ACTIVATION_STATUS.RBSOperational, 
+                         dbo.HRI_ACTIVATION_STATUS.ErrorCode, dbo.HRI_ACTIVATION_STATUS.ErrorMessage, dbo.HRI_ACTIVATION_STATUS.IP, dbo.HRI_CBS_CONNECT.Endpoint, dbo.HRI_CBS_CONNECT.Topic, dbo.HRI_CBS_CONNECT.Subscription
+FROM            dbo.HRI_CROSSING_HEADER AS A INNER JOIN
+                         dbo.HRI_HIGHWAY_TRAFFIC_CONTROL_DEVICE AS B ON A.CrossingID = B.CrossingID INNER JOIN
+                         dbo.HRI_LOCATION_AND_CLASSIFICATION AS C ON A.CrossingID = C.CrossingID INNER JOIN
+                         dbo.HRI_PHYSICAL_CHARACTERISTICS AS D ON A.CrossingID = D.CrossingID INNER JOIN
+                         dbo.HRI_PUBLIC_HIGHWAY AS E ON A.CrossingID = E.CrossingID LEFT OUTER JOIN
+                         dbo.HRI_ACTIVATION_STATUS ON A.HRI_ID = dbo.HRI_ACTIVATION_STATUS.HRI_ID LEFT OUTER JOIN
+                         dbo.HRI_CBS_CONNECT ON A.HRI_ID = dbo.HRI_CBS_CONNECT.HRI_ID AND dbo.HRI_CBS_CONNECT.Type = 'Events';
+
+
+-- dbo.RBS_INCOMING_MAP_RATE source
+
+CREATE VIEW [dbo].[RBS_INCOMING_MAP_RATE]
+AS
+SELECT HRI.HRI_ID, 
+        COALESCE(DATEDIFF(SECOND, MIN(Received), MAX(Received)), 0) AS SecondCount, 
+        SUM(CASE WHEN MAP.HRI_ID IS NULL THEN 0 ELSE 1 END) AS TotalMsgs, 
+        CASE WHEN DATEDIFF(SECOND, MIN(Received), MAX(Received)) > 0 THEN 1.0 * COUNT(*) / DATEDIFF(SECOND, MIN(Received), MAX(Received)) ELSE 0.0 END AS MsgRate
+FROM [dbo].[HRI_ACTIVATION_STATUS] HRI
+LEFT JOIN [dbo].[RBS_INCOMING_MAP] MAP
+ON HRI.HRI_ID = MAP.HRI_ID 
+AND MAP.Received > HRI.LastUpdated 
+AND MAP.Received > DATEADD(SECOND, -10, GETDATE())
+GROUP BY HRI.HRI_ID;
+
+
+-- dbo.RBS_INCOMING_MESSAGE_RATE source
+
+CREATE VIEW [dbo].[RBS_INCOMING_MESSAGE_RATE]
+AS
+SELECT HRI.HRI_ID, MSG.Topic, 
+        COALESCE(DATEDIFF(SECOND, MIN(Received), MAX(Received)), 0) AS SecondCount, 
+        SUM(CASE WHEN MSG.Received IS NULL THEN 0 ELSE 1 END) AS TotalMsgs,
+        CASE WHEN DATEDIFF(SECOND, MIN(Received), MAX(Received)) > 0 THEN 1.0 * COUNT(*) / DATEDIFF(SECOND, MIN(Received), MAX(Received)) ELSE 0.0 END AS MsgRate
+FROM [dbo].[HRI_ACTIVATION_STATUS] HRI
+LEFT JOIN [dbo].[RBS_INCOMING_MESSAGE] MSG
+ON HRI.HRI_ID = CASE WHEN Subject IS NOT NULL 
+AND LEN(Subject) > 0
+THEN CAST(RIGHT(LEFT(Subject, 14), 5) AS INT) 
+ELSE 0 END
+AND MSG.Topic LIKE 'tmx.plugin.%.status'
+AND MSG.Received > DATEADD(SECOND, -10, GETDATE())
+GROUP BY HRI.HRI_ID, MSG.Topic;
+
+
+-- dbo.RBS_INCOMING_SPAT_PERFORMANCE source
+
+CREATE VIEW [dbo].[RBS_INCOMING_SPAT_PERFORMANCE]
+AS
+SELECT MSG.Message_ID, SPAT.HRI_ID, MSG.Content, SPAT.IntersectionName, SPAT.ActiveSignalGroup, SPAT.MsgTime, MSG.Received, MSG.Stored,
+DATEDIFF(MILLISECOND, SPAT.MsgTime, MSG.Received) AS ReceivedIn_msec, 
+DATEDIFF(MILLISECOND, SPAT.MsgTime, MSG.Stored) AS StoredIn_msec
+FROM dbo.RBS_INCOMING_SPAT SPAT
+JOIN dbo.RBS_INCOMING_MESSAGE MSG
+ON SPAT.Message_ID = MSG.Message_ID AND SPAT.HRI_ID = MSG.Subject AND MSG.Content_Type = 'SPAT';
+
+
+-- dbo.RBS_INCOMING_SPAT_RATE source
+
+CREATE VIEW [dbo].[RBS_INCOMING_SPAT_RATE]
+AS
+SELECT HRI.HRI_ID, 
+        COALESCE(DATEDIFF(SECOND, MIN(MsgTime), MAX(MsgTime)), 0) AS SecondCount, 
+        SUM(CASE WHEN SPAT.HRI_ID IS NULL THEN 0 ELSE 1 END) AS TotalMsgs, 
+        CASE WHEN DATEDIFF(SECOND, MIN(MsgTime), MAX(MsgTime)) > 0 THEN 1.0 * COUNT(*) / DATEDIFF(SECOND, MIN(MsgTime), MAX(MsgTime)) ELSE 0.0 END AS MsgRate
+FROM [dbo].[HRI_ACTIVATION_STATUS] HRI
+LEFT JOIN [dbo].[RBS_INCOMING_SPAT] SPAT
+ON HRI.HRI_ID = SPAT.HRI_ID
+AND SPAT.MsgTime > DATEADD(SECOND, -10, GETDATE())
+GROUP BY HRI.HRI_ID;
+
+
+-- dbo.RBS_INCOMING_SPAT_STATUS source
+
+CREATE VIEW [dbo].[RBS_INCOMING_SPAT_STATUS]
+AS
+SELECT HRI.HRI_ID, SPAT.Message_ID AS SPATMsgId, SPAT.MsgTime AS SPATMsgTime, 
+    MAP.Message_ID AS MAPMsgId, MAP.Received AS MAPMsgTime,
+    MAP.RefPointLatitude, MAP.RefPointLongitude, 
+    SPAT.IntersectionName, SPAT.ActiveSignalGroup, MAP.TrackedLane,
+    CASE WHEN SPAT.ActiveSignalGroup = MAP.SignalGroup THEN 1 ELSE 0 END AS HRIActive
+FROM [dbo].[HRI_ACTIVATION_STATUS] HRI
+LEFT JOIN [dbo].[RBS_LAST_SPAT] LSPAT 
+ON LSPAT.HRI_ID = HRI.HRI_ID
+LEFT JOIN [dbo].[RBS_LAST_MAP] LMAP
+ON LMAP.HRI_ID = HRI.HRI_ID
+LEFT JOIN [dbo].[RBS_INCOMING_SPAT] SPAT
+ON SPAT.HRI_ID = HRI.HRI_ID 
+AND SPAT.MsgTime = LSPAT.LastSpat
+LEFT JOIN [dbo].[RBS_INCOMING_MAP] MAP
+ON MAP.HRI_ID = HRI.HRI_ID
+AND MAP.Received = LMAP.LastMap;
+
+
+-- dbo.RBS_LAST_MAP source
+
+CREATE VIEW RBS_LAST_MAP
+AS
+SELECT HRI_ID, MAX(Received) as LastMap
+FROM RBS_INCOMING_MAP
+GROUP BY HRI_ID;
+
+
+-- dbo.RBS_LAST_SPAT source
+
+CREATE VIEW RBS_LAST_SPAT
+AS
+SELECT HRI_ID, MAX(MsgTime) as LastSpat
+FROM RBS_INCOMING_SPAT
+GROUP BY HRI_ID;
