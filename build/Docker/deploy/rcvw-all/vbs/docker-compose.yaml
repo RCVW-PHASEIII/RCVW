@@ -341,41 +341,10 @@ configs:
           }
         ],
         "loglevel": "${RCVW_VBS_RCVW_DEBUG:-DEBUG}",
-        "Distance To HRI": "${RCVW_FAULT_HRI_DISTANCE:=1000.0}",
+        "Distance To HRI": "${RCVW_FAULT_HRI_DISTANCE:-1000.0}",
         "Extended Intersection": 0.1,
         "Friction": 0.8,
-        "HRI Locations": [
-          {
-            "Latitude": 39.9570244,
-            "Longitude": -83.2478429,
-            "HRIName": "Battelle West Jefferson"
-          },
-          {
-            "Latitude": 30.288532,
-            "Longitude": -81.720607,
-            "HRIName": "Roosevelt & St. Johns Jacksonville, FL"          
-          },
-          {
-            "Latitude": 30.282196,
-            "Longitude": -81.720559,
-            "HRIName": "Roosevelt & San Juan Jacksonville, FL"          
-          },
-          {
-            "Latitude": 30.3269015,
-            "Longitude": -81.7308415,
-            "HRIName": "Beaver & Edgewood Jacksonville, FL"          
-          },
-          {
-            "Latitude": 30.206077,
-            "Longitude": -81.57877,
-            "HRIName": "Sunbeam & Phillips Jacksonville, FL"          
-          },
-          {
-            "Latitude": 45.7951446,
-            "Longitude": -87.0822741,
-            "HRIName": "County Rd 426 Escanaba, MI"          
-            }${RCVW_KNOWN_HRIS:+,${RCVW_KNOWN_HRIS}}
-        ],
+        "HRI Locations": [${RCVW_KNOWN_HRIS:-}],
         "HRI Warning Threshold Speed": 1.0,
         "Message Expiration": 2000,
         "Output Interface": 0,
