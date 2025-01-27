@@ -103,10 +103,6 @@ services:
   rbs-rtcm-basestation:
     extends:
       service: rbs-rtcm
-    depends_on:
-      kafka:
-        condition: service_healthy
-        required: true
     profiles:
       - rbs-basestation
     depends_on:
@@ -115,10 +111,6 @@ services:
   cfg-basestation:
     extends:
       service: rbs-plugin
-    depends_on:
-      kafka:
-        condition: service_healthy
-        required: true
     restart: no
     entrypoint:
       - /usr/local/bin/configure-ubx.sh
