@@ -170,10 +170,11 @@ services:
       CFG_TMODE_HEIGHT: 0
 
   vbs-gpsd:
-    image: boimar/gpsd
+    image: zafrirron/gpsd
     restart: always
     privileged: true
     user: root
+    ipc: host
     entrypoint:
       - /usr/sbin/gpsd
       - -N
@@ -340,7 +341,7 @@ configs:
           }
         ],
         "loglevel": "${RCVW_VBS_RCVW_DEBUG:-DEBUG}",
-        "Distance To HRI": 2000.0,
+        "Distance To HRI": "${RCVW_FAULT_HRI_DISTANCE:=1000.0}",
         "Extended Intersection": 0.1,
         "Friction": 0.8,
         "HRI Locations": [
@@ -356,35 +357,35 @@ configs:
         "Reaction Time": 1.0,
         "Safety Offset": 1.5,
         "Use Calculated Deceleration": false,
-        "V2 Application Latency": 0.085,
-        "V2 Check Location Frequency": true,
-        "V2 Check RTK": true,
-        "V2 Communication Latency": 0.3,
-        "V2 Critical Message Expiration": 500,
+        "V2 Application Latency": "${RCVW_LATENCY_APP:-0.085}",
+        "V2 Check Location Frequency": "${RCVW_FAULT_PVT:-true}",
+        "V2 Check RTK": "${RCVW_FAULT_RTK:-true}",
+        "V2 Communication Latency": "${RCVW_LATENCY_COMM:-0.3}",
+        "V2 Critical Message Expiration": "${RCVW_LATENCY_MSG:-500}",
         "V2 Deceleration Car": 3.4,
         "V2 Deceleration Heavy Truck": 2.322,
         "V2 Deceleration Light Truck": 2.148,
-        "V2 GPS Error": 3.12,
+        "V2 GPS Error": "${RCVW_ERR_GNSS:-1.5}",
         "V2 Grade": 0,
-        "V2 Location Frequency Sample Size": 30,
+        "V2 Location Frequency Sample Size": "${RCVW_FAULT_PVT_COUNT:-30}",
         "V2 Log SPAT": true,
         "V2 Max Heading Change": 90.0,
         "V2 Max Ignored Positions": 2,
-        "V2 Minimum Location Frequency": 4,
-        "V2 Reaction Time": 2.5,
+        "V2 Minimum Location Frequency": "${RCVW_FAULT_PVT_FREQ:-4}",
+        "V2 Reaction Time": "${RCVW_ERR_RT:-2.5}",
         "V2 Use Config Grade": false,
         "V2 Use VBM Deceleration": false,
-        "V2 Antenna Placement X": "${RCVW_VBS_ANTENNA_X:?Missing antenna location measurement (X).}",
-        "V2 Antenna Placement Y": "${RCVW_VBS_ANTENNA_Y:?Missing antenna location measurement (Y).}",
-        "V2 Antenna Height": "${RCVW_VBS_ANTENNA_HEIGHT:?Missing antenna location measurement (Z).}",
+        "V2 Antenna Placement X": "${RCVW_VBS_ANTENNA_X:-0.9525}",
+        "V2 Antenna Placement Y": "${RCVW_VBS_ANTENNA_Y:-2.25552}",
+        "V2 Antenna Height": "${RCVW_VBS_ANTENNA_HEIGHT:-1.70688}",
         "V2 Vehicle Type": "${RCVW_VBS_TYPE:-1}",
-        "V2 Vehicle Length": "${RCVW_VBS_LENGTH:-4.8}"
+        "V2 Vehicle Length": "${RCVW_VBS_LENGTH:-4.51104}"
       }
 
   httpd-config:
     content: |
       <VirtualHost *:80>
-        ServerAdmin baumgardner@battelle.org  
+        ServerAdmin baumgardner@battelle.org
 
         DocumentRoot /var/www/html
         <Directory />
