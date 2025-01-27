@@ -1,9 +1,5 @@
 services:
   vbs-plugin:
-    depends_on:
-      kafka:
-        condition: service_healthy
-        required: true
     image: ${RCVW_VBS_IMAGE:-rcvw-vbs}:${RCVW_VBS_VERSION:-4.0.0}
     entrypoint: /bin/bash
     hostname: "rcvw-vbs-${RCVW_VBS_VEHICLE:-0}"
@@ -30,6 +26,10 @@ services:
   vbs-dgps:
     extends:
       service: vbs-plugin
+    depends_on:
+      kafka:
+        condition: service_healthy
+        required: true
     restart: always
     entrypoint:
       - /usr/local/bin/tmxctl
@@ -46,6 +46,10 @@ services:
   vbs-recv:
     extends:
       service: vbs-plugin
+    depends_on:
+      kafka:
+        condition: service_healthy
+        required: true
     restart: always
     entrypoint:
       - /usr/local/bin/tmxctl
@@ -75,6 +79,10 @@ services:
   vbs-rcvw:
     extends:
       service: vbs-plugin
+    depends_on:
+      kafka:
+        condition: service_healthy
+        required: true
     entrypoint:
       - /usr/local/bin/tmxctl
       - --start
