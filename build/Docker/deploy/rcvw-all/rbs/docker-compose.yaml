@@ -1,9 +1,5 @@
 services:
   rbs-plugin:
-    depends_on:
-      kafka:
-        condition: service_healthy
-        required: true
     image: ${RCVW_RBS_IMAGE:-rcvw-rbs}:${RCVW_RBS_VERSION:-4.0.0}
     entrypoint: /bin/bash
     hostname: "rcvw-rbs-${RCVW_HRI:-0}"
@@ -27,6 +23,10 @@ services:
   rbs-map:
     extends:
       service: rbs-plugin
+    depends_on:
+      kafka:
+        condition: service_healthy
+        required: true
     entrypoint:
       - /usr/local/bin/tmxctl
       - --start
@@ -41,6 +41,10 @@ services:
   rbs-hri:
     extends:
       service: rbs-plugin
+    depends_on:
+      kafka:
+        condition: service_healthy
+        required: true
     entrypoint:
       - /usr/local/bin/tmxctl
       - --start
@@ -60,6 +64,10 @@ services:
   rbs-rsu:
     extends:
       service: rbs-plugin
+    depends_on:
+      kafka:
+        condition: service_healthy
+        required: true
     entrypoint:
       - /usr/local/bin/tmxctl
       - --start
@@ -76,6 +84,10 @@ services:
   rbs-rtcm:
     extends:
       service: rbs-plugin
+    depends_on:
+      kafka:
+        condition: service_healthy
+        required: true
     entrypoint:
       - /usr/local/bin/tmxctl
       - --start
@@ -91,6 +103,10 @@ services:
   rbs-rtcm-basestation:
     extends:
       service: rbs-rtcm
+    depends_on:
+      kafka:
+        condition: service_healthy
+        required: true
     profiles:
       - rbs-basestation
     depends_on:
@@ -99,6 +115,10 @@ services:
   cfg-basestation:
     extends:
       service: rbs-plugin
+    depends_on:
+      kafka:
+        condition: service_healthy
+        required: true
     restart: no
     entrypoint:
       - /usr/local/bin/configure-ubx.sh
