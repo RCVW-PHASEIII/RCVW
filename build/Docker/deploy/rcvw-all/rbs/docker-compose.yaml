@@ -360,7 +360,7 @@ configs:
           {
             "comment": "The RTCM source from a GPSd basestation.",
             "id": "rtcm-gpsd",
-            "${RCVW_GPSD_SOURCE:+con}text": "gpsd://${RCVW_GPSD_SOURCE:-localhost}",
+            "${RCVW_GPSD_SOURCE:+con}text": "gpsd://localhost",
             "config": {
               "auto-subscribe": true,
               "auto-publish": false,
