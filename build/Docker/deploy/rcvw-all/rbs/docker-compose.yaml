@@ -100,14 +100,6 @@ services:
         uid: "999"
         gid: "999"
 
-  rbs-rtcm-basestation:
-    extends:
-      service: rbs-rtcm
-    profiles:
-      - rbs-basestation
-    depends_on:
-      - cfg-basestation
-
   cfg-basestation:
     extends:
       service: rbs-plugin
@@ -119,7 +111,7 @@ services:
     volumes:
       - ${RCVW_GPSD_SOURCE:-/dev/null}:/dev/gps
     environment:
-      GPS_INPUT: ${RCVW_GPSD_SOURCE:-/dev/null}
+      GPS_INPUT: /dev/gps
       # Basestation Configuration Options
       CFG_TMODE_MODE: 2
       CFG_TMODE_LAT: ${RCVW_HRI_LAT:-0}
