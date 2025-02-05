@@ -58,10 +58,10 @@ $ make docker-image-rcvw-vbs
 The Cloud-based Subsystem has multiple Docker images.
 
 ```
-$ make docker-image-rcvw-cbs-api
-$ make docker-image-rcvw-cbs-event-mgr
-$ make docker-image-rcvw-cbs-ingest
-$ make docker-image-rcvw-cbs-rtcm
+$ make docker-image-cbs-api
+$ make docker-image-cbs-event-mgr
+$ make docker-image-cbs-ingest
+$ make docker-image-cbs-rtcm
 ```
 
 ## Execution
