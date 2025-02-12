@@ -121,6 +121,7 @@ void TmxQpidProtonSender::on_sender_error(proton::sender &sender) {
     TLOG(DEBUG3) << "Enter " << TMX_PRETTY_FUNCTION << " for " << sender.container().id();
 
     this->on_published(this->context, to_error(sender.error()), this->message);
+    sender.close();
 }
 
 void TmxQpidProtonSender::on_sendable(proton::sender &s) {
