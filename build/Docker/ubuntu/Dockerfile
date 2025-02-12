@@ -13,7 +13,7 @@ ENV TZ=America/New_York
 
 # Install base development tools
 RUN apt-get update
-RUN apt-get install -y git gcc g++ gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf libboost-all-dev icu-devtools openssl libxerces-c-dev libcurl4-openssl-dev libsnmp-dev libmysqlclient-dev libmysqlcppconn-dev uuid-dev libz3-dev libgps-dev libev-dev libuv1-dev libusb-1.0-0-dev liboctave-dev libbluetooth-dev openjdk-8-jre-headless lsb-release aptly
+RUN apt-get install -y git gcc g++ gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf libboost-all-dev icu-devtools openssl libxerces-c-dev libcurl4-openssl-dev librdkafka-dev libqpid-proton-cpp12-dev libsnmp-dev libmysqlclient-dev libmysqlcppconn-dev uuid-dev libz3-dev libgps-dev libev-dev libuv1-dev libusb-1.0-0-dev liboctave-dev libbluetooth-dev openjdk-21-jre-headless lsb-release aptly
 
 # Need to install latest version of cmake
 RUN apt-get install -y wget gpg
