@@ -1013,14 +1013,16 @@ double RCVWPlugin::GetDistanceToCrossing(double lat, double lon, double heading,
     TLOG(DEBUG) << "Lane, SignalGroup = " << r.LaneNumber << ", " << signalGroup;
     std::string spatSeg = "";
 
-    if (!intersection.IsSignalForGroupRedLight(*spatCopy, signalGroup)) {
-        if (_preemption)
-            this->set_status("HRI", "Not Present");
-        _preemption = false;
-    } else {
-        if (!_preemption)
-            this->set_status("HRI", "Present");
-        _preemption = true;
+    if (signalGroup > 0) {
+        if (!intersection.IsSignalForGroupRedLight(*spatCopy, signalGroup)) {
+            if (_preemption)
+                this->set_status("HRI", "Not Present");
+            _preemption = false;
+        } else {
+            if (!_preemption)
+                this->set_status("HRI", "Present");
+            _preemption = true;
+        }
     }
 
     int laneSegment = r.LaneSegment;
