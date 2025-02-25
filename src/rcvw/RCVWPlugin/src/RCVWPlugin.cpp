@@ -92,6 +92,28 @@ private:
     void handle_vbm(message::v2x::VehicleBasicMessage const &, message::TmxMessage const &);
 
 private:
+    typedef enum V2VehicleTypeEnum {
+        Car = 1,
+        LightTruck = 2,
+        HeavyTruck = 3
+    } V2VehicleType;
+
+    typedef enum V2RTKTypeEnum {
+        NA = 0,
+        None = 1,
+        Float = 2,
+        Fixed = 3
+    } V2RTKType;
+
+    typedef enum V2StateErrorMessageEnum: std::uint8_t {
+        NoError = 0,
+        MAP = 1,
+        SPaT = 2,
+        Location = 3,
+        Frequency = 4,
+        RTK = 5
+    } V2StateErrorMessage;
+
     //Config Values
     std::mutex _dataLock;
     std::atomic<double> _safetyOffset;
@@ -161,7 +183,7 @@ private:
     //other
     std::atomic<double> _lastLoggedspeed;
     std::atomic<uint64_t> _lastLocationTime;
-    std::atomic<uint8_t> _stateErrorMessage;
+    std::atomic<V2StateErrorMessage> _stateErrorMessage;
     std::atomic<uint8_t> _changeDirectionCount;
 
     //V2
@@ -191,28 +213,6 @@ private:
     std::atomic<uint64_t> _v2LocationFrequencyCount;
     std::atomic<double> _v2MaxHeadingChange;
     std::atomic<uint64_t> _v2MaxIgnoredPositions;
-
-    typedef enum V2VehicleTypeEnum {
-        Car = 1,
-        LightTruck = 2,
-        HeavyTruck = 3
-    } V2VehicleType;
-
-    typedef enum V2RTKTypeEnum {
-        NA = 0,
-        None = 1,
-        Float = 2,
-        Fixed = 3
-    } V2RTKType;
-
-    typedef enum V2StateErrorMessageEnum {
-        NoError = 0,
-        MAP = 1,
-        SPaT = 2,
-        Location = 3,
-        Frequency = 4,
-        RTK = 5
-    } V2StateErrorMessage;
 
     //Helper Functions
     void CheckForErrorCondition(double lat, double lon, bool frequencyError);
@@ -1426,8 +1426,9 @@ bool RCVWPlugin::IsLocationInRangeOfEquippedHRI(double latitude, double longitud
         double distanceToHRI = Conversions::DistanceMeters(latitude, longitude,
                                                            locations[i]["Latitude"], locations[i]["Longitude"]);
 
-        if (distanceToHRI <= _distanceToHRI && this->_statusThrottle.Monitor(1)) {
-            this->set_status("Near Active HRI", locations[i]["HRIName"].to_string().c_str());
+        if (distanceToHRI <= _distanceToHRI) {
+            if (this->_statusThrottle.Monitor(1))
+                this->set_status("Near Active HRI", locations[i]["HRIName"].to_string().c_str());
             return true;
         }
     }
