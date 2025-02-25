@@ -56,7 +56,6 @@ void TmxQpidProtonClient::disconnect(TmxBrokerContext &ctx) noexcept {
 void TmxQpidProtonConnection::on_connection_open(proton::connection &connection) {
     TLOG(DEBUG3) << "Enter " << TMX_PRETTY_FUNCTION << " for " << connection.container().id();
 
-
     auto &ctx = to_context(connection.container());
     std::lock_guard<std::mutex> lock(ctx.get_thread_lock());
 

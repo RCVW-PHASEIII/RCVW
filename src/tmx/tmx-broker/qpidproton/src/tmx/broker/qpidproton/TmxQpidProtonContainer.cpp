@@ -201,6 +201,8 @@ void TmxQpidProtonConnection::event_loop() noexcept {
 
     TLOG(DEBUG1) << this->get_broker_info(this->context());
 
+    container().auto_stop(false);
+
     TmxError ret { EXIT_SUCCESS, "Container for " + container().id() +" has stopped" };
     try {
         TLOG(DEBUG) << "Running the container for " << container().id();
