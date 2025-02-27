@@ -191,6 +191,9 @@ void TmxPlugin::on_message_received<types::String8 const, v2x::MessageReceiver::
 
         if (msgId > 0)
             id = v2x::MessageReceiver::get_message_id(std::to_string(msgId));
+
+        if (id <= 0 && payloadBytes.length() > 1)
+            payloadBytes = payloadBytes.substr(1);
     }
 
     if (id > 0) {
